@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
+import "./globals.css";
 
-export const metadata = { title: "ব্লগ — P0a যাচাই", robots: { index: false } };
+export const metadata = { title: "Ancient Mariner", robots: { index: false } };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (

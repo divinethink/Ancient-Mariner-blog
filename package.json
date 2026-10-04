@@ -6,20 +6,33 @@
     "build": "next build",
     "build:cf": "opennextjs-cloudflare build && node scripts/build-public.mjs",
     "typecheck": "tsc --noEmit",
-    "deploy:dry": "wrangler deploy --dry-run"
+    "deploy:dry": "wrangler deploy --dry-run",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "format": "prettier --write ."
   },
   "dependencies": {
+    "@tailwindcss/postcss": "4.3.3",
     "next": "16.3.8",
+    "postcss": "8.5.28",
     "react": "19.3.0",
     "react-dom": "19.3.0",
+    "tailwindcss": "4.3.3",
     "zod": "4.6.5"
   },
   "devDependencies": {
+    "@eslint/js": "9.39.5",
     "@opennextjs/cloudflare": "1.20.8",
     "@types/node": "26.6.4",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
-    "typescript": "7.0.2",
+    "eslint": "9.39.5",
+    "eslint-config-next": "16.3.8",
+    "eslint-config-prettier": "10.1.8",
+    "prettier": "3.9.9",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.71.0",
+    "vitest": "5.0.3",
     "wrangler": "4.147.0"
   }
 }
