@@ -1,0 +1,14 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "blog",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2025-06-01",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS",
+    // শুধু এই রুটে Worker চলে; বাকি সব static asset (Worker না চালিয়ে)
+    "run_worker_first": ["/dashboard/*", "/login", "/api/*"]
+  },
+  "observability": { "enabled": true }
+}
