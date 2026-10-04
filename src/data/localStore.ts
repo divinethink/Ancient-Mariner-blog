@@ -1,0 +1,42 @@
+// IndexedDB-ভিত্তিক লোকাল persistence — শুধু এই ফাইল দিয়ে (Arch §১ নং ৬)।
+// critical data localStorage-এ নয়; logout-এ clearAll() (Arch §৫)।
+const DB = "blog-local";
+const STORE = "kv";
+
+function open(): Promise<IDBDatabase> {
+  return new Promise((resolve, reject) => {
+    if (typeof indexedDB === "undefined") return reject(new Error("IndexedDB অনুপলব্ধ"));
+    const req = indexedDB.open(DB, 1);
+    req.onupgradeneeded = () => req.result.createObjectStore(STORE);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error ?? new Error("IndexedDB খোলা যায়নি"));
+  });
+}
+
+async function run<T>(
+  mode: IDBTransactionMode,
+  fn: (s: IDBObjectStore) => IDBRequest<T>,
+): Promise<T> {
+  const db = await open();
+  try {
+    return await new Promise<T>((resolve, reject) => {
+      const tx = db.transaction(STORE, mode);
+      const req = fn(tx.objectStore(STORE));
+      tx.oncomplete = () => resolve(req.result);
+      tx.onerror = () => reject(tx.error ?? new Error("IndexedDB লেখা/পড়া ব্যর্থ"));
+      tx.onabort = () => reject(tx.error ?? new Error("IndexedDB abort"));
+    });
+  } finally {
+    db.close();
+  }
+}
+
+export const localStore = {
+  get: <T>(key: string) => run<T | undefined>("readonly", (s) => s.get(key)),
+  set: (key: string, value: unknown) =>
+    run("readwrite", (s) => s.put(value, key)).then(() => undefined),
+  delete: (key: string) => run("readwrite", (s) => s.delete(key)).then(() => undefined),
+  keys: () => run<IDBValidKey[]>("readonly", (s) => s.getAllKeys()).then((k) => k.map(String)),
+  /** logout-এ: লোকাল ড্রাফট ও search-index মোছা (UI-পছন্দ localStorage-এ, থাকে) */
+  clearAll: () => run("readwrite", (s) => s.clear()).then(() => undefined),
+};

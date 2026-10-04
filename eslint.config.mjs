@@ -29,7 +29,7 @@ const libBanned = [
 const rule = (...patterns) => ({ "no-restricted-imports": ["error", { patterns }] });
 
 const config = [
-  { ignores: [".next/**", ".open-next/**", "node_modules/**", "next-env.d.ts"] },
+  { ignores: [".next/**", ".open-next/**", "node_modules/**", "next-env.d.ts", "public/**"] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   ...nextVitals,

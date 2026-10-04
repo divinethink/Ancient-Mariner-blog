@@ -1,0 +1,94 @@
+/* Design tokens — single source of truth (Arch §১১). ছয় থিম: auto(=light|dark)/light/sepia/warm/dark/amoled.
+   theme-init.js <html data-theme="light|sepia|warm|dark|amoled"> বসায় (auto আগেই light/dark-এ resolve হয়)।
+   sepia/warm-এর muted সামান্য গাঢ় (AA ≥ ৪.৫:১, Arch §১১ 'প্রয়োজনে সমন্বয়')। */
+:root,
+[data-theme="light"] {
+  color-scheme: light;
+  --bg: #faf9f5;
+  --surface: #fffefb;
+  --text: #1f1e1d;
+  --muted: #6b6963;
+  --accent: #c96442;
+  --accent-text: #a94e2f;
+  --line: #e7e3d9;
+  --btn-bg: #a94e2f;
+  --btn-tx: #ffffff;
+}
+[data-theme="sepia"] {
+  color-scheme: light;
+  --bg: #f4ecd8;
+  --surface: #faf3e2;
+  --text: #3b3226;
+  --muted: #75684f;
+  --accent: #b5552f;
+  --accent-text: #94431f;
+  --line: #e2d5b8;
+  --btn-bg: #94431f;
+  --btn-tx: #ffffff;
+}
+[data-theme="warm"] {
+  color-scheme: light;
+  --bg: #f7e0bc;
+  --surface: #fbe9cc;
+  --text: #45301c;
+  --muted: #785c40;
+  --accent: #b9531a;
+  --accent-text: #94420f;
+  --line: #e6c89e;
+  --btn-bg: #94420f;
+  --btn-tx: #ffffff;
+}
+[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #1c1b19;
+  --surface: #262421;
+  --text: #ece8df;
+  --muted: #a8a398;
+  --accent: #e0805f;
+  --accent-text: #ee9b7d;
+  --line: #36322d;
+  --btn-bg: #e0805f;
+  --btn-tx: #1c1b19;
+}
+[data-theme="amoled"] {
+  color-scheme: dark;
+  --bg: #000000;
+  --surface: #0c0c0b;
+  --text: #ece8df;
+  --muted: #a8a398;
+  --accent: #e0805f;
+  --accent-text: #ee9b7d;
+  --line: #1e1d1b;
+  --btn-bg: #e0805f;
+  --btn-tx: #000000;
+}
+/* JS ছাড়া fallback: data-theme না থাকলে সিস্টেম dark অনুসরণ */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    color-scheme: dark;
+    --bg: #1c1b19;
+    --surface: #262421;
+    --text: #ece8df;
+    --muted: #a8a398;
+    --accent: #e0805f;
+    --accent-text: #ee9b7d;
+    --line: #36322d;
+    --btn-bg: #e0805f;
+    --btn-tx: #1c1b19;
+  }
+}
+
+/* Tailwind v4 token-mapping: bg-bg, text-text, text-muted, border-line, bg-btn-bg ইত্যাদি */
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-text: var(--text);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-accent-text: var(--accent-text);
+  --color-line: var(--line);
+  --color-btn-bg: var(--btn-bg);
+  --color-btn-tx: var(--btn-tx);
+  --font-sans: "Noto Sans Bengali", system-ui, sans-serif;
+  --font-serif: "Noto Serif Bengali", serif;
+}
