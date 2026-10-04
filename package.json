@@ -7,5 +7,19 @@
     "build:cf": "opennextjs-cloudflare build && node scripts/build-public.mjs",
     "typecheck": "tsc --noEmit",
     "deploy:dry": "wrangler deploy --dry-run"
+  },
+  "dependencies": {
+    "next": "16.3.8",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "@opennextjs/cloudflare": "1.20.8",
+    "@types/node": "26.6.4",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "typescript": "7.0.2",
+    "wrangler": "4.147.0"
   }
 }
