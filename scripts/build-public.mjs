@@ -1,5 +1,5 @@
 // Next prerender করা public HTML → Workers assets-এ কপি (উপায় ১, Arch §৫ P0a)
-import { readdirSync, statSync, mkdirSync, copyFileSync, writeFileSync, existsSync, readFileSync } from "node:fs";
+import { readdirSync, statSync, mkdirSync, copyFileSync, writeFileSync, existsSync } from "node:fs";
 import { join, dirname, relative, sep } from "node:path";
 
 const SRC = ".next/server/app";
@@ -31,8 +31,7 @@ if (copied.length === 0) {
 writeFileSync(join(DEST, "build.json"), JSON.stringify({ builtAt: new Date().toISOString() }));
 console.log("✅ assets-এ কপি:\n" + copied.map((c) => " - " + c).join("\n"));
 
-// _redirects / _headers assets-এ পৌঁছেছে কিনা (diagnostic)
+// _redirects / _headers assets-এ পৌঁছেছে কিনা
 for (const n of ["_redirects", "_headers"]) {
-  const f = join(DEST, n);
-  console.log(existsSync(f) ? `✅ ${n} আছে:\n` + readFileSync(f, "utf8") : `❌ ${n} assets-এ নেই`);
+  if (!existsSync(join(DEST, n))) { console.error(`❌ ${n} assets-এ নেই`); process.exit(1); }
 }
