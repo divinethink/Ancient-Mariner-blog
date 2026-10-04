@@ -10,5 +10,10 @@
     // শুধু এই রুটে Worker চলে; বাকি সব static asset (Worker না চালিয়ে)
     "run_worker_first": ["/dashboard", "/dashboard/*", "/login", "/api/*"]
   },
+  // runtime-এ middleware/auth route-এর জন্য (secret নয়); OWNER_UID ও SESSION_SECRET Secret হিসেবে dashboard-এ
+  "vars": {
+    "FIREBASE_PROJECT_ID": "ancientmarinerblog",
+    "SITE_URL": "https://blog.ancientmariner.workers.dev"
+  },
   "observability": { "enabled": true }
 }
