@@ -11,6 +11,7 @@ jobs:
       FIREBASE_PROJECT_ID: ancientmarinerblog
       FIREBASE_SERVER_API_KEY: ${{ secrets.FIREBASE_SERVER_API_KEY }}
       SITE_URL: https://blog.ancientmariner.workers.dev
+      NEXT_PUBLIC_FIREBASE_API_KEY: ${{ vars.FIREBASE_BROWSER_API_KEY }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

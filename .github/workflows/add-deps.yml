@@ -1,0 +1,31 @@
+name: add-deps
+
+# একবারের কাজ (P1a): `jose` ও `firebase` exact-pin করে package.json + package-lock.json commit করে ও ci চালায়।
+# কাজ শেষে এই ফাইল মুছে ফেলুন।
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  add:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --save-exact jose firebase
+      - name: Commit
+        run: |
+          git config user.name "deps-bot"
+          git config user.email "deps-bot@users.noreply.github.com"
+          git add package.json package-lock.json
+          git commit -m "chore: add jose and firebase (exact-pinned)"
+          git push origin HEAD:main
+      - name: Trigger CI
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh workflow run ci.yml --ref main
