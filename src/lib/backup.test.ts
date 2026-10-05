@@ -56,7 +56,7 @@ describe("exportBackup", () => {
     expect(new Set(j.collections.posts.map((d: { id: string }) => d.id)).size).toBe(250);
     expect(j.collections.posts[0].data.at).toEqual({ $timestamp: "1970-01-01T00:00:00.000Z" });
     expect(j.collections.drafts).toEqual([]);
-    expect(j.counts).toEqual({ posts: 250, drafts: 0, slugs: 3, siteSettings: 0 });
+    expect(j.counts).toEqual({ posts: 250, drafts: 0, slugs: 3, siteSettings: 0, ideas: 0, notes: 0 });
     expect(r.total).toBe(253);
     expect(Object.keys(j.collections)).toEqual([...BACKUP_COLLECTIONS]);
   });
@@ -68,7 +68,7 @@ describe("exportBackup", () => {
   it("সম্পূর্ণ খালি → বৈধ JSON", async () => {
     const chunks: string[] = [];
     await exportBackup(fake({}), { sink: (c) => chunks.push(c) });
-    expect(JSON.parse(chunks.join("")).counts).toEqual({ posts: 0, drafts: 0, slugs: 0, siteSettings: 0 });
+    expect(JSON.parse(chunks.join("")).counts).toEqual({ posts: 0, drafts: 0, slugs: 0, siteSettings: 0, ideas: 0, notes: 0 });
   });
   it("abort হলে throw", async () => {
     const ac = new AbortController();

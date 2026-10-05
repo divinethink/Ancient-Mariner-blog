@@ -5,6 +5,7 @@
 import { usePathname } from "next/navigation";
 import { useState, type CSSProperties, type ReactNode } from "react";
 import { readNavCollapsed, saveNavCollapsed } from "@/data/comfortStore";
+import { AddProvider } from "./AddSheet";
 import { SidePanel, TopNav } from "./DashboardNav";
 
 export function DashboardShell({ children }: { children: ReactNode }) {
@@ -16,12 +17,14 @@ export function DashboardShell({ children }: { children: ReactNode }) {
     setCollapsed(!collapsed);
   };
   return (
-    <div className="dash-shell lg:pl-[var(--nav-w)]" style={{ "--nav-w": collapsed ? "72px" : "240px" } as CSSProperties}>
-      <SidePanel collapsed={collapsed} onToggle={toggle} />
-      <div className={`mx-auto max-w-3xl p-6 ${inEditor ? "lg:max-w-none" : ""}`}>
-        <TopNav />
-        <div className="pb-24 md:pb-0">{children}</div>
+    <AddProvider>
+      <div className="dash-shell lg:pl-[var(--nav-w)]" style={{ "--nav-w": collapsed ? "72px" : "240px" } as CSSProperties}>
+        <SidePanel collapsed={collapsed} onToggle={toggle} />
+        <div className={`mx-auto max-w-3xl p-6 ${inEditor ? "lg:max-w-none" : ""}`}>
+          <TopNav />
+          <div className="pb-24 md:pb-0">{children}</div>
+        </div>
       </div>
-    </div>
+    </AddProvider>
   );
 }

@@ -3,12 +3,14 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { bn } from "@/i18n/bn";
+import { useAdd } from "./AddSheet";
 
 const item = "flex min-h-12 flex-1 items-center justify-center text-sm text-muted";
 
 /** <1024px: bottom-nav / উপরের সারি; editor-এ লুকানো (শুধু লেখা) */
 export function TopNav() {
   const path = usePathname();
+  const { openMenu } = useAdd();
   if (path.startsWith("/dashboard/posts/")) return null;
   const on = (p: string) => (path === p ? "font-semibold text-accent-text" : "");
   return (
@@ -19,13 +21,15 @@ export function TopNav() {
           <Link href="/dashboard" className={`${item} ${on("/dashboard")}`}>
             {bn.nav.library}
           </Link>
-          <Link
-            href="/dashboard/posts/new"
-            aria-label={bn.nav.newPost}
+          <button
+            type="button"
+            onClick={openMenu}
+            aria-haspopup="dialog"
+            aria-label={bn.nav.add}
             className="-mt-6 flex size-14 shrink-0 items-center justify-center rounded-full bg-btn-bg text-3xl text-btn-tx md:mt-0 md:size-11 md:text-2xl"
           >
             ＋
-          </Link>
+          </button>
           <Link href="/dashboard/menu" className={`${item} ${on("/dashboard/menu")}`}>
             {bn.nav.menu}
           </Link>
@@ -36,6 +40,7 @@ export function TopNav() {
 /** ≥1024px: বাঁ panel (editor-এও; ফোকাস মোডে টাইপ চলাকালে মিলিয়ে যায়) */
 export function SidePanel({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => void }) {
   const path = usePathname();
+  const { openIdea } = useAdd();
   const side = (p: string) =>
     `flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm ${collapsed ? "justify-center" : ""} ${
       path === p ? "bg-line font-semibold text-accent-text" : "text-muted hover:bg-line"
@@ -56,6 +61,17 @@ export function SidePanel({ collapsed, onToggle }: { collapsed: boolean; onToggl
             {!collapsed && <span>{l.label}</span>}
           </Link>
         ))}
+        <button
+          type="button"
+          onClick={openIdea}
+          aria-haspopup="dialog"
+          aria-label={bn.nav.quickIdea}
+          title={bn.nav.quickIdea}
+          className={`flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm text-muted hover:bg-line ${collapsed ? "justify-center" : ""}`}
+        >
+          <span aria-hidden>💡</span>
+          {!collapsed && <span>{bn.nav.quickIdea}</span>}
+        </button>
         <button
           type="button"
           onClick={onToggle}

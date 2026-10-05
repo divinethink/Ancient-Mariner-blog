@@ -117,7 +117,7 @@ describe("siteSettings", () => {
 });
 
 // নতুন owner-only collection যোগে এই তালিকায় এক লাইন (Arch §৯)
-const OWNER_ONLY_COLLECTIONS = ["drafts"];
+const OWNER_ONLY_COLLECTIONS = ["drafts", "ideas", "notes"];
 describe.each(OWNER_ONLY_COLLECTIONS)("owner-only: %s", (name) => {
   it("owner read/write পারে; non-owner ও anonymous পারে না", async () => {
     await seed(name, "a", { title: "x", ownerUid: OWNER });
