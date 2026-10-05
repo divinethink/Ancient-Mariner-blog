@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Editor } from "@tiptap/react";
-import { applyComfort, readComfort } from "@/data/comfortStore";
+import { applyComfort, readComfort, readFocus, saveFocus } from "@/data/comfortStore";
 import { draftStore, type EditorPos } from "@/data/draftStore";
 import { bn } from "@/i18n/bn";
 import { countWords, docToText, makeExcerpt, sanitizeDoc, type DocNode } from "@/lib/editorDoc";
@@ -39,6 +39,9 @@ export function EditorSurface({ postId, data }: { postId: string; data: Loaded }
   const [excerpt, setExcerpt] = useState(data.excerpt);
   const [panelOpen, setPanelOpen] = useState(false);
   const [comfortOpen, setComfortOpen] = useState(false);
+  const [focus, setFocus] = useState(readFocus); // ফোকাস মোড: প্রতি-ডিভাইস পছন্দ
+  const [typing, setTyping] = useState(false);
+  const focusRef = useRef(focus);
   const { status, pub, setPub, engine, edited, blur } = useRemoteSync(postId, data.pub);
 
   const editorRef = useRef<Editor | null>(null);
@@ -115,6 +118,42 @@ export function EditorSurface({ postId, data }: { postId: string; data: Loaded }
     [persist],
   );
 
+  const toggleFocus = useCallback(() => {
+    const next = !focusRef.current;
+    focusRef.current = next;
+    saveFocus(next);
+    setFocus(next);
+    setTyping(false);
+  }, []);
+
+  /** Ctrl/⌘+S = এখনই লোকাল সেভ + Firestore sync (প্রকাশ নয়); Ctrl/⌘+Shift+F = ফোকাস টগল; Esc = ফোকাস মোড থেকে বেরোনো */
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const mod = e.ctrlKey || e.metaKey;
+      const k = e.key.toLowerCase();
+      if (mod && !e.shiftKey && !e.altKey && k === "s") {
+        e.preventDefault();
+        void flushAsync().then(() => engine?.syncNow()).catch(() => undefined);
+      } else if (mod && e.shiftKey && !e.altKey && k === "f") {
+        e.preventDefault();
+        toggleFocus();
+      } else if (e.key === "Escape" && focusRef.current && !comfortOpen && !panelOpen) {
+        toggleFocus();
+      }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [flushAsync, engine, toggleFocus, comfortOpen, panelOpen]);
+
+  // টাইপ চলাকালে লুকানো UI ফেরে: মাউস/আঙুল নড়লে বা অন্য কিছুতে focus গেলে
+  useEffect(() => {
+    if (!typing) return;
+    const back = () => setTyping(false);
+    const evs = ["pointermove", "pointerdown", "touchstart", "focusin"] as const;
+    evs.forEach((n) => document.addEventListener(n, back, { passive: true }));
+    return () => evs.forEach((n) => document.removeEventListener(n, back));
+  }, [typing]);
+
   // সংরক্ষিত আরাম-সেটিং (ফন্ট/আকার/ফাঁক/চওড়া) প্রয়োগ
   useEffect(() => applyComfort(readComfort()), []);
 
@@ -166,8 +205,8 @@ export function EditorSurface({ postId, data }: { postId: string; data: Loaded }
             : "";
 
   return (
-    <div>
-      <header className="sticky top-0 z-20 -mx-6 mb-4 flex min-h-14 items-center gap-3 border-b border-line bg-bg/90 px-4 backdrop-blur">
+    <div data-focus={focus ? "on" : "off"} data-typing={typing ? "true" : "false"}>
+      <header className="chrome sticky top-0 z-20 -mx-6 mb-4 flex min-h-14 items-center gap-3 border-b border-line bg-bg/90 px-4 backdrop-blur">
         <Link
           href="/dashboard"
           aria-label={bn.editor.back}
@@ -195,6 +234,25 @@ export function EditorSurface({ postId, data }: { postId: string; data: Loaded }
         <span className="hidden text-sm text-muted sm:inline">
           {words} {bn.editor.words}
         </span>
+        <button
+          type="button"
+          aria-label={bn.editor.saveNow}
+          title="Ctrl/⌘+S"
+          onClick={() => void flushAsync().then(() => engine?.syncNow()).catch(() => undefined)}
+          className="hidden min-h-11 min-w-11 rounded-full text-base sm:inline-flex sm:items-center sm:justify-center"
+        >
+          💾
+        </button>
+        <button
+          type="button"
+          aria-label={focus ? bn.editor.focusOff : bn.editor.focusOn}
+          aria-pressed={focus}
+          title="Ctrl/⌘+Shift+F"
+          onClick={toggleFocus}
+          className={`min-h-11 min-w-11 rounded-full text-base ${focus ? "bg-line" : ""}`}
+        >
+          🧘
+        </button>
         <button
           type="button"
           aria-label={bn.editor.comfort.open}
@@ -264,7 +322,10 @@ export function EditorSurface({ postId, data }: { postId: string; data: Loaded }
         <TiptapEditor
           initialDoc={data.doc}
           pos={data.pos}
-          onContentChange={() => schedule(true)}
+          onContentChange={() => {
+            schedule(true);
+            if (focusRef.current) setTyping(true);
+          }}
           onCaretMove={() => schedule(false)}
           onBlur={onBlur}
           onEditor={onEditor}

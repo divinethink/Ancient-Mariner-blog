@@ -121,7 +121,7 @@ function Toolbar({ editor }: { editor: Editor }) {
       role="toolbar"
       aria-label={bn.editor.toolbar}
       style={{ bottom: inset }}
-      className="fixed inset-x-0 z-30 flex gap-1 overflow-x-auto border-t border-line bg-surface p-1.5 md:justify-center"
+      className="chrome fixed inset-x-0 z-30 flex gap-1 overflow-x-auto border-t border-line bg-surface p-1.5 md:justify-center"
     >
       {items.map((it) => (
         <button

@@ -147,3 +147,12 @@ body {
   border-top: 1px solid var(--line);
   margin: 1.5em 0;
 }
+
+/* ফোকাস মোড (P2b-২): টাইপ চলাকালে header/toolbar মিলিয়ে যায়; মাউস/আঙুল নড়লে বা focus সরলে ফেরে */
+.chrome {
+  transition: opacity 0.6s;
+}
+[data-typing="true"] .chrome {
+  opacity: 0;
+  pointer-events: none;
+}

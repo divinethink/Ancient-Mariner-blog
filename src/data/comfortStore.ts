@@ -27,3 +27,7 @@ export function saveThemePref(p: ThemePref): void {
   document.documentElement.setAttribute("data-theme", t);
   document.querySelector('meta[name="theme-color"]')?.setAttribute("content", THEME_BG[t] ?? THEME_BG.light);
 }
+
+const FOCUS_KEY = "focusMode";
+export const readFocus = (): boolean => prefs.get(FOCUS_KEY) === "1";
+export const saveFocus = (on: boolean): void => prefs.set(FOCUS_KEY, on ? "1" : "0");

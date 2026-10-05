@@ -87,6 +87,9 @@ export const bn = {
     savedLocal: "এই ডিভাইসে সংরক্ষিত ✓",
     saveFailed: "সংরক্ষণ ব্যর্থ — ব্রাউজারের স্টোরেজ দেখুন",
     words: "শব্দ",
+    focusOn: "ফোকাস মোড চালু করুন",
+    focusOff: "ফোকাস মোড বন্ধ করুন",
+    saveNow: "এখনই সংরক্ষণ",
     comfort: {
       open: "আরাম-সেটিং",
       title: "লেখার আরাম",
