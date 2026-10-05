@@ -18,6 +18,8 @@ npm run dev
 | `npm run format`                      | Prettier (স্থানীয়; CI gate নেই)          |
 | `npm run build:cf`                    | OpenNext build + public HTML → assets কপি |
 | `npm run deploy:dry`                  | `wrangler deploy --dry-run` (আকার-যাচাই)  |
+| `npm run test:rules`                  | Firestore rules-test (Emulator; Java লাগে) |
+| `npm run deploy:rules`                | rules+indexes production-এ (`OWNER_UID` env, Firebase login) |
 
 ## Env তালিকা (`src/config/env.ts`, Zod boot-check)
 
@@ -31,7 +33,11 @@ Google Sign-In (popup) → `POST /api/auth/session` (`jose`-এ ID token যা�
 
 ## Deploy
 
-ZIP আপলোড → `unzip.yml` commit → `ci` চলে। `deploy.yml` হাতে: Actions → deploy → Run workflow। `npm run deploy:rules` P0c-তে আসবে।
+ZIP আপলোড → `unzip.yml` commit → `ci` চলে। `deploy.yml` হাতে: Actions → deploy → Run workflow। Rules/enum/index বদলালে: `OWNER_UID=<uid> npm run deploy:rules` (লোকাল টার্মিনাল/Codespaces; `firebase login` আগে একবার)। CI-র rules-test Emulator-এ নকল uid ব্যবহার করে (`render-rules.ts --test`), production-এ কিছু পাঠায় না।
+
+## Data layer (P2a-১)
+
+পথ ক `src/data/postRepo.client.ts` (`createPostRepoClient(db, ownerUid)`; dashboard থেকে dynamic import), পথ খ `src/data/postRepo.server.ts` (`getPublicPostSource().listPublished()` — build-সময়ে REST)। Slug: `posts` ও `slugs/{slug}` lock এক `writeBatch`-এ; lock না-মোছা (rename-এর পুরনো slug reserved)। প্রকাশিত post-এ `publishedAt` বাধ্যতামূলক (পাবলিক query তা দিয়ে order করে; `update()` প্রথম প্রকাশে বসায়)। পাবলিক REST-পড়া একবারে সব published পোস্ট আনে, pagination নেই — শত শত পোস্টের পর দেখা হবে।
 
 ## Known shortcuts
 
