@@ -3,5 +3,9 @@ import { fileURLToPath } from "node:url";
 
 export default defineConfig({
   resolve: { alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) } },
-  test: { include: ["src/**/*.test.ts", "tests/**/*.test.ts"], passWithNoTests: true },
+  test: {
+    // শুধু src: tests/rules-এ Emulator লাগে, সেগুলো `npm run test:rules` (vitest.rules.config.ts) চালায়
+    include: ["src/**/*.test.ts"],
+    passWithNoTests: true,
+  },
 });
