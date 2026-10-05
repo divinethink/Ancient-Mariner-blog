@@ -9,6 +9,7 @@
     "deploy:dry": "wrangler deploy --dry-run",
     "lint": "eslint .",
     "test": "vitest run",
+    "test:rules": "tsx scripts/render-rules.ts --test && npx --yes firebase-tools@15.32.1 emulators:exec --only firestore --project demo-ancientmarinerblog \"vitest run --config vitest.rules.config.ts\"",
     "format": "prettier --write .",
     "deploy:rules": "tsx scripts/render-rules.ts && npx --yes firebase-tools@15.32.1 deploy --only firestore:rules,firestore:indexes"
   },
