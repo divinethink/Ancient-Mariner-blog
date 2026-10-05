@@ -44,6 +44,8 @@ export function PublishPanel(p: Props) {
   const [slugIn, setSlugIn] = useState("");
   const [vis, setVis] = useState<"private" | "public">("public");
   const [dateIn, setDateIn] = useState("");
+  /** প্রকাশের তারিখের `max` — render-এ Date.now() নয়, meta লোডের সময় বসে */
+  const [maxIn, setMaxIn] = useState("");
   const firstRef = useRef<HTMLInputElement>(null);
   const { flushLocal } = p;
 
@@ -55,6 +57,7 @@ export function PublishPanel(p: Props) {
       // কখনো প্রকাশ না-হওয়া লেখায় প্রকাশের পথে Public শুরুর মান; নইলে বর্তমান
       setVis(post.publishedAt ? post.visibility : "public");
       setDateIn(post.publishedAt ? toZonedInput(post.publishedAt) : "");
+      setMaxIn(toZonedInput(new Date()));
       onPub({ status: post.status === "published" ? "published" : "draft", hasUnpublished: hasDraft });
     },
     [onPub],
@@ -72,11 +75,8 @@ export function PublishPanel(p: Props) {
     [engine, postId, applyMeta],
   );
 
-  const loadAll = useCallback(async (reset: boolean) => {
-    if (reset) {
-      setState("loading");
-      setMsg(null);
-    }
+  /** লোড করে ফল ফেরত দেয় (state বসানো কলারের callback-এ) */
+  const load = useCallback(async (): Promise<"ready" | "empty" | "error"> => {
     try {
       await flushLocal();
       await engine.syncNow(); // নতুন লেখা এখানেই Firestore-এ তৈরি হয়
@@ -86,15 +86,21 @@ export function PublishPanel(p: Props) {
         await refresh(repo);
         return true;
       });
-      setState(found ? "ready" : "empty");
+      return found ? "ready" : "empty";
     } catch {
-      setState("error");
+      return "error";
     }
   }, [engine, postId, refresh, flushLocal]);
 
+  const retry = useCallback(() => {
+    setState("loading");
+    setMsg(null);
+    void load().then(setState);
+  }, [load]);
+
   useEffect(() => {
-    void loadAll(false); // mount-এ state আগে থেকেই "loading"
-  }, [loadAll]);
+    void load().then(setState); // mount-এ state আগে থেকেই "loading"
+  }, [load]);
 
   useEffect(() => {
     firstRef.current?.focus();
@@ -224,7 +230,7 @@ export function PublishPanel(p: Props) {
         {state === "error" && (
           <p role="alert" className="text-muted">
             {status === "conflict" ? bn.publishPanel.conflictFirst : bn.publishPanel.loadFailed}{" "}
-            <button type="button" onClick={() => void loadAll(true)} className="min-h-11 text-accent-text underline">
+            <button type="button" onClick={retry} className="min-h-11 text-accent-text underline">
               {bn.publishPanel.retry}
             </button>
           </p>
@@ -306,7 +312,7 @@ export function PublishPanel(p: Props) {
                 id="pp-date"
                 type="datetime-local"
                 value={dateIn}
-                max={toZonedInput(Date.now())}
+                max={maxIn || undefined}
                 onChange={(e) => setDateIn(e.target.value)}
                 className={input}
               />
