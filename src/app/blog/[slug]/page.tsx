@@ -3,10 +3,12 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PostBody } from "@/components/public/PostBody";
 import { getSiteUrl } from "@/config/env";
+import { hasDefaultOgImage } from "@/data/publicAssets";
 import { getPublicSettings, listPublicPosts } from "@/data/publicSnapshot";
 import { bn } from "@/i18n/bn";
 import { formatDate } from "@/lib/datetime";
 import { blogPath, planSlugMoves, postExcerpt } from "@/lib/publicSite";
+import { buildSeo } from "@/lib/seo";
 
 // build-সময়ে সব published+public লেখার (এবং বাংলা পুরনো-slug-এর redirect-stub) পেজ; অন্য slug = 404 (Arch §২, §১২)
 export const dynamic = "force-static";
@@ -23,6 +25,14 @@ const decode = (s: string) => {
   }
 };
 
+function safeSiteUrl(): string | undefined {
+  try {
+    return getSiteUrl();
+  } catch {
+    return undefined; // SITE_URL ছাড়া (লোকাল dev) canonical বাদ
+  }
+}
+
 async function resolve(rawSlug: string) {
   const slug = decode(rawSlug);
   const posts = await listPublicPosts();
@@ -38,13 +48,21 @@ export async function generateStaticParams() {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const [r, { siteTitle }] = await Promise.all([resolve((await params).slug), getPublicSettings()]);
+  const [r, { siteTitle, allowIndexing }] = await Promise.all([resolve((await params).slug), getPublicSettings()]);
   if (!r) return {};
   if (r.kind === "post") {
-    return {
+    return buildSeo({
+      siteUrl: safeSiteUrl(),
+      siteName: siteTitle,
       title: `${r.post.title || bn.library.untitled} — ${siteTitle}`,
-      description: postExcerpt(r.post) || undefined,
-    };
+      description: postExcerpt(r.post),
+      path: blogPath(r.post.slug),
+      allowIndexing,
+      type: "article",
+      publishedTime: r.post.publishedAt,
+      modifiedTime: r.post.updatedAt,
+      hasOgImage: hasDefaultOgImage(),
+    }) as Metadata;
   }
   let canonical: string | undefined;
   try {

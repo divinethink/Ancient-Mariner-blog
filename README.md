@@ -17,7 +17,7 @@ npm run dev
 | `npm run lint` / `typecheck` / `test` | CI-র তিন gate                             |
 | `npm run format`                      | Prettier (স্থানীয়; CI gate নেই)          |
 | `npm run fetch:public`                | Firestore REST থেকে published+public পোস্ট → `.build-data/posts.json` (build:cf-এর প্রথম ধাপ) |
-| `npm run build:cf`                    | fetch → OpenNext build → public HTML → assets কপি → `_redirects` → `theme-init.js`-এ default থিম |
+| `npm run build:cf`                    | fetch → OpenNext build → public HTML → assets কপি → `_redirects` → `robots.txt`/`sitemap.xml` → `theme-init.js`-এ default থিম |
 | `npm run deploy:dry`                  | `wrangler deploy --dry-run` (আকার-যাচাই)  |
 | `npm run test:rules`                  | Firestore rules-test (Emulator; Java লাগে) |
 | `npm run deploy:rules`                | rules+indexes production-এ (`OWNER_UID` env, Firebase login) |
@@ -67,10 +67,12 @@ ZIP আপলোড → `unzip.yml` commit → `ci` চলে। `deploy.yml` �
 - সাধারণ নাম `postRepo.client.ts`/`postRepo.server.ts` adapter P2a-তে (Firebase SDK/REST লাগে)।
 - `public/icons/*` placeholder আইকন; owner-এর আসল আইকন পরে বদলাবে।
 - Public পেজের CSP `public/_headers`-এ (শুধু static asset-এ প্রযোজ্য); `/dashboard`/`/login`-এর nonce-CSP `src/middleware.ts` থেকে (`lib/csp.ts`)।
+- `allowIndexing` doc না থাকলে `false` (Arch §৬-এর 'শুরুর true'-এর বদলে; owner-অনুমোদিত)। APP_ENV/preview-noindex নেই — preview environment নেই।
 - `typescript` 6.0.x ও `eslint` 9.x — `typescript-eslint` TS 7 এবং `eslint-plugin-react` ESLint 10 সমর্থন করে না; সমর্থন এলে owner-অনুমোদনে আপগ্রেড।
 - Session-যাচাই `jose`-ভিত্তিক (Firebase Admin SDK নয়) — Workers-এ Admin SDK-র নির্ভরযোগ্যতা অনিশ্চিত; `jose` edge-এ নিশ্চিত চলে (Arch §৫-এর অনুমোদিত fallback)।
 - Sign-In popup-only; popup ব্লক/ব্যর্থ হলে error-বার্তা, redirect fallback নেই (owner-এর ফোন/PWA-যাচাইয়ের পর সিদ্ধান্ত)।
 - `middleware.ts` (edge) ব্যবহার হবে; Next 16-এর `proxy.ts` Node runtime-এ, OpenNext-এ unsupported — deprecation warning প্রত্যাশিত।
 - Publish panel-এ Mockup-এর 'অবস্থা' radio-র বদলে অবস্থা-ব্যাজ + ক্রিয়া-বোতাম (প্রকাশ/আপডেট/Draft-এ ফেরান) — owner-অনুমোদন বাকি; focus-trap নেই (aria-modal + Esc)।
 - সাইট `noindex` থাকে যতক্ষণ Settings-এ [Google-এ ইনডেক্স হোক] চালু না হয় — `siteSettings` doc না থাকলে/পড়া না গেলে `allowIndexing` default `false` (Arch §৬-এর 'শুরুর true'-এর বদলে fail-closed; owner-অনুমোদিত ২০২৬-১০-০৫)। টগল ও meta/sitemap/robots P2c-২-তে।
+- SEO (P2c-২): `lib/seo.ts` (pure + test) → Home/Article `generateMetadata` (title/description/canonical/OG/twitter)। Root layout-এর `noindex` থাকে (dashboard/login fail-closed); শুধু পাবলিক পেজ `allowIndexing=true` হলে `robots: index` দিয়ে override করে (stub পেজ সবসময় noindex)। `robots.txt`/`sitemap.xml` `scripts/build-seo.ts` দিয়ে সরাসরি assets-এ: ইনডেক্স বন্ধ = `Disallow: /` + sitemap নেই; চালু = `/dashboard /login /api` Disallow + Sitemap, `blockAiCrawlers` হলে `AI_CRAWLERS` তালিকার প্রত্যেকে `Disallow: /`। og:image = `public/og-default.png` থাকলে, নইলে tag বাদ।
 - Settings: `siteSettings/main`; সেভ = শুধু P2c-র ফিল্ডগুলোর `merge` (পরের phase-এর `menu/layout/design` অক্ষত), last-write-wins (একক owner)। Dashboard timezone/সেটিং প্রতি-ডিভাইস `prefs` cache থেকে সাথে সাথে, পেছনে ১ read-এ হালনাগাদ। থিম-default build-সময়ে assets-এর `theme-init.js`-এর `DEFAULT_THEME`-এ বসে (`scripts/build-theme-default.ts`); প্রতি-ডিভাইস পছন্দ জেতে।

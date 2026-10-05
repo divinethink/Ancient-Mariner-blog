@@ -1,17 +1,35 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { getSiteUrl } from "@/config/env";
+import { hasDefaultOgImage } from "@/data/publicAssets";
 import { toPostCard } from "@/data/postRepo";
 import { getPublicSettings, listPublicPosts } from "@/data/publicSnapshot";
 import { bn } from "@/i18n/bn";
 import { formatDate } from "@/lib/datetime";
 import { blogPath, postExcerpt } from "@/lib/publicSite";
+import { buildSeo } from "@/lib/seo";
 
 // build-সময়ে prerender; পাঠক-রিকোয়েস্টে Worker চলে না (Arch §১২)। card-এ `body` নেই (toPostCard)।
 export const dynamic = "force-static";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const { siteTitle, tagline } = await getPublicSettings();
-  return { title: siteTitle, description: tagline || undefined };
+  const { siteTitle, tagline, allowIndexing } = await getPublicSettings();
+  let siteUrl: string | undefined;
+  try {
+    siteUrl = getSiteUrl();
+  } catch {
+    siteUrl = undefined; // SITE_URL ছাড়া (লোকাল dev) canonical বাদ
+  }
+  return buildSeo({
+    siteUrl,
+    siteName: siteTitle,
+    title: siteTitle,
+    description: tagline,
+    path: "/",
+    allowIndexing,
+    type: "website",
+    hasOgImage: hasDefaultOgImage(),
+  }) as Metadata;
 }
 
 export default async function Home() {
