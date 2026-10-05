@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { checkParent, termSlugBase } from "./taxonomy";
+import { checkParent, chunk, renamedTagNames, termSlugBase } from "./taxonomy";
 
 describe("termSlugBase", () => {
   it("বাংলা নাম Unicode-preserving", () => expect(termSlugBase("ভ্রমণ কাহিনি", "abc")).toBe("ভ্রমণ-কাহিনি"));
@@ -13,4 +13,21 @@ describe("checkParent", () => {
   it("parent নিজেই সন্তান → ব্যর্থ (৩ স্তর)", () =>
     expect(checkParent("c", { id: "p", parentCategoryId: "g" }, false).ok).toBe(false));
   it("সন্তান থাকা category সন্তান হতে পারে না", () => expect(checkParent("c", { id: "p" }, true).ok).toBe(false));
+});
+
+describe("chunk", () => {
+  it("ভাগ করে; খালি → খালি", () => {
+    expect(chunk([1, 2, 3, 4, 5], 2)).toEqual([[1, 2], [3, 4], [5]]);
+    expect(chunk([], 2)).toEqual([]);
+  });
+});
+
+describe("renamedTagNames", () => {
+  it("নির্দিষ্ট সূচকের নাম বদলায়, বাকি অক্ষত", () =>
+    expect(renamedTagNames(["a", "b"], ["x", "y"], "b", "z")).toEqual(["x", "z"]));
+  it("নাম আগেই মিললে বা tag না থাকলে null (idempotent)", () => {
+    expect(renamedTagNames(["a"], ["z"], "a", "z")).toBeNull();
+    expect(renamedTagNames(["a"], ["z"], "q", "z")).toBeNull();
+  });
+  it("tagNames ছোট হলে খালি দিয়ে ভরে", () => expect(renamedTagNames(["a", "b"], ["x"], "b", "z")).toEqual(["x", "z"]));
 });

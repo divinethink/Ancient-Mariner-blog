@@ -59,6 +59,14 @@ export class TermRuleError extends Error {
   }
 }
 
+/** ব্যবহৃত term মোছা যায় না — `count` = ব্যবহারকারী লেখা (UI সংখ্যা দেখায়) */
+export class TermInUseError extends TermRuleError {
+  constructor(public readonly count: number) {
+    super(`${count}টি লেখায় ব্যবহৃত`);
+    this.name = "TermInUseError";
+  }
+}
+
 /** পথ ক (owner-CSR) */
 export interface TaxonomyRepo {
   readonly kind: TaxonomyKind;

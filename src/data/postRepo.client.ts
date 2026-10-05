@@ -131,7 +131,13 @@ export function createPostRepoClient(db: Firestore, ownerUid: string): PostRepo 
   async function update(id: string, patchInput: Parameters<PostRepo["update"]>[1]): Promise<Date> {
     const patch = PostPatchSchema.parse(patchInput);
     const updatedAt = new Date();
-    const data: Record<string, unknown> = { ...compact(patch), updatedAt };
+    // null → ফিল্ড সরানো (সংগঠন-ফিল্ড clear)
+    const data: Record<string, unknown> = {
+      ...Object.fromEntries(
+        Object.entries(compact(patch)).map(([k, v]) => [k, v === null ? deleteField() : v]),
+      ),
+      updatedAt,
+    };
     if (patch.status === "published" && !patch.publishedAt) {
       const cur = await get(id);
       if (!cur) throw new PostNotFoundError(id);

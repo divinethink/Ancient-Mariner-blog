@@ -18,6 +18,13 @@ export const PostSchema = z.object({
   status: PostStatus,
   visibility: PostVisibility,
   wordCount: z.number().int().nonnegative().default(0),
+  // P3a: সংগঠন (Arch §৬) — পুরনো doc-এ নেই, তাই optional/default (defensive read)
+  categoryId: z.string().min(1).optional(),
+  categoryName: z.string().optional(),
+  tagIds: z.array(z.string()).default([]),
+  tagNames: z.array(z.string()).default([]),
+  seriesId: z.string().min(1).optional(),
+  seriesOrder: z.number().int().nonnegative().optional(),
   publishedAt: z.date().optional(),
   trashedAt: z.date().optional(),
   ownerUid: z.string().min(1),
@@ -30,15 +37,28 @@ export type Post = z.infer<typeof PostSchema>;
 export type PostWithId = Post & { id: string };
 
 /** আংশিক সম্পাদনা — `.partial()` নয় (Zod 4-এ default ঢুকে পড়ত); স্পষ্ট optional */
-export const PostPatchSchema = z.object({
-  title: z.string().optional(),
-  body: Body.optional(),
-  excerpt: z.string().optional(),
-  wordCount: z.number().int().nonnegative().optional(),
-  status: PostStatus.optional(),
-  visibility: PostVisibility.optional(),
-  publishedAt: z.date().optional(),
-});
+export const MAX_TAGS_PER_POST = 20;
+export const PostPatchSchema = z
+  .object({
+    title: z.string().optional(),
+    body: Body.optional(),
+    excerpt: z.string().optional(),
+    wordCount: z.number().int().nonnegative().optional(),
+    status: PostStatus.optional(),
+    visibility: PostVisibility.optional(),
+    publishedAt: z.date().optional(),
+    contentType: ContentType.optional(),
+    // `null` = ফিল্ড সরানো (client adapter deleteField করে); অনুপস্থিত = অপরিবর্তিত
+    categoryId: z.string().min(1).nullable().optional(),
+    categoryName: z.string().nullable().optional(),
+    tagIds: z.array(z.string().min(1)).max(MAX_TAGS_PER_POST).optional(),
+    tagNames: z.array(z.string()).max(MAX_TAGS_PER_POST).optional(),
+    seriesId: z.string().min(1).nullable().optional(),
+    seriesOrder: z.number().int().nonnegative().nullable().optional(),
+  })
+  .refine((p) => (p.tagIds === undefined) === (p.tagNames === undefined), "tagIds ও tagNames একসাথে দিতে হবে")
+  .refine((p) => p.tagIds === undefined || p.tagIds.length === p.tagNames?.length, "tagIds/tagNames দৈর্ঘ্য অমিল")
+  .refine((p) => (p.categoryId === undefined) === (p.categoryName === undefined), "categoryId ও categoryName একসাথে দিতে হবে");
 export type PostPatch = z.infer<typeof PostPatchSchema>;
 
 /** প্রকাশিত লেখার অপ্রকাশিত সম্পাদনা (Arch §৬ `drafts`, doc-ID = postId) */

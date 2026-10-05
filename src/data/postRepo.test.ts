@@ -81,3 +81,24 @@ describe("DraftSchema / normalizeRaw", () => {
     expect(normalizeRaw({ a: undefined, b: 1 })).toEqual({ b: 1 });
   });
 });
+
+describe("P3a সংগঠন-ফিল্ড", () => {
+  it("পুরনো doc-এ নেই → tagIds/tagNames [], বাকি optional; নতুন ফিল্ড পড়ে", () => {
+    const old = parsePost("a", raw());
+    expect(old.tagIds).toEqual([]);
+    expect(old.tagNames).toEqual([]);
+    expect(old.categoryId).toBeUndefined();
+    const p = parsePost("b", raw({ categoryId: "c", categoryName: "ভ্রমণ", tagIds: ["t"], tagNames: ["x"], seriesId: "s", seriesOrder: 2, contentType: "travel" }));
+    expect(p).toMatchObject({ categoryId: "c", categoryName: "ভ্রমণ", tagIds: ["t"], seriesId: "s", seriesOrder: 2, contentType: "travel" });
+  });
+  it("patch: null অনুমোদিত (clear); জোড়া-নিয়ম ও দৈর্ঘ্য-সীমা", () => {
+    expect(PostPatchSchema.parse({ seriesId: null, seriesOrder: null })).toEqual({ seriesId: null, seriesOrder: null });
+    expect(PostPatchSchema.parse({ categoryId: null, categoryName: null })).toEqual({ categoryId: null, categoryName: null });
+    expect(() => PostPatchSchema.parse({ tagIds: ["a"] })).toThrow();
+    expect(() => PostPatchSchema.parse({ tagIds: ["a"], tagNames: [] })).toThrow();
+    expect(() => PostPatchSchema.parse({ categoryId: "c" })).toThrow();
+    expect(() => PostPatchSchema.parse({ contentType: "novel" })).toThrow();
+    const many = Array.from({ length: 21 }, (_, i) => `t${i}`);
+    expect(() => PostPatchSchema.parse({ tagIds: many, tagNames: many })).toThrow();
+  });
+});

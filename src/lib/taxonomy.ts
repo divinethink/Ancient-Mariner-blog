@@ -23,3 +23,25 @@ export function checkParent(
   if (selfHasChildren) return { ok: false, reason: "সন্তান থাকা ক্যাটাগরি অন্যের সন্তান হতে পারে না" };
   return { ok: true };
 }
+
+/** Firestore batch ≤ ৫০০ অপারেশন — নিরাপদ ছোট chunk */
+export const BATCH_CHUNK = 400;
+export function chunk<T>(items: readonly T[], size = BATCH_CHUNK): T[][] {
+  const out: T[][] = [];
+  for (let i = 0; i < items.length; i += size) out.push(items.slice(i, i + size));
+  return out;
+}
+
+/** ট্যাগ-rename-এ পোস্টের `tagNames` — প্রয়োজন না থাকলে null (idempotent: আবার চালালে null) */
+export function renamedTagNames(
+  tagIds: readonly string[],
+  tagNames: readonly string[],
+  id: string,
+  name: string,
+): string[] | null {
+  const idx = tagIds.indexOf(id);
+  if (idx < 0 || tagNames[idx] === name) return null;
+  const next = tagIds.map((_, i) => tagNames[i] ?? "");
+  next[idx] = name;
+  return next;
+}
