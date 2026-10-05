@@ -2,12 +2,13 @@
 
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 import type { Editor } from "@tiptap/react";
 import { applyComfort, readComfort, readFocus, saveFocus } from "@/data/comfortStore";
 import { draftStore, type EditorPos } from "@/data/draftStore";
 import { bn } from "@/i18n/bn";
 import { countWords, docToText, makeExcerpt, sanitizeDoc, type DocNode } from "@/lib/editorDoc";
+import { useMinWidth } from "../../../useMinWidth";
 import { ComfortPanel } from "./ComfortPanel";
 import { PublishPanel } from "./PublishPanel";
 import { useRemoteSync, type PubInfo } from "./useRemoteSync";
@@ -42,6 +43,8 @@ export function EditorSurface({ postId, data }: { postId: string; data: Loaded }
   const [focus, setFocus] = useState(readFocus); // ফোকাস মোড: প্রতি-ডিভাইস পছন্দ
   const [typing, setTyping] = useState(false);
   const focusRef = useRef(focus);
+  const docked = useMinWidth(1200); // ≥১২০০px: Publish panel ডানে docked (Mockup §৭.১০)
+  const inspector = docked && panelOpen;
   const { status, pub, setPub, engine, edited, blur } = useRemoteSync(postId, data.pub);
 
   const editorRef = useRef<Editor | null>(null);
@@ -145,6 +148,14 @@ export function EditorSurface({ postId, data }: { postId: string; data: Loaded }
     return () => document.removeEventListener("keydown", onKey);
   }, [flushAsync, engine, toggleFocus, comfortOpen, panelOpen]);
 
+  // বাঁ panel-ও fade-এর আওতায় — তাই <html>-এ (CSS: :root[data-typing])
+  useEffect(() => {
+    document.documentElement.dataset.typing = typing ? "true" : "false";
+    return () => {
+      delete document.documentElement.dataset.typing;
+    };
+  }, [typing]);
+
   // টাইপ চলাকালে লুকানো UI ফেরে: মাউস/আঙুল নড়লে বা অন্য কিছুতে focus গেলে
   useEffect(() => {
     if (!typing) return;
@@ -205,7 +216,10 @@ export function EditorSurface({ postId, data }: { postId: string; data: Loaded }
             : "";
 
   return (
-    <div data-focus={focus ? "on" : "off"} data-typing={typing ? "true" : "false"}>
+    <div
+      data-focus={focus ? "on" : "off"}
+      style={{ paddingRight: inspector ? "24rem" : undefined, "--insp-w": inspector ? "24rem" : "0px" } as CSSProperties}
+    >
       <header className="chrome sticky top-0 z-20 -mx-6 mb-4 flex min-h-14 items-center gap-3 border-b border-line bg-bg/90 px-4 backdrop-blur">
         <Link
           href="/dashboard"
@@ -335,6 +349,7 @@ export function EditorSurface({ postId, data }: { postId: string; data: Loaded }
       {comfortOpen && <ComfortPanel onClose={() => setComfortOpen(false)} />}
       {panelOpen && (
       <PublishPanel
+        docked={docked}
         onClose={() => setPanelOpen(false)}
         flushLocal={flushAsync}
         postId={postId}

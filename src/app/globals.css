@@ -44,10 +44,15 @@ body {
 
 /* Editor: লেখার ঘরের টাইপোগ্রাফি — Arch §১৩; --ff/--fs/--lh/--mw আরাম-প্যানেল (P2b-১) বসায় */
 .editor-col {
-  position: relative;
-  left: 50%;
-  width: min(var(--mw, 680px), calc(100vw - 3rem));
-  transform: translateX(-50%);
+  /* transform নয়: ভেতরের fixed toolbar-এর containing block ভাঙত */
+  width: min(var(--mw, 680px), 100%);
+  margin-inline: auto;
+}
+/* Dashboard shell (P2b-৩): root <main>-এর max-w/padding শেল নিজে সামলায় */
+main:has(.dash-shell) {
+  max-width: none;
+  margin: 0;
+  padding: 0;
 }
 .pm {
   outline: none;
@@ -152,7 +157,8 @@ body {
 .chrome {
   transition: opacity 0.6s;
 }
-[data-typing="true"] .chrome {
+[data-typing="true"] .chrome,
+:root[data-typing="true"] .chrome {
   opacity: 0;
   pointer-events: none;
 }

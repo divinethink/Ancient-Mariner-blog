@@ -15,6 +15,8 @@ import { BuildStatus } from "@/app/dashboard/BuildStatus";
 import type { PubInfo, SyncEngine } from "./useRemoteSync";
 
 type Props = {
+  /** ≥১২০০px: ডানে docked (modal নয়; backdrop/Esc-বন্ধ নেই) */
+  docked?: boolean;
   /** parent শুধু খোলা অবস্থায় mount করে (প্রতিবার নতুন state) */
   onClose: () => void;
   postId: string;
@@ -106,10 +108,10 @@ export function PublishPanel(p: Props) {
 
   useEffect(() => {
     firstRef.current?.focus();
-    const esc = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    const esc = (e: KeyboardEvent) => e.key === "Escape" && !p.docked && onClose();
     window.addEventListener("keydown", esc);
     return () => window.removeEventListener("keydown", esc);
-  }, [state, onClose]);
+  }, [state, onClose, p.docked]);
 
   /** slug/visibility/publishedAt যা বদলেছে তা লেখা; ব্যর্থ হলে Error throw (বার্তা ফেরত) */
   async function writeMeta(repo: PostRepo, extra: { status?: "published" | "draft" } = {}) {
@@ -210,13 +212,13 @@ export function PublishPanel(p: Props) {
 
   const published = meta?.post.status === "published";
   return (
-    <div className="fixed inset-0 z-40" role="presentation">
-      <div className="absolute inset-0 bg-black/40" onClick={onClose} aria-hidden />
+    <div className={p.docked ? "fixed inset-y-0 right-0 z-40 w-96" : "fixed inset-0 z-40"} role="presentation">
+      {!p.docked && <div className="absolute inset-0 bg-black/40" onClick={onClose} aria-hidden />}
       <div
         role="dialog"
-        aria-modal="true"
+        aria-modal={p.docked ? undefined : "true"}
         aria-label={bn.publishPanel.title}
-        className="absolute inset-x-0 bottom-0 max-h-[88dvh] overflow-y-auto rounded-t-3xl border border-line bg-surface p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom,0px))] shadow-xl md:inset-y-0 md:left-auto md:right-0 md:max-h-none md:w-96 md:rounded-none md:rounded-l-3xl"
+        className={`${p.docked ? "absolute inset-0 overflow-y-auto border-l border-line bg-surface p-5" : "absolute inset-x-0 bottom-0 max-h-[88dvh] overflow-y-auto rounded-t-3xl border border-line bg-surface p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom,0px))] shadow-xl md:inset-y-0 md:left-auto md:right-0 md:max-h-none md:w-96 md:rounded-none md:rounded-l-3xl"}`}
       >
         <div className="mb-4 flex items-center">
           <h2 className="flex-1 font-serif text-xl font-bold">{bn.publishPanel.title}</h2>

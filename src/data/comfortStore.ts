@@ -31,3 +31,7 @@ export function saveThemePref(p: ThemePref): void {
 const FOCUS_KEY = "focusMode";
 export const readFocus = (): boolean => prefs.get(FOCUS_KEY) === "1";
 export const saveFocus = (on: boolean): void => prefs.set(FOCUS_KEY, on ? "1" : "0");
+
+const NAV_KEY = "navCollapsed";
+export const readNavCollapsed = (): boolean => prefs.get(NAV_KEY) === "1";
+export const saveNavCollapsed = (on: boolean): void => prefs.set(NAV_KEY, on ? "1" : "0");

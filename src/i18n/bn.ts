@@ -21,7 +21,14 @@ export const bn = {
     confirmDiscard: "সংরক্ষণহীন লেখা মুছে যাবে — নিশ্চিত?",
   },
   dashboard: { library: "লাইব্রেরি", menu: "মেনু", settings: "সেটিংস" },
-  nav: { label: "ড্যাশবোর্ড নেভিগেশন", library: "লাইব্রেরি", newPost: "নতুন লেখা", menu: "মেনু" },
+  nav: {
+    label: "ড্যাশবোর্ড নেভিগেশন",
+    library: "লাইব্রেরি",
+    newPost: "নতুন লেখা",
+    menu: "মেনু",
+    collapse: "প্যানেল ছোট করুন",
+    expand: "প্যানেল বড় করুন",
+  },
   library: {
     resume: "চালিয়ে যান",
     empty: "এখনো কোনো লেখা নেই — ＋ চেপে শুরু করুন।",
