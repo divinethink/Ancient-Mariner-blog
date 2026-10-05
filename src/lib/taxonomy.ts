@@ -45,3 +45,37 @@ export function renamedTagNames(
   next[idx] = name;
   return next;
 }
+
+/** এর বেশি term থাকলে তালিকায় প্রতিটার ব্যবহার-সংখ্যা আগেই গোনা হয় না (Firestore read সাশ্রয়); মোছার সময় সংখ্যা আসে */
+export const COUNT_LIST_LIMIT = 60;
+
+export type TreeRow<T> = { term: T; depth: 0 | 1 };
+
+/**
+ * category-তালিকা → parent-এর নিচে সন্তান (নাম-ক্রমে) সাজানো সারি (Mockup §৭.১৩, ২ স্তর)।
+ * parent মোছা/অনুপস্থিত হলে সন্তান শীর্ষ-স্তরে দেখায় — কিছু হারায় না।
+ */
+export function buildCategoryTree<T extends { id: string; name: string; parentCategoryId?: string }>(
+  terms: readonly T[],
+): TreeRow<T>[] {
+  const ids = new Set(terms.map((t) => t.id));
+  const byName = (a: T, b: T) => a.name.localeCompare(b.name, "bn");
+  const isChild = (t: T) => !!t.parentCategoryId && ids.has(t.parentCategoryId);
+  const out: TreeRow<T>[] = [];
+  for (const top of terms.filter((t) => !isChild(t)).sort(byName)) {
+    out.push({ term: top, depth: 0 });
+    for (const kid of terms.filter((t) => t.parentCategoryId === top.id).sort(byName)) {
+      out.push({ term: kid, depth: 1 });
+    }
+  }
+  return out;
+}
+
+/** parent-হিসেবে বাছাইযোগ্য ক্যাটাগরি: নিজে নয়, অন্যের সন্তান নয়, আর সন্তান থাকলে কোনো parent-ই নয় */
+export function parentChoices<T extends { id: string; parentCategoryId?: string }>(
+  terms: readonly T[],
+  selfId: string | null,
+): T[] {
+  if (selfId && terms.some((t) => t.parentCategoryId === selfId)) return [];
+  return terms.filter((t) => !t.parentCategoryId && t.id !== selfId);
+}

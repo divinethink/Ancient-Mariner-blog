@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { bn } from "@/i18n/bn";
 import { BuildStatus } from "../BuildStatus";
+import { DefaultCategoryField } from "./DefaultCategoryField";
 import { SettingsForm } from "./SettingsForm";
 
 export default function SettingsPage() {
@@ -11,6 +12,7 @@ export default function SettingsPage() {
       </Link>
       <h1 className="mb-6 font-serif text-3xl font-bold">{bn.settings.title}</h1>
       <SettingsForm />
+      <DefaultCategoryField />
       <div className="mt-10">
         <BuildStatus />
       </div>

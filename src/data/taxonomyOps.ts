@@ -22,6 +22,8 @@ export interface TaxonomyOps {
   getDefaultCategoryId(): Promise<string | null>;
   /** ডিফল্ট ক্যাটাগরি নিশ্চিত করে (না থাকলে বানায়) ও siteSettings-এ বসায়; idempotent */
   ensureDefaultCategory(): Promise<{ id: string; name: string }>;
+  /** owner অন্য বিদ্যমান ক্যাটাগরিকে ডিফল্ট করে (Settings); ক্যাটাগরি না থাকলে TermNotFoundError; idempotent */
+  setDefaultCategory(id: string): Promise<void>;
   /** কতগুলো লেখা (trashed-সহ) এই term ব্যবহার করছে */
   usage(kind: TaxonomyKind, id: string): Promise<number>;
   /** term-এর নাম বদলে পোস্টের denormalized নাম আপডেট; ব্যর্থ অংশ `failed`-এ */

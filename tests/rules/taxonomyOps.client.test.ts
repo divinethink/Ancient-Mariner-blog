@@ -6,7 +6,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { createPostRepoClient } from "../../src/data/postRepo.client";
 import { DEFAULT_CATEGORY_ID, DEFAULT_CATEGORY_NAME } from "../../src/data/taxonomyOps";
 import { createTaxonomyOpsClient } from "../../src/data/taxonomyOps.client";
-import { TermInUseError, TermRuleError } from "../../src/data/taxonomyRepo";
+import { TermInUseError, TermNotFoundError, TermRuleError } from "../../src/data/taxonomyRepo";
 import { createTaxonomyRepoClient } from "../../src/data/taxonomyRepo.client";
 import { renderRules } from "../../src/lib/renderRules";
 
@@ -147,6 +147,21 @@ describe("ডিফল্ট ক্যাটাগরি", () => {
     const s = (await getDoc(doc(db(), "siteSettings", "main"))).data();
     expect(s).toMatchObject({ siteTitle: "আমার ব্লগ", defaultCategoryId: DEFAULT_CATEGORY_ID });
     expect(await ops().getDefaultCategoryId()).toBe(DEFAULT_CATEGORY_ID);
+  });
+
+  it("setDefaultCategory: বিদ্যমান ক্যাটাগরি ডিফল্ট হয়, অন্য settings অক্ষত, idempotent; অজানা id ব্যর্থ", async () => {
+    await env.withSecurityRulesDisabled((ctx) =>
+      setDoc(doc(fs(ctx.firestore()), "siteSettings", "main"), { siteTitle: "আমার ব্লগ" }),
+    );
+    const c = await cats().create({ name: "ভ্রমণ" });
+    await ops().setDefaultCategory(c.id);
+    await ops().setDefaultCategory(c.id);
+    expect(await ops().getDefaultCategoryId()).toBe(c.id);
+    expect((await getDoc(doc(db(), "siteSettings", "main"))).data()).toMatchObject({ siteTitle: "আমার ব্লগ" });
+    await expect(ops().setDefaultCategory("nope")).rejects.toBeInstanceOf(TermNotFoundError);
+    expect(await ops().getDefaultCategoryId()).toBe(c.id); // ব্যর্থ ডাকে বদলায়নি
+    // নতুন ডিফল্ট হওয়ায় পুরনোটা মোছা-যোগ্য, নতুনটা নয়
+    await expect(ops().remove("categories", c.id)).rejects.toBeInstanceOf(TermRuleError);
   });
 });
 

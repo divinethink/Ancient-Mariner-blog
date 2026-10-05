@@ -9,6 +9,14 @@ export default function MenuPage() {
       <h1 className="mb-4 font-serif text-3xl font-bold">{bn.dashboard.menu}</h1>
       <ul className="mb-6 divide-y divide-line rounded-2xl border border-line bg-surface">
         <li>
+          <Link href="/dashboard/library" className="flex min-h-12 items-center justify-between px-4">
+            <span>🗂️ {bn.dashboard.organize}</span>
+            <span aria-hidden className="text-muted">
+              ›
+            </span>
+          </Link>
+        </li>
+        <li>
           <Link href="/dashboard/settings" className="flex min-h-12 items-center justify-between px-4">
             <span>⚙️ {bn.dashboard.settings}</span>
             <span aria-hidden className="text-muted">

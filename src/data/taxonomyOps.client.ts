@@ -48,12 +48,18 @@ export function createTaxonomyOpsClient(db: Firestore, ownerUid: string): Taxono
     }
     // স্থির doc-ID ⇒ retry/double-call-এ duplicate নয় (create বিদ্যমান ফেরত দেয়)
     const t = await repo("categories").create({ id: DEFAULT_CATEGORY_ID, name: DEFAULT_CATEGORY_NAME });
+    await writeDefaultId(t.id);
+    return { id: t.id, name: t.name };
+  }
+
+  /** siteSettings-এ শুধু `defaultCategoryId` merge — অন্য ফিল্ড অক্ষত; `createdAt` শুধু প্রথম লেখায় */
+  async function writeDefaultId(id: string): Promise<void> {
     await runTransaction(db, async (tx) => {
       const exists = (await tx.get(settingsRef)).exists();
       tx.set(
         settingsRef,
         {
-          defaultCategoryId: t.id,
+          defaultCategoryId: id,
           ownerUid,
           schemaVersion: SETTINGS_SCHEMA_VERSION,
           updatedAt: serverTimestamp(),
@@ -62,7 +68,11 @@ export function createTaxonomyOpsClient(db: Firestore, ownerUid: string): Taxono
         { merge: true },
       );
     });
-    return { id: t.id, name: t.name };
+  }
+
+  async function setDefaultCategory(id: string): Promise<void> {
+    if (!(await repo("categories").get(id))) throw new TermNotFoundError(id);
+    await writeDefaultId(id);
   }
 
   const usageQuery = (kind: TaxonomyKind, id: string) =>
@@ -116,6 +126,7 @@ export function createTaxonomyOpsClient(db: Firestore, ownerUid: string): Taxono
   return {
     getDefaultCategoryId,
     ensureDefaultCategory,
+    setDefaultCategory,
     usage,
     rename,
     propagateName,
