@@ -5,6 +5,10 @@ import {
   deleteDoc,
   doc,
   getDoc,
+  getDocs,
+  limit,
+  orderBy,
+  query,
   setDoc,
   updateDoc,
   writeBatch,
@@ -45,6 +49,21 @@ export function createPostRepoClient(db: Firestore, ownerUid: string): PostRepo 
   async function get(id: string): Promise<PostWithId | null> {
     const snap = await getDoc(postRef(id));
     return snap.exists() ? parsePost(id, snap.data()) : null;
+  }
+
+  async function list(opts: { limit?: number } = {}): Promise<PostWithId[]> {
+    // single-field index (auto); status-ফিল্টার UI-তে, composite index ছাড়াই
+    const q = query(collection(db, "posts"), orderBy("updatedAt", "desc"), limit(opts.limit ?? 20));
+    const snap = await getDocs(q);
+    const out: PostWithId[] = [];
+    for (const d of snap.docs) {
+      try {
+        out.push(parsePost(d.id, d.data()));
+      } catch {
+        // একটা বিকৃত doc যেন পুরো তালিকা না ভাঙে
+      }
+    }
+    return out;
   }
 
   /** `slugs/{slug}`-এর মালিক post-id; lock না থাকলে null */
@@ -171,6 +190,7 @@ export function createPostRepoClient(db: Firestore, ownerUid: string): PostRepo 
 
   return {
     get,
+    list,
     create,
     update,
     changeSlug,

@@ -141,6 +141,18 @@ describe("drafts (প্রকাশিত লেখার সম্পাদন
   });
 });
 
+describe("list", () => {
+  it("সর্বশেষ সম্পাদনা আগে; limit মানে", async () => {
+    const a = await repo().create(input({ title: "এক" }));
+    await new Promise((r) => setTimeout(r, 15));
+    const b = await repo().create(input({ title: "দুই" }));
+    await new Promise((r) => setTimeout(r, 15));
+    await repo().update(a.id, { title: "এক-সম্পাদিত" });
+    expect((await repo().list()).map((p) => p.id)).toEqual([a.id, b.id]);
+    expect(await repo().list({ limit: 1 })).toHaveLength(1);
+  });
+});
+
 describe("rules-এর নিচে", () => {
   it("অন্য uid-র repo কিছু লিখতে পারে না", async () => {
     const intruder = createPostRepoClient(

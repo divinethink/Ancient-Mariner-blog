@@ -119,6 +119,8 @@ export type CreatePostInput = {
 /** পথ ক (owner-CSR) — UI ও lib শুধু এই interface দেখে; raw backend field নয় (Arch §১) */
 export interface PostRepo {
   get(id: string): Promise<PostWithId | null>;
+  /** সর্বশেষ সম্পাদনা আগে; trashed-সহ (UI ফিল্টার করে) — dashboard তালিকা, ~২০টা/বার */
+  list(opts?: { limit?: number }): Promise<PostWithId[]>;
   create(input: CreatePostInput): Promise<PostWithId>;
   update(id: string, patch: PostPatch): Promise<void>;
   /** নতুন slug lock + পুরনো slug `slugHistory`-তে — এক writeBatch-এ */

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { logout } from "@/auth/authClient";
+import { draftStore } from "@/data/draftStore";
 import { bn } from "@/i18n/bn";
 
 export function LogoutButton() {
@@ -10,7 +11,12 @@ export function LogoutButton() {
   async function onClick() {
     setFailed(false);
     try {
-      if ((await logout({ confirmDiscard: () => confirm(bn.auth.confirmDiscard) })) === "done") {
+      const res = await logout({
+        // sync P2a-২খ-তে জোড়া হবে; এখন dirty লোকাল ড্রাফট থাকলে মোছার আগে confirm
+        hasUnsynced: () => draftStore.hasUnsynced(),
+        confirmDiscard: () => confirm(bn.auth.confirmDiscard),
+      });
+      if (res === "done") {
         location.replace("/login");
       }
     } catch {
