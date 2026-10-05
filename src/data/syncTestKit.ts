@@ -56,6 +56,17 @@ export function fakeRepo(t = { now: 1000 }) {
       return at;
     },
     discardDraft: async (id) => void drafts.delete(id),
+    trash: async (id) => {
+      calls.push("trash");
+      posts.set(id, { ...posts.get(id)!, status: "trashed", trashedAt: tick() });
+    },
+    restore: async (id) => void posts.set(id, { ...posts.get(id)!, status: "draft", trashedAt: undefined }),
+    deletePermanently: async (id) => {
+      posts.delete(id);
+      drafts.delete(id);
+    },
+    listTrashed: async () => [...posts.values()].filter((p) => p.status === "trashed"),
+    emptyTrash: async () => ({ deleted: 0, failed: 0 }),
   };
   return { repo, posts, drafts, calls, t };
 }

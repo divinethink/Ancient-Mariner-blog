@@ -3,6 +3,7 @@
 import {
   collection,
   deleteDoc,
+  deleteField,
   doc,
   getDoc,
   getDocs,
@@ -10,6 +11,7 @@ import {
   orderBy,
   query,
   setDoc,
+  where,
   updateDoc,
   writeBatch,
   type Firestore,
@@ -22,10 +24,12 @@ import {
   PostSchema,
   SCHEMA_VERSION,
   SlugTakenError,
+  TrashRequiredError,
   type Draft,
   type PostRepo,
   type PostWithId,
 } from "@/data/postRepo";
+import { countWords, docToText, parseBody } from "@/lib/editorDoc";
 import {
   decideSlugClaim,
   fallbackSlug,
@@ -196,6 +200,79 @@ export function createPostRepoClient(db: Firestore, ownerUid: string): PostRepo 
     return updatedAt;
   }
 
+  async function trash(id: string): Promise<void> {
+    const cur = await get(id);
+    if (!cur) throw new PostNotFoundError(id);
+    if (cur.status === "trashed") return; // idempotent
+    const now = new Date();
+    const data: Record<string, unknown> = { status: "trashed", trashedAt: now, updatedAt: now };
+    const batch = writeBatch(db);
+    const d = await getDraft(id);
+    if (d) {
+      // প্রকাশিত লেখার অপ্রকাশিত সম্পাদনা হারায় না — আগে posts-এ কপি (Arch §১২)
+      Object.assign(data, {
+        title: d.title,
+        body: d.body,
+        excerpt: d.excerpt,
+        wordCount: countWords(docToText(parseBody(d.body))),
+      });
+      batch.delete(draftRef(id));
+    }
+    batch.update(postRef(id), data);
+    await batch.commit();
+  }
+
+  async function restore(id: string): Promise<void> {
+    const cur = await get(id);
+    if (!cur) throw new PostNotFoundError(id);
+    if (cur.status !== "trashed") return;
+    await updateDoc(postRef(id), { status: "draft", trashedAt: deleteField(), updatedAt: new Date() });
+  }
+
+  async function deletePermanently(id: string): Promise<void> {
+    const cur = await get(id);
+    if (!cur) {
+      await deleteDoc(draftRef(id)); // post আগেই গেছে — retry-নিরাপদ, পড়ে-থাকা draft সাফ
+      return;
+    }
+    if (cur.status !== "trashed") throw new TrashRequiredError(id);
+    const batch = writeBatch(db);
+    for (const s of new Set([cur.slug, ...cur.slugHistory])) {
+      if ((await slugOwner(s)) === id) batch.delete(slugRef(s)); // অন্যের lock ছোঁয়া নয়
+    }
+    batch.delete(draftRef(id));
+    batch.delete(postRef(id));
+    await batch.commit();
+  }
+
+  async function listTrashed(): Promise<PostWithId[]> {
+    // single-field index (auto), composite ছাড়াই; সাজানো UI-তে
+    const snap = await getDocs(query(collection(db, "posts"), where("status", "==", "trashed"), limit(100)));
+    const out: PostWithId[] = [];
+    for (const d of snap.docs) {
+      try {
+        out.push(parsePost(d.id, d.data()));
+      } catch {
+        // বিকৃত doc বাদ
+      }
+    }
+    return out;
+  }
+
+  async function emptyTrash(): Promise<{ deleted: number; failed: number }> {
+    let deleted = 0;
+    let failed = 0;
+    for (const p of await listTrashed()) {
+      try {
+        await deletePermanently(p.id);
+        deleted++;
+      } catch {
+        failed++; // বাকিগুলো চলে; ব্যর্থ থাকে — আবার চেষ্টা করা যায়
+      }
+    }
+    return { deleted, failed };
+  }
+
   return {
     get,
     list,
@@ -206,5 +283,10 @@ export function createPostRepoClient(db: Firestore, ownerUid: string): PostRepo 
     getDraft,
     applyDraft,
     discardDraft: (id) => deleteDoc(draftRef(id)),
+    trash,
+    restore,
+    deletePermanently,
+    listTrashed,
+    emptyTrash,
   };
 }

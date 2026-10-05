@@ -104,6 +104,13 @@ export class PostNotFoundError extends Error {
   }
 }
 
+export class TrashRequiredError extends Error {
+  constructor(public readonly id: string) {
+    super(`আগে ট্র্যাশে পাঠাতে হবে: ${id}`);
+    this.name = "TrashRequiredError";
+  }
+}
+
 export type CreatePostInput = {
   /** retry-নিরাপত্তার জন্য editor আগে থেকে id বানিয়ে রাখে; একই id-তে দ্বিতীয় create = বিদ্যমান ফেরত */
   id?: string;
@@ -132,6 +139,16 @@ export interface PostRepo {
   /** drafts → posts কপি + drafts মোছা (এক batch); draft না থাকলে null, নইলে নতুন `updatedAt` */
   applyDraft(id: string, wordCount: number): Promise<Date | null>;
   discardDraft(id: string): Promise<void>;
+  /** Trash (Arch §৬): থাকা `drafts` আগে posts-এ কপি; status=trashed + trashedAt — এক batch। ইতিমধ্যে trashed হলে no-op */
+  trash(id: string): Promise<void>;
+  /** trashed → `draft` (slug-lock অক্ষত); trashed না হলে no-op */
+  restore(id: string): Promise<void>;
+  /** শুধু trashed লেখা: post + নিজের সব slug-lock + drafts এক batch-এ মোছে; trashed না হলে TrashRequiredError */
+  deletePermanently(id: string): Promise<void>;
+  /** trashed লেখা, সর্বোচ্চ ১০০টা (সাজানো UI-তে) */
+  listTrashed(): Promise<PostWithId[]>;
+  /** সব trashed (১০০টা/বার) মুছে ফেলা; ফল = মোছা/ব্যর্থ সংখ্যা */
+  emptyTrash(): Promise<{ deleted: number; failed: number }>;
 }
 
 /** পথ খ (build-সময়ে unauthenticated REST) — শুধু published+public, publishedAt desc */
