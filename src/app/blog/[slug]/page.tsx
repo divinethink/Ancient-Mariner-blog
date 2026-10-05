@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Analytics } from "@/components/public/Analytics";
 import { PostBody } from "@/components/public/PostBody";
 import { getSiteUrl } from "@/config/env";
 import { hasDefaultOgImage } from "@/data/publicAssets";
@@ -99,6 +100,7 @@ export default async function BlogPost({ params }: Props) {
   const { post } = r;
   return (
     <article>
+      <Analytics />
       <Link href="/" prefetch={false} className="mb-3 inline-flex min-h-11 items-center text-accent-text">
         ← {bn.public.home}
       </Link>

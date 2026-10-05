@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Analytics } from "@/components/public/Analytics";
 import { getSiteUrl } from "@/config/env";
 import { hasDefaultOgImage } from "@/data/publicAssets";
 import { toPostCard } from "@/data/postRepo";
@@ -40,6 +41,7 @@ export default async function Home() {
     .map((p) => ({ ...toPostCard(p), excerpt: postExcerpt(p) }));
   return (
     <>
+      <Analytics />
       <h1 className="font-serif text-3xl font-bold">{settings.siteTitle}</h1>
       {settings.tagline && <p className="mt-1 text-muted">{settings.tagline}</p>}
       <h2 className="mb-4 mt-8 font-serif text-xl font-bold">{bn.public.latest}</h2>

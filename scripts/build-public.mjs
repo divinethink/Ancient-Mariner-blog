@@ -36,6 +36,10 @@ if (copied.length === 0) {
   console.error("❌ কোনো public HTML কপি হয়নি");
   process.exit(1);
 }
+// ব্র্যান্ডেড 404 (wrangler `not_found_handling: "404-page"`); না পেলে সতর্কতা — build ভাঙে না
+const NF = join(SRC, "_not-found.html");
+if (existsSync(NF)) { copyFileSync(NF, join(DEST, "404.html")); copied.push("404.html"); }
+else console.warn("⚠️ _not-found.html পাওয়া যায়নি — ব্র্যান্ডেড 404 বাদ");
 writeFileSync(join(DEST, "build.json"), JSON.stringify({ builtAt }));
 console.log("✅ assets-এ কপি:\n" + copied.map((c) => " - " + c).join("\n"));
 
