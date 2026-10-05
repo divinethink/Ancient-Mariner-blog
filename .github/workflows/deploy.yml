@@ -14,6 +14,7 @@ jobs:
       FIREBASE_PROJECT_ID: ancientmarinerblog
       FIREBASE_SERVER_API_KEY: ${{ secrets.FIREBASE_SERVER_API_KEY }}
       SITE_URL: https://blog.ancientmariner.workers.dev
+      CF_ANALYTICS_TOKEN: ${{ vars.CF_ANALYTICS_TOKEN }}
       NEXT_PUBLIC_FIREBASE_API_KEY: ${{ vars.FIREBASE_BROWSER_API_KEY }}
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
