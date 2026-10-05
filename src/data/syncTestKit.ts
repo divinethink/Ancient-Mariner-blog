@@ -28,6 +28,7 @@ export function fakeRepo(t = { now: 1000 }) {
       const p = {
         id, title: i.title, slug: id, slugHistory: [], contentType: "post", body: i.body,
         excerpt: i.excerpt ?? "", status: "draft", visibility: "private", wordCount: i.wordCount ?? 0,
+        tagIds: [], tagNames: [],
         ownerUid: "o", createdAt: at, updatedAt: at, schemaVersion: 1,
       } as PostWithId;
       posts.set(id, p);

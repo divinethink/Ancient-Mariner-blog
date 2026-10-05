@@ -17,6 +17,8 @@ const post = (id: string, over: Partial<PostWithId> = {}): PostWithId => ({
   status: "published",
   visibility: "public",
   wordCount: 3,
+  tagIds: [],
+  tagNames: [],
   publishedAt: new Date("2026-10-01T00:00:00Z"),
   ownerUid: "uid",
   createdAt: new Date("2026-09-30T00:00:00Z"),
