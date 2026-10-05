@@ -27,6 +27,30 @@ const post = (id: string, over: Partial<PostWithId> = {}): PostWithId => ({
   ...over,
 });
 
+describe("publicSnapshot — সংগঠন-ফিল্ড (P3a-৩)", () => {
+  it("category/tag/series জোড়া লেখা-পড়ায় অক্ষত থাকে", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "snap-org-"));
+    const path = join(dir, "posts.json");
+    await writeSnapshot(
+      [post("a", { categoryId: "c1", categoryName: "ভ্রমণ", tagIds: ["t1", "t2"], tagNames: ["সমুদ্র", "ছুটি"], seriesId: "s1", seriesOrder: 3 }), post("b")],
+      new Date(),
+      path,
+    );
+    const s = await readSnapshot(path);
+    expect(s?.posts[0]).toMatchObject({
+      categoryId: "c1",
+      categoryName: "ভ্রমণ",
+      tagIds: ["t1", "t2"],
+      tagNames: ["সমুদ্র", "ছুটি"],
+      seriesId: "s1",
+      seriesOrder: 3,
+    });
+    // সংগঠনহীন পুরনো লেখা ভাঙে না
+    expect(s?.posts[1].categoryId).toBeUndefined();
+    expect(s?.posts[1].tagIds).toEqual([]);
+  });
+});
+
 describe("publicSnapshot", () => {
   it("লেখা-পড়ায় Date ফেরে ও ক্রম থাকে", async () => {
     const dir = await mkdtemp(join(tmpdir(), "snap-"));

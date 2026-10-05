@@ -231,6 +231,26 @@ describe("trash", () => {
   });
 });
 
+describe("find (Library খোঁজ/ফিল্টার)", () => {
+  it("prefix, category, type ও সংমিশ্রণ; trashed বাদ", async () => {
+    const r = repo();
+    const a = await r.create({ title: "কক্সবাজার ডায়েরি", body: "{}" });
+    const b = await r.create({ title: "কক্সবাজারের ভোর", body: "{}" });
+    const c = await r.create({ title: "অন্য লেখা", body: "{}" });
+    await r.update(a.id, { categoryId: "c1", categoryName: "ভ্রমণ", contentType: "diary" });
+    await r.update(b.id, { categoryId: "c1", categoryName: "ভ্রমণ" });
+    await r.update(c.id, { contentType: "diary" });
+    const ids = async (o: Parameters<typeof r.find>[0]) => (await r.find(o)).map((p) => p.id).sort();
+    expect(await ids({ titlePrefix: "কক্সবাজার" })).toEqual([a.id, b.id].sort());
+    expect(await ids({ categoryId: "c1" })).toEqual([a.id, b.id].sort());
+    expect(await ids({ contentType: "diary" })).toEqual([a.id, c.id].sort());
+    expect(await ids({ categoryId: "c1", contentType: "diary" })).toEqual([a.id]);
+    expect(await ids({ titlePrefix: "কক্সবাজার", contentType: "diary" })).toEqual([a.id]);
+    await r.trash(a.id);
+    expect(await ids({ contentType: "diary" })).toEqual([c.id]);
+  });
+});
+
 describe("list", () => {
   it("সর্বশেষ সম্পাদনা আগে; limit মানে", async () => {
     const a = await repo().create(input({ title: "এক" }));

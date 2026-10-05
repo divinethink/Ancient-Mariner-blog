@@ -1,5 +1,6 @@
 // শুধু test-এর জন্য: in-memory PostRepo ও KV (production bundle-এ import হয় না)
 import type { CreatePostInput, Draft, PostRepo, PostWithId } from "@/data/postRepo";
+import { matchesFind } from "@/lib/postFind";
 
 export function memoryKV() {
   const m = new Map<string, unknown>();
@@ -19,6 +20,7 @@ export function fakeRepo(t = { now: 1000 }) {
   const repo: PostRepo = {
     get: async (id) => posts.get(id) ?? null,
     list: async () => [...posts.values()],
+    find: async (o) => [...posts.values()].filter((p) => matchesFind(p, o)),
     create: async (i: CreatePostInput) => {
       calls.push("create");
       const id = i.id ?? "gen";

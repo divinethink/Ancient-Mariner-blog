@@ -6,13 +6,17 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { draftStore } from "@/data/draftStore";
 import { triggerSiteRebuild } from "@/data/rebuildClient";
 import { PostNotFoundError, SlugTakenError, type PostRepo, type PostWithId } from "@/data/postRepo";
+import { getTaxonomyOps } from "@/data/taxonomyOps.wire";
+import { getTaxonomyRepo } from "@/data/taxonomyRepo.wire";
 import { bn } from "@/i18n/bn";
 import { toZonedInput } from "@/lib/datetime";
+import { orgFromPost, orgPatch, parseSeriesOrder, type OrgState } from "@/lib/postOrg";
 import { parsePublishDate } from "@/lib/publish";
 import { useSiteTimezone } from "../../../SiteSettingsProvider";
 import { isValidSlug, slugify } from "@/lib/slug";
 import type { SyncStatus } from "@/data/syncEngine";
 import { BuildStatus } from "@/app/dashboard/BuildStatus";
+import { OrgSection, type OrgOptions } from "./OrgSection";
 import type { PubInfo, SyncEngine } from "./useRemoteSync";
 
 type Props = {
@@ -35,6 +39,9 @@ type Props = {
 type Meta = { post: PostWithId; hasDraft: boolean };
 type Msg = { kind: "ok" | "err"; text: string } | null;
 
+/** event-handler-এর ভেতরের "এখন" — render-purity lint এড়াতে আলাদা (render-এ কখনো ডাকা হয় না) */
+const nowMs = () => Date.now();
+
 const field = "mb-1 block text-sm text-muted";
 const input = "min-h-11 w-full rounded-xl border border-line bg-bg px-3 text-base";
 const btnPrimary = "min-h-11 rounded-full bg-btn-bg px-5 font-semibold text-btn-tx disabled:opacity-50";
@@ -52,6 +59,12 @@ export function PublishPanel(p: Props) {
   const [dateIn, setDateIn] = useState("");
   /** প্রকাশের তারিখের `max` — render-এ Date.now() নয়, meta লোডের সময় বসে */
   const [maxIn, setMaxIn] = useState("");
+  const [org, setOrg] = useState<OrgState | null>(null);
+  const [orderIn, setOrderIn] = useState("");
+  /** এখনো-না-বানানো নতুন ট্যাগের id — সেভে তৈরি হয় (id আগে থেকে ঠিক ⇒ retry-তে duplicate নয়) */
+  const [pendingTags, setPendingTags] = useState<string[]>([]);
+  const [orgOpts, setOrgOpts] = useState<OrgOptions | "error" | null>(null);
+  const [optsTick, setOptsTick] = useState(0);
   const firstRef = useRef<HTMLInputElement>(null);
   const { flushLocal } = p;
 
@@ -64,6 +77,9 @@ export function PublishPanel(p: Props) {
       setVis(post.publishedAt ? post.visibility : "public");
       setDateIn(post.publishedAt ? toZonedInput(post.publishedAt, tz) : "");
       setMaxIn(toZonedInput(new Date(), tz));
+      setOrg(orgFromPost(post));
+      setOrderIn(post.seriesId && post.seriesOrder !== undefined ? String(post.seriesOrder) : "");
+      setPendingTags([]);
       onPub({ status: post.status === "published" ? "published" : "draft", hasUnpublished: hasDraft });
     },
     [onPub, tz],
@@ -108,6 +124,23 @@ export function PublishPanel(p: Props) {
     void load().then(setState); // mount-এ state আগে থেকেই "loading"
   }, [load]);
 
+  // সংগঠনের বিকল্প (ক্যাটাগরি/ট্যাগ/সিরিজ) panel তৈরি হওয়ার পর একবার; ব্যর্থ হলে সংগঠন-সেকশন বাদে বাকি panel চলে
+  useEffect(() => {
+    if (state !== "ready") return;
+    let dead = false;
+    Promise.all([getTaxonomyRepo("categories"), getTaxonomyRepo("tags"), getTaxonomyRepo("series")])
+      .then(([c, t, s]) => Promise.all([c.list(), t.list(), s.list()]))
+      .then(([categories, tags, series]) => {
+        if (!dead) setOrgOpts({ categories, tags, series });
+      })
+      .catch(() => {
+        if (!dead) setOrgOpts("error");
+      });
+    return () => {
+      dead = true;
+    };
+  }, [state, optsTick]);
+
   useEffect(() => {
     firstRef.current?.focus();
     const esc = (e: KeyboardEvent) => e.key === "Escape" && !p.docked && onClose();
@@ -116,22 +149,51 @@ export function PublishPanel(p: Props) {
   }, [state, onClose, p.docked]);
 
   /** slug/visibility/publishedAt যা বদলেছে তা লেখা; ব্যর্থ হলে Error throw (বার্তা ফেরত) */
-  async function writeMeta(repo: PostRepo, extra: { status?: "published" | "draft" } = {}) {
+  async function writeMeta(
+    repo: PostRepo,
+    extra: { status?: "published" | "draft" } = {},
+    opts: { defaultCategory?: boolean } = {},
+  ) {
     if (!meta) return;
     const cur = meta.post;
     const slug = slugify(slugIn);
     if (!isValidSlug(slug)) throw new Error("slug");
-    const date = parsePublishDate(dateIn, Date.now(), tz);
+    const date = parsePublishDate(dateIn, nowMs(), tz);
     if (!date.ok) throw new Error(date.reason);
     if (slug !== cur.slug) await repo.changeSlug(postId, slug);
     const dateChanged =
       date.date !== undefined && (!cur.publishedAt || toZonedInput(cur.publishedAt, tz) !== dateIn);
+    const orgChange = await resolveOrg(cur, opts.defaultCategory ?? false);
     const patch = {
+      ...orgChange,
       ...(vis !== cur.visibility ? { visibility: vis } : {}),
       ...(dateChanged ? { publishedAt: date.date } : {}),
       ...extra,
     };
     if (Object.keys(patch).length) await repo.update(postId, patch);
+  }
+
+  /**
+   * সংগঠনের বদল-patch: নতুন ট্যাগ আগে তৈরি (idempotent id); প্রকাশে ক্যাটাগরি না থাকলে ডিফল্ট।
+   * বিকল্প লোড না হলে (opts≠ready) সংগঠন ছোঁয়া হয় না — পুরনো মান অক্ষত।
+   */
+  async function resolveOrg(cur: PostWithId, defaultCategory: boolean) {
+    if (!org || !orgOpts || orgOpts === "error") return {};
+    const order = parseSeriesOrder(orderIn);
+    if (org.seriesId && order === "invalid") throw new Error("order");
+    let next: OrgState = { ...org, seriesOrder: org.seriesId && order !== "invalid" ? order : null };
+    if (defaultCategory && !next.categoryId) {
+      const d = await (await getTaxonomyOps()).ensureDefaultCategory();
+      next = { ...next, categoryId: d.id, categoryName: d.name };
+    }
+    const patch = orgPatch(orgFromPost(cur), next);
+    if (patch.tagIds) {
+      const tagRepo = await getTaxonomyRepo("tags");
+      for (const tg of next.tags) {
+        if (pendingTags.includes(tg.id)) await tagRepo.create({ id: tg.id, name: tg.name });
+      }
+    }
+    return patch;
   }
 
   /** affectsSite = পাবলিক সাইটে প্রভাব পড়ে এমন ক্রিয়া → সফল হলে rebuild trigger (Arch §১২; autosave-এ কখনো না) */
@@ -162,7 +224,9 @@ export function PublishPanel(p: Props) {
             ? bn.publishPanel.slugTaken
             : reason === "slug"
               ? bn.publishPanel.slugInvalid
-              : reason === "invalid"
+              : reason === "order"
+                ? bn.org.panel.orderInvalid
+                : reason === "invalid"
                 ? bn.publishPanel.dateInvalid
                 : reason === "future"
                   ? bn.publishPanel.dateFuture
@@ -177,7 +241,7 @@ export function PublishPanel(p: Props) {
 
   const onPublish = () =>
     run(async (repo) => {
-      await writeMeta(repo, { status: "published" });
+      await writeMeta(repo, { status: "published" }, { defaultCategory: true });
       return bn.publishPanel.publishedOk;
     }, true);
   const onUpdate = () =>
@@ -311,6 +375,24 @@ export function PublishPanel(p: Props) {
                 ))}
               </div>
             </fieldset>
+
+            {org && (
+              <OrgSection
+                value={org}
+                onChange={setOrg}
+                opts={orgOpts}
+                pending={pendingTags}
+                onPending={setPendingTags}
+                orderInput={orderIn}
+                onOrderInput={setOrderIn}
+                published={published}
+                disabled={busy}
+                onRetry={() => {
+                  setOrgOpts(null);
+                  setOptsTick((n) => n + 1);
+                }}
+              />
+            )}
 
             <div>
               <label htmlFor="pp-date" className={field}>

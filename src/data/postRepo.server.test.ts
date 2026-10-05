@@ -36,6 +36,34 @@ describe("listPublished (REST)", () => {
     expect(init.method).toBe("POST");
     expect(String(init.body)).toContain('"stringValue":"published"');
   });
+  it("REST-এর array/integer সংগঠন-ফিল্ড decode হয় (P3a-৩)", async () => {
+    const f = vi.fn(() =>
+      resp([
+        doc("a", {
+          categoryId: { stringValue: "c1" },
+          categoryName: { stringValue: "ভ্রমণ" },
+          tagIds: { arrayValue: { values: [{ stringValue: "t1" }, { stringValue: "t2" }] } },
+          tagNames: { arrayValue: { values: [{ stringValue: "সমুদ্র" }, { stringValue: "ছুটি" }] } },
+          seriesId: { stringValue: "s1" },
+          seriesOrder: { integerValue: "4" },
+        }),
+      ]),
+    );
+    const [p] = await make(f as unknown as typeof fetch).listPublished();
+    expect(p).toMatchObject({
+      categoryId: "c1",
+      categoryName: "ভ্রমণ",
+      tagIds: ["t1", "t2"],
+      tagNames: ["সমুদ্র", "ছুটি"],
+      seriesId: "s1",
+      seriesOrder: 4,
+    });
+  });
+  it("সংগঠনহীন খালি tagIds (arrayValue খালি) → []", async () => {
+    const f = vi.fn(() => resp([doc("a", { tagIds: { arrayValue: {} }, tagNames: { arrayValue: {} } })]));
+    const [p] = await make(f as unknown as typeof fetch).listPublished();
+    expect(p.tagIds).toEqual([]);
+  });
   it("খালি ফল (শুধু readTime) → []", async () => {
     const f = vi.fn(() => resp([{ readTime: "2026-10-05T00:00:00Z" }]));
     expect(await make(f as unknown as typeof fetch).listPublished()).toEqual([]);

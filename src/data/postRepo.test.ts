@@ -55,8 +55,34 @@ describe("toPostCard", () => {
     expect(card).not.toHaveProperty("body");
     expect(card).not.toHaveProperty("ownerUid");
     expect(Object.keys(card).sort()).toEqual(
-      ["contentType", "excerpt", "id", "publishedAt", "slug", "title", "wordCount"].sort(),
+      [
+        "categoryId",
+        "categoryName",
+        "contentType",
+        "excerpt",
+        "id",
+        "publishedAt",
+        "seriesId",
+        "seriesOrder",
+        "slug",
+        "tagIds",
+        "tagNames",
+        "title",
+        "wordCount",
+      ].sort(),
     );
+  });
+  it("সংগঠন-ফিল্ড card-এ থাকে (P3a-৩; P4a-র card/filter-এর জন্য), পুরনো doc-এ খালি", () => {
+    const full = toPostCard(
+      parsePost(
+        "id1",
+        raw({ categoryId: "c1", categoryName: "ভ্রমণ", tagIds: ["t1"], tagNames: ["সমুদ্র"], seriesId: "s1", seriesOrder: 2 }),
+      ),
+    );
+    expect(full).toMatchObject({ categoryId: "c1", categoryName: "ভ্রমণ", tagIds: ["t1"], tagNames: ["সমুদ্র"], seriesId: "s1", seriesOrder: 2 });
+    const old = toPostCard(parsePost("id2", raw()));
+    expect(old.categoryId).toBeUndefined();
+    expect(old.tagIds).toEqual([]);
   });
 });
 

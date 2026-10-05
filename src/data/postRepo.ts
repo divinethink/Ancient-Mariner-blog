@@ -2,6 +2,7 @@
 // Zod শুধু shell field validate করে; `body` (Tiptap JSON string)-র কাঠামো renderer/editor-এ (Arch §২)।
 import { z } from "zod";
 import { ContentType, PostStatus, PostVisibility } from "@/lib/enums";
+import type { FindOpts } from "@/lib/postFind";
 
 export const SCHEMA_VERSION = 1;
 const MAX_BODY_BYTES = 900 * 1024; // UTF-8 byte (বাংলা ≈ ৩ byte/অক্ষর) — Arch §৬
@@ -74,9 +75,22 @@ export const DraftSchema = z.object({
 export type Draft = z.infer<typeof DraftSchema>;
 
 /** পাবলিক card/list-এর payload — `body` নেই (Arch §২ Public payload) */
+// category/tag/series জোড়া থাকে (P3a-৩; P4a-র card/filter-এর জন্য) — সবই denormalized নাম/id, `body` নয়
 export type PostCard = Pick<
   PostWithId,
-  "id" | "title" | "slug" | "excerpt" | "publishedAt" | "wordCount" | "contentType"
+  | "id"
+  | "title"
+  | "slug"
+  | "excerpt"
+  | "publishedAt"
+  | "wordCount"
+  | "contentType"
+  | "categoryId"
+  | "categoryName"
+  | "tagIds"
+  | "tagNames"
+  | "seriesId"
+  | "seriesOrder"
 >;
 export const toPostCard = (p: PostWithId): PostCard => ({
   id: p.id,
@@ -86,6 +100,12 @@ export const toPostCard = (p: PostWithId): PostCard => ({
   publishedAt: p.publishedAt,
   wordCount: p.wordCount,
   contentType: p.contentType,
+  categoryId: p.categoryId,
+  categoryName: p.categoryName,
+  tagIds: p.tagIds,
+  tagNames: p.tagNames,
+  seriesId: p.seriesId,
+  seriesOrder: p.seriesOrder,
 });
 
 const DATE_KEYS = new Set(["publishedAt", "trashedAt", "createdAt", "updatedAt"]);
@@ -165,6 +185,11 @@ export interface PostRepo {
   restore(id: string): Promise<void>;
   /** শুধু trashed লেখা: post + নিজের সব slug-lock + drafts এক batch-এ মোছে; trashed না হলে TrashRequiredError */
   deletePermanently(id: string): Promise<void>;
+  /**
+   * Library filter/খোঁজ (সর্বোচ্চ `limit`, default ৫০; trashed বাদ): সার্ভার-query-তে prefix নইলে category নইলে type, বাকি শর্ত client-এ।
+   * সর্বশেষ-সম্পাদনা আগে (prefix-খোঁজে শিরোনাম-ক্রমে)।
+   */
+  find(opts: FindOpts): Promise<PostWithId[]>;
   /** trashed লেখা, সর্বোচ্চ ১০০টা (সাজানো UI-তে) */
   listTrashed(): Promise<PostWithId[]>;
   /** সব trashed (১০০টা/বার) মুছে ফেলা; ফল = মোছা/ব্যর্থ সংখ্যা */

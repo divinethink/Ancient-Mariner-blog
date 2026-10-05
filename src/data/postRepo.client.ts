@@ -30,6 +30,7 @@ import {
   type PostWithId,
 } from "@/data/postRepo";
 import { countWords, docToText, parseBody } from "@/lib/editorDoc";
+import { FIND_LIMIT, matchesFind, serverKey, titleRange, type FindOpts } from "@/lib/postFind";
 import {
   decideSlugClaim,
   fallbackSlug,
@@ -65,6 +66,30 @@ export function createPostRepoClient(db: Firestore, ownerUid: string): PostRepo 
         out.push(parsePost(d.id, d.data()));
       } catch {
         // একটা বিকৃত doc যেন পুরো তালিকা না ভাঙে
+      }
+    }
+    return out;
+  }
+
+  async function find(opts: FindOpts): Promise<PostWithId[]> {
+    const col = collection(db, "posts");
+    const lim = limit(opts.limit ?? FIND_LIMIT);
+    const key = serverKey(opts);
+    const q =
+      key === "prefix"
+        ? query(col, orderBy("title"), where("title", ">=", titleRange(opts.titlePrefix ?? "")[0]), where("title", "<=", titleRange(opts.titlePrefix ?? "")[1]), lim)
+        : key === "category"
+          ? query(col, where("categoryId", "==", opts.categoryId), orderBy("updatedAt", "desc"), lim) // composite index (firestore.indexes.json)
+          : key === "type"
+            ? query(col, where("contentType", "==", opts.contentType), orderBy("updatedAt", "desc"), lim) // composite index
+            : query(col, orderBy("updatedAt", "desc"), lim);
+    const out: PostWithId[] = [];
+    for (const d of (await getDocs(q)).docs) {
+      try {
+        const p = parsePost(d.id, d.data());
+        if (matchesFind(p, opts)) out.push(p);
+      } catch {
+        // বিকৃত doc বাদ
       }
     }
     return out;
@@ -292,6 +317,7 @@ export function createPostRepoClient(db: Firestore, ownerUid: string): PostRepo 
     trash,
     restore,
     deletePermanently,
+    find,
     listTrashed,
     emptyTrash,
   };
