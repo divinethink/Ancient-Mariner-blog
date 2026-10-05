@@ -39,13 +39,24 @@ describe("draftStore", () => {
     await s.savePos("new", { from: 0, to: 0, scrollY: 0 });
     expect((await s.listDrafts()).map((x) => x.id)).toEqual(["new", "old"]);
   });
-  it("hasUnsynced: শুধু dirty থাকলে true", async () => {
+  it("hasUnsynced: sync-তথ্য ছাড়া = dirty; syncedUpdatedAt ধরে ক্লিন/dirty", async () => {
     const s = createDraftStore(memoryKV());
     expect(await s.hasUnsynced()).toBe(false);
-    await s.saveDraft(d("a", 1, false));
-    expect(await s.hasUnsynced()).toBe(false);
-    await s.saveDraft(d("b", 2, true));
+    await s.saveDraft(d("a", 5));
     expect(await s.hasUnsynced()).toBe(true);
+    await s.setSync("a", { baseMs: 9, syncedUpdatedAt: 5 });
+    expect(await s.hasUnsynced()).toBe(false);
+    expect((await s.loadDraft("a"))?.dirty).toBe(false);
+    await s.saveDraft(d("a", 6)); // sync-এর পরে নতুন টাইপ
+    expect((await s.loadDraft("a"))?.dirty).toBe(true);
+    expect((await s.getSync("a"))?.baseMs).toBe(9); // editor-এর লেখা sync-তথ্য মোছে না
+  });
+  it("deleteDraft sync-তথ্যও মোছে", async () => {
+    const s = createDraftStore(memoryKV());
+    await s.saveDraft(d("a", 1));
+    await s.setSync("a", { syncedUpdatedAt: 1 });
+    await s.deleteDraft("a");
+    expect(await s.getSync("a")).toBeUndefined();
   });
   it("একই id-তে আবার save = প্রতিস্থাপন (idempotent)", async () => {
     const s = createDraftStore(memoryKV());

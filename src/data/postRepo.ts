@@ -122,14 +122,15 @@ export interface PostRepo {
   /** সর্বশেষ সম্পাদনা আগে; trashed-সহ (UI ফিল্টার করে) — dashboard তালিকা, ~২০টা/বার */
   list(opts?: { limit?: number }): Promise<PostWithId[]>;
   create(input: CreatePostInput): Promise<PostWithId>;
-  update(id: string, patch: PostPatch): Promise<void>;
+  /** লেখা `updatedAt` ফেরত — sync-এর base-stamp (conflict-যাচাই, Arch §১২-ঙ) */
+  update(id: string, patch: PostPatch): Promise<Date>;
   /** নতুন slug lock + পুরনো slug `slugHistory`-তে — এক writeBatch-এ */
   changeSlug(id: string, newSlug: string): Promise<PostWithId>;
   /** প্রকাশিত লেখার সম্পাদনা `drafts/{id}`-এ (পাবলিক অপরিবর্তিত) */
-  saveEdit(id: string, edit: { title: string; body: string; excerpt: string }): Promise<void>;
+  saveEdit(id: string, edit: { title: string; body: string; excerpt: string }): Promise<Date>;
   getDraft(id: string): Promise<Draft | null>;
-  /** drafts → posts কপি + drafts মোছা (এক batch); draft না থাকলে false */
-  applyDraft(id: string, wordCount: number): Promise<boolean>;
+  /** drafts → posts কপি + drafts মোছা (এক batch); draft না থাকলে null, নইলে নতুন `updatedAt` */
+  applyDraft(id: string, wordCount: number): Promise<Date | null>;
   discardDraft(id: string): Promise<void>;
 }
 

@@ -128,11 +128,11 @@ describe("drafts (প্রকাশিত লেখার সম্পাদন
     expect((await repo().get(p.id))?.body).toBe("পুরনো");
     expect((await repo().getDraft(p.id))?.title).toBe("সম্পাদিত-২");
 
-    expect(await repo().applyDraft(p.id, 7)).toBe(true);
+    expect(await repo().applyDraft(p.id, 7)).toBeInstanceOf(Date);
     const after = await repo().get(p.id);
     expect(after).toMatchObject({ title: "সম্পাদিত-২", body: "নতুন-২", excerpt: "সার", wordCount: 7 });
     expect(await repo().getDraft(p.id)).toBeNull();
-    expect(await repo().applyDraft(p.id, 7)).toBe(false);
+    expect(await repo().applyDraft(p.id, 7)).toBeNull();
 
     await repo().saveEdit(p.id, { title: "x", body: "y", excerpt: "" });
     await repo().discardDraft(p.id);

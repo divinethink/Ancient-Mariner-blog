@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { logout } from "@/auth/authClient";
 import { draftStore } from "@/data/draftStore";
+import { getPostRepo } from "@/data/postRepo.wire";
+import { syncAllDirty } from "@/data/syncEngine";
 import { bn } from "@/i18n/bn";
 
 export function LogoutButton() {
@@ -12,8 +14,11 @@ export function LogoutButton() {
     setFailed(false);
     try {
       const res = await logout({
-        // sync P2a-২খ-তে জোড়া হবে; এখন dirty লোকাল ড্রাফট থাকলে মোছার আগে confirm
+        // আগে sync চেষ্টা; তারপরও সংরক্ষণহীন থাকলে মোছার আগে confirm (Arch §৫)
         hasUnsynced: () => draftStore.hasUnsynced(),
+        sync: async () => {
+          await syncAllDirty(await getPostRepo(), draftStore);
+        },
         confirmDiscard: () => confirm(bn.auth.confirmDiscard),
       });
       if (res === "done") {

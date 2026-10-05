@@ -41,7 +41,15 @@ ZIP আপলোড → `unzip.yml` commit → `ci` চলে। `deploy.yml` �
 
 ## Editor (P2a-২ক)
 
-লেখা IndexedDB-তে autosave (`src/data/draftStore.ts`, `dirty=true` = এখনো Firestore-এ যায়নি; sync P2a-২খ)। Logout `localStore.clearAll()` করে, তাই dirty ড্রাফট থাকলে আগে confirm। Editor schema = `src/lib/editor-nodes.ts`-এর allowlist; সেভের আগে `sanitizeDoc`। Tiptap ভারী, তাই শুধু edit route-এ `next/dynamic`। Dependency: `@tiptap/react`, `@tiptap/pm`, `@tiptap/starter-kit` (v3, exact-pin)।
+লেখা IndexedDB-তে autosave (`src/data/draftStore.ts`)। Logout `localStore.clearAll()` করে, তাই dirty ড্রাফট থাকলে আগে confirm। Editor schema = `src/lib/editor-nodes.ts`-এর allowlist; সেভের আগে `sanitizeDoc`। Tiptap ভারী, তাই শুধু edit route-এ `next/dynamic`। Dependency: `@tiptap/react`, `@tiptap/pm`, `@tiptap/starter-kit` (v3, exact-pin)।
+
+## Sync ও Publish (P2a-২খ)
+
+- লোকাল ড্রাফট → Firestore: `src/data/syncEngine.ts` (idle ≥৫s / blur / manual; দুই sync-এর ব্যবধান ≥১৫s; ব্যর্থ হলে ৩০s পরে আবার, লেখা লোকালে অক্ষত)। draft = `posts`, প্রকাশিত = `drafts/{id}` (`src/data/postSync.ts`)। নিয়ম pure ফাংশনে `src/lib/syncPlan.ts`।
+- **dirty** আলাদা key `sync:<id>`-এর `syncedUpdatedAt` থেকে হিসাব (draft-key শুধু editor লেখে) — sync চলাকালে নতুন টাইপ কখনো মোছে না।
+- **Conflict:** sync-এর আগে রিমোট (post/drafts-এর বড় `updatedAt`) ≠ আমার base হলে লেখা বন্ধ, editor-এ [আমার লেখা রাখুন]/[সার্ভারের লেখা আনুন]; merge নেই (Arch §১২-ঙ)। কনটেন্ট হুবহু সমান হলে conflict নয় (retry-নিরাপদ)।
+- Publish panel (`PublishPanel.tsx`): slug/সারাংশ/দৃশ্যমানতা/প্রকাশের তারিখ + [প্রকাশ করুন] / [আপডেট প্রকাশ করুন] / [পরিবর্তন বাতিল] / [Draft-এ ফেরান]। সব রিমোট-লেখা `engine.exclusive`-এ।
+- সাইটে লাইভ হওয়া (rebuild trigger) P2a-৩-এ; তার আগে প্রকাশ মানে Firestore-এ `published+public`, পাবলিক সাইটে আনতে `deploy` workflow হাতে চালাতে হবে।
 
 ## Known shortcuts
 
@@ -54,4 +62,5 @@ ZIP আপলোড → `unzip.yml` commit → `ci` চলে। `deploy.yml` �
 - Session-যাচাই `jose`-ভিত্তিক (Firebase Admin SDK নয়) — Workers-এ Admin SDK-র নির্ভরযোগ্যতা অনিশ্চিত; `jose` edge-এ নিশ্চিত চলে (Arch §৫-এর অনুমোদিত fallback)।
 - Sign-In popup-only; popup ব্লক/ব্যর্থ হলে error-বার্তা, redirect fallback নেই (owner-এর ফোন/PWA-যাচাইয়ের পর সিদ্ধান্ত)।
 - `middleware.ts` (edge) ব্যবহার হবে; Next 16-এর `proxy.ts` Node runtime-এ, OpenNext-এ unsupported — deprecation warning প্রত্যাশিত।
+- Publish panel-এ Mockup-এর 'অবস্থা' radio-র বদলে অবস্থা-ব্যাজ + ক্রিয়া-বোতাম (প্রকাশ/আপডেট/Draft-এ ফেরান) — owner-অনুমোদন বাকি; focus-trap নেই (aria-modal + Esc)।
 - সাইট এখন সর্বত্র `noindex` (লঞ্চ-যাচাইয়ের আগে); Google-ইনডেক্স টগল P2c-তে।

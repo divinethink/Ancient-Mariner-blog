@@ -31,3 +31,40 @@ export function dayKey(d: DateInput, timeZone = DEFAULT_TIMEZONE): string {
   const get = (t: string) => parts.find((p) => p.type === t)?.value ?? "";
   return `${get("year")}-${get("month")}-${get("day")}`;
 }
+
+const pad = (n: number) => String(n).padStart(2, "0");
+
+/** UTC ms → সাইট-timezone-এর "YYYY-MM-DDTHH:mm" (datetime-local ইনপুটের মান) */
+export function toZonedInput(d: DateInput, timeZone = DEFAULT_TIMEZONE): string {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    numberingSystem: "latn",
+    hourCycle: "h23",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).formatToParts(toDate(d));
+  const get = (t: string) => parts.find((p) => p.type === t)?.value ?? "";
+  return `${get("year")}-${get("month")}-${get("day")}T${get("hour")}:${get("minute")}`;
+}
+
+/** সাইট-timezone-এর "YYYY-MM-DDTHH:mm" → UTC Date; অবৈধ হলে null (DST-সহ দুইবার offset সমন্বয়) */
+export function fromZonedInput(s: string, timeZone = DEFAULT_TIMEZONE): Date | null {
+  const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/.exec(s);
+  if (!m) return null;
+  const [y, mo, d, h, mi] = m.slice(1).map(Number);
+  const wall = Date.UTC(y, mo - 1, d, h, mi);
+  if (Number.isNaN(wall)) return null;
+  let guess = wall;
+  for (let i = 0; i < 2; i++) {
+    const shown = toZonedInput(guess, timeZone);
+    const sm = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/.exec(shown);
+    if (!sm) return null;
+    const [sy, smo, sd, sh, smi] = sm.slice(1).map(Number);
+    guess += wall - Date.UTC(sy, smo - 1, sd, sh, smi);
+  }
+  const out = new Date(guess);
+  return toZonedInput(out, timeZone) === `${m[1]}-${m[2]}-${m[3]}T${pad(h)}:${pad(mi)}` ? out : null;
+}

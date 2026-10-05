@@ -124,9 +124,10 @@ export function createPostRepoClient(db: Firestore, ownerUid: string): PostRepo 
     throw new SlugTakenError(base);
   }
 
-  async function update(id: string, patchInput: Parameters<PostRepo["update"]>[1]) {
+  async function update(id: string, patchInput: Parameters<PostRepo["update"]>[1]): Promise<Date> {
     const patch = PostPatchSchema.parse(patchInput);
-    const data: Record<string, unknown> = { ...compact(patch), updatedAt: new Date() };
+    const updatedAt = new Date();
+    const data: Record<string, unknown> = { ...compact(patch), updatedAt };
     if (patch.status === "published" && !patch.publishedAt) {
       const cur = await get(id);
       if (!cur) throw new PostNotFoundError(id);
@@ -134,6 +135,7 @@ export function createPostRepoClient(db: Firestore, ownerUid: string): PostRepo 
       if (!cur.publishedAt) data.publishedAt = new Date();
     }
     await updateDoc(postRef(id), data);
+    return updatedAt;
   }
 
   async function changeSlug(id: string, newSlugRaw: string): Promise<PostWithId> {
@@ -155,16 +157,21 @@ export function createPostRepoClient(db: Firestore, ownerUid: string): PostRepo 
     return { ...cur, slug, slugHistory, updatedAt: now };
   }
 
-  async function saveEdit(id: string, edit: { title: string; body: string; excerpt: string }) {
+  async function saveEdit(
+    id: string,
+    edit: { title: string; body: string; excerpt: string },
+  ): Promise<Date> {
+    const updatedAt = new Date();
     const d = {
       targetType: "post" as const,
       ...edit,
       ownerUid,
-      updatedAt: new Date(),
+      updatedAt,
       schemaVersion: SCHEMA_VERSION,
     };
     parseDraft(d); // validate (body-সীমা)
     await setDoc(draftRef(id), d); // idempotent — doc-ID = postId
+    return updatedAt;
   }
 
   async function getDraft(id: string): Promise<Draft | null> {
@@ -172,20 +179,21 @@ export function createPostRepoClient(db: Firestore, ownerUid: string): PostRepo 
     return snap.exists() ? parseDraft(snap.data()) : null;
   }
 
-  async function applyDraft(id: string, wordCount: number): Promise<boolean> {
+  async function applyDraft(id: string, wordCount: number): Promise<Date | null> {
     const d = await getDraft(id);
-    if (!d) return false;
+    if (!d) return null;
     const patch = PostPatchSchema.parse({
       title: d.title,
       body: d.body,
       excerpt: d.excerpt,
       wordCount,
     });
+    const updatedAt = new Date();
     const batch = writeBatch(db);
-    batch.update(postRef(id), { ...compact(patch), updatedAt: new Date() });
+    batch.update(postRef(id), { ...compact(patch), updatedAt });
     batch.delete(draftRef(id));
     await batch.commit();
-    return true;
+    return updatedAt;
   }
 
   return {

@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { draftStore } from "@/data/draftStore";
 import { getPostRepo } from "@/data/postRepo.wire";
+import { syncAllDirty } from "@/data/syncEngine";
 import { bn } from "@/i18n/bn";
 import { formatDate } from "@/lib/datetime";
 
@@ -11,7 +12,7 @@ type Item = {
   id: string;
   title: string;
   status: "draft" | "published";
-  localOnly: boolean; // Firestore-এ এখনো নেই (sync P2a-২খ)
+  localOnly: boolean; // Firestore-এ এখনো নেই
   wordCount: number;
   updatedAt: number;
 };
@@ -58,11 +59,21 @@ async function loadItems(): Promise<{ items: Item[]; remoteFailed: boolean }> {
 export function LibraryHome() {
   const [state, setState] = useState<State>({ kind: "loading" });
   const [attempt, setAttempt] = useState(0);
+  const bgSynced = useRef(false);
 
   useEffect(() => {
     let dead = false;
-    loadItems().then((r) => {
-      if (!dead) setState({ kind: "ready", ...r });
+    loadItems().then(async (r) => {
+      if (dead) return;
+      setState({ kind: "ready", ...r });
+      // editor ছেড়ে আসার পর বাকি থাকা সংরক্ষণহীন ড্রাফট নীরবে Firestore-এ (প্রতি মাউন্টে একবার)
+      if (bgSynced.current || r.remoteFailed || !(await draftStore.hasUnsynced().catch(() => false))) return;
+      bgSynced.current = true;
+      const repo = await getPostRepo().catch(() => null);
+      if (repo && (await syncAllDirty(repo, draftStore)) > 0 && !dead) {
+        const fresh = await loadItems();
+        if (!dead) setState({ kind: "ready", ...fresh });
+      }
     });
     return () => {
       dead = true;

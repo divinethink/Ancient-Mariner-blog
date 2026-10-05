@@ -1,45 +1,89 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { draftStore } from "@/data/draftStore";
+import { draftStore, type LocalDraft } from "@/data/draftStore";
 import { getPostRepo } from "@/data/postRepo.wire";
+import { loadRemote } from "@/data/postSync";
 import { bn } from "@/i18n/bn";
-import { EMPTY_DOC, parseBody } from "@/lib/editorDoc";
+import { EMPTY_DOC, docToText, makeExcerpt, parseBody } from "@/lib/editorDoc";
+import { remoteChanged } from "@/lib/syncPlan";
 import { EditorSurface, type Loaded } from "./EditorSurface";
 
 type State = { kind: "loading" } | { kind: "error" } | { kind: "ready"; data: Loaded };
 
-/** লোকাল ড্রাফট আগে (সবচেয়ে নতুন কাজ); না থাকলে Firestore: drafts/{id} → posts/{id}; কিছুই না থাকলে খালি নতুন লেখা */
+const fromLocal = async (postId: string, l: LocalDraft, pub?: Loaded["pub"]): Promise<State> => {
+  const doc = parseBody(l.body);
+  return {
+    kind: "ready",
+    data: {
+      title: l.title,
+      doc,
+      createdAt: l.createdAt,
+      pos: await draftStore.loadPos(postId).catch(() => undefined),
+      excerpt: l.excerpt,
+      excerptManual: l.excerptManual ?? l.excerpt !== makeExcerpt(docToText(doc)),
+      pub: pub ?? { status: "draft", hasUnpublished: false },
+    },
+  };
+};
+
+/**
+ * ড্রাফট-ক্রম: (১) সংরক্ষণহীন (dirty) লোকাল ড্রাফট — সবচেয়ে নতুন কাজ, sync/conflict engine দেখবে;
+ * (২) নইলে রিমোট (drafts/{id} → posts/{id}); রিমোট বদলে থাকলে পুরনো ক্লিন লোকাল কপি বাতিল;
+ * (৩) রিমোটে না পৌঁছালে ক্লিন লোকাল কপি; (৪) কিছুই না থাকলে খালি নতুন লেখা
+ */
 async function load(postId: string, isNew: boolean): Promise<State> {
   const local = await draftStore.loadDraft(postId).catch(() => undefined);
-  if (local) {
-    const pos = await draftStore.loadPos(postId).catch(() => undefined);
-    return {
-      kind: "ready",
-      data: { title: local.title, doc: parseBody(local.body), createdAt: local.createdAt, pos },
-    };
+  if (local?.dirty) {
+    const pub = await getPostRepo()
+      .then((r) => loadRemote(r, postId))
+      .then((rv) => (rv ? { status: rv.post.status === "published" ? ("published" as const) : ("draft" as const), hasUnpublished: true } : undefined))
+      .catch(() => undefined);
+    return fromLocal(postId, local, pub);
   }
   try {
     const repo = await getPostRepo();
-    const draft = await repo.getDraft(postId);
-    const post = draft ? null : await repo.get(postId);
-    if (draft || post) {
-      const pos = await draftStore.loadPos(postId).catch(() => undefined);
+    const rv = await loadRemote(repo, postId);
+    if (rv) {
+      const meta = await draftStore.getSync(postId).catch(() => undefined);
+      const pub = {
+        status: rv.post.status === "published" ? ("published" as const) : ("draft" as const),
+        hasUnpublished: !!rv.draft,
+      };
+      if (local && !remoteChanged(rv.stamp, meta?.baseMs, local.updatedAt)) return fromLocal(postId, local, pub);
+      // রিমোটই সত্য: পুরনো ক্লিন লোকাল কপি সরিয়ে base বসানো (প্রথম সম্পাদনায় conflict-যাচাই ঠিক চলবে)
+      await draftStore.deleteDraft(postId).catch(() => undefined);
+      await draftStore.setSync(postId, { baseMs: rv.stamp, syncedUpdatedAt: 0 }).catch(() => undefined);
+      const doc = parseBody(rv.body);
       return {
         kind: "ready",
         data: {
-          title: draft?.title ?? post?.title ?? "",
-          doc: parseBody(draft?.body ?? post?.body ?? ""),
-          createdAt: (post?.createdAt ?? draft?.updatedAt ?? new Date()).getTime(),
-          pos,
+          title: rv.title,
+          doc,
+          createdAt: rv.post.createdAt.getTime(),
+          excerpt: rv.excerpt,
+          excerptManual: rv.excerpt !== makeExcerpt(docToText(doc)),
+          pub,
         },
       };
     }
   } catch {
-    // পুরনো লেখা খুলতে নেট না পেলে ভুল করে খালি খোলা নয়; নতুন লেখা অফলাইনেও শুরু করা যায়
+    // নেট না পেলে: ক্লিন লোকাল কপি থাকলে তা; পুরনো লেখায় নইলে ভুল করে খালি খোলা নয়; নতুন লেখা অফলাইনেও শুরু করা যায়
+    if (local) return fromLocal(postId, local);
     if (!isNew) return { kind: "error" };
   }
-  return { kind: "ready", data: { title: "", doc: EMPTY_DOC, createdAt: Date.now() } };
+  if (local) return fromLocal(postId, local);
+  return {
+    kind: "ready",
+    data: {
+      title: "",
+      doc: EMPTY_DOC,
+      createdAt: Date.now(),
+      excerpt: "",
+      excerptManual: false,
+      pub: { status: "draft", hasUnpublished: false },
+    },
+  };
 }
 
 export function PostEditor({ postId, isNew }: { postId: string; isNew: boolean }) {

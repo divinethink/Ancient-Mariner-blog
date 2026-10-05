@@ -1,0 +1,351 @@
+"use client";
+
+// Publish/Metadata panel (Mockup §৭.৯): mobile = bottom-sheet, ≥md = ডান ড্রয়ার।
+// সব রিমোট-লেখা `engine.exclusive`-এর ভেতরে (sync-এর সাথে ক্রমানুসারে); প্রতিটা ক্রিয়ার পর রিমোট পড়ে base বসানো।
+import { useCallback, useEffect, useRef, useState } from "react";
+import { draftStore } from "@/data/draftStore";
+import { PostNotFoundError, SlugTakenError, type PostRepo, type PostWithId } from "@/data/postRepo";
+import { bn } from "@/i18n/bn";
+import { toZonedInput } from "@/lib/datetime";
+import { parsePublishDate } from "@/lib/publish";
+import { isValidSlug, slugify } from "@/lib/slug";
+import type { SyncStatus } from "@/data/syncEngine";
+import type { PubInfo, SyncEngine } from "./useRemoteSync";
+
+type Props = {
+  /** parent শুধু খোলা অবস্থায় mount করে (প্রতিবার নতুন state) */
+  onClose: () => void;
+  postId: string;
+  engine: SyncEngine;
+  status: SyncStatus;
+  excerpt: string;
+  onExcerpt: (v: string) => void;
+  onPub: (p: PubInfo) => void;
+  /** লোকাল ড্রাফটের শেষ সম্পাদনা IndexedDB-তে নামা পর্যন্ত অপেক্ষা */
+  flushLocal: () => Promise<void>;
+  /** রিমোটের লেখা আনতে (লোকাল ড্রাফট মুছে রিলোড) */
+  onDiscarded: () => Promise<void>;
+};
+
+type Meta = { post: PostWithId; hasDraft: boolean };
+type Msg = { kind: "ok" | "err"; text: string } | null;
+
+const field = "mb-1 block text-sm text-muted";
+const input = "min-h-11 w-full rounded-xl border border-line bg-bg px-3 text-base";
+const btnPrimary = "min-h-11 rounded-full bg-btn-bg px-5 font-semibold text-btn-tx disabled:opacity-50";
+const btnGhost = "min-h-11 rounded-full border border-line px-4 disabled:opacity-50";
+
+export function PublishPanel(p: Props) {
+  const { onClose, postId, engine, status } = p;
+  const [meta, setMeta] = useState<Meta | null>(null);
+  const [state, setState] = useState<"loading" | "ready" | "empty" | "error">("loading");
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<Msg>(null);
+  const [slugIn, setSlugIn] = useState("");
+  const [vis, setVis] = useState<"private" | "public">("public");
+  const [dateIn, setDateIn] = useState("");
+  const firstRef = useRef<HTMLInputElement>(null);
+  const { flushLocal } = p;
+
+  const { onPub } = p;
+  const applyMeta = useCallback(
+    (post: PostWithId, hasDraft: boolean) => {
+      setMeta({ post, hasDraft });
+      setSlugIn(post.slug);
+      // কখনো প্রকাশ না-হওয়া লেখায় প্রকাশের পথে Public শুরুর মান; নইলে বর্তমান
+      setVis(post.publishedAt ? post.visibility : "public");
+      setDateIn(post.publishedAt ? toZonedInput(post.publishedAt) : "");
+      onPub({ status: post.status === "published" ? "published" : "draft", hasUnpublished: hasDraft });
+    },
+    [onPub],
+  );
+
+  /** রিমোট পড়ে meta বসানো + base হালনাগাদ (নিজের লেখা যেন পরের sync-এ conflict না হয়) */
+  const refresh = useCallback(
+    async (repo: PostRepo) => {
+      const post = await repo.get(postId);
+      if (!post) throw new PostNotFoundError(postId);
+      const d = post.status === "published" ? await repo.getDraft(postId) : null;
+      await engine.adoptBase(Math.max(post.updatedAt.getTime(), d?.updatedAt.getTime() ?? 0));
+      applyMeta(post, !!d);
+    },
+    [engine, postId, applyMeta],
+  );
+
+  const loadAll = useCallback(async (reset: boolean) => {
+    if (reset) {
+      setState("loading");
+      setMsg(null);
+    }
+    try {
+      await flushLocal();
+      await engine.syncNow(); // নতুন লেখা এখানেই Firestore-এ তৈরি হয়
+      const found = await engine.exclusive(async (repo) => {
+        const post = await repo.get(postId);
+        if (!post) return false;
+        await refresh(repo);
+        return true;
+      });
+      setState(found ? "ready" : "empty");
+    } catch {
+      setState("error");
+    }
+  }, [engine, postId, refresh, flushLocal]);
+
+  useEffect(() => {
+    void loadAll(false); // mount-এ state আগে থেকেই "loading"
+  }, [loadAll]);
+
+  useEffect(() => {
+    firstRef.current?.focus();
+    const esc = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", esc);
+    return () => window.removeEventListener("keydown", esc);
+  }, [state, onClose]);
+
+  /** slug/visibility/publishedAt যা বদলেছে তা লেখা; ব্যর্থ হলে Error throw (বার্তা ফেরত) */
+  async function writeMeta(repo: PostRepo, extra: { status?: "published" | "draft" } = {}) {
+    if (!meta) return;
+    const cur = meta.post;
+    const slug = slugify(slugIn);
+    if (!isValidSlug(slug)) throw new Error("slug");
+    const date = parsePublishDate(dateIn, Date.now());
+    if (!date.ok) throw new Error(date.reason);
+    if (slug !== cur.slug) await repo.changeSlug(postId, slug);
+    const dateChanged =
+      date.date !== undefined && (!cur.publishedAt || toZonedInput(cur.publishedAt) !== dateIn);
+    const patch = {
+      ...(vis !== cur.visibility ? { visibility: vis } : {}),
+      ...(dateChanged ? { publishedAt: date.date } : {}),
+      ...extra,
+    };
+    if (Object.keys(patch).length) await repo.update(postId, patch);
+  }
+
+  async function run(action: (repo: PostRepo) => Promise<string>) {
+    if (!engine || busy) return;
+    setBusy(true);
+    setMsg(null);
+    try {
+      await flushLocal();
+      await engine.syncNow(); // সর্বশেষ লেখা আগে রিমোটে — ব্যর্থ হলে এখানেই থামে
+      if (engine.status === "conflict" || engine.status === "trashed") {
+        setMsg({ kind: "err", text: bn.publishPanel.conflictFirst });
+        return;
+      }
+      const text = await engine.exclusive(async (repo) => {
+        const t = await action(repo);
+        await refresh(repo);
+        return t;
+      });
+      setMsg({ kind: "ok", text });
+    } catch (e) {
+      const reason = e instanceof Error ? e.message : "";
+      setMsg({
+        kind: "err",
+        text:
+          e instanceof SlugTakenError
+            ? bn.publishPanel.slugTaken
+            : reason === "slug"
+              ? bn.publishPanel.slugInvalid
+              : reason === "invalid"
+                ? bn.publishPanel.dateInvalid
+                : reason === "future"
+                  ? bn.publishPanel.dateFuture
+                  : bn.publishPanel.failed,
+      });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const wordCount = async (fallback: number) => (await draftStore.loadDraft(postId))?.wordCount ?? fallback;
+
+  const onPublish = () =>
+    run(async (repo) => {
+      await writeMeta(repo, { status: "published" });
+      return bn.publishPanel.publishedOk;
+    });
+  const onUpdate = () =>
+    run(async (repo) => {
+      await writeMeta(repo);
+      await repo.applyDraft(postId, await wordCount(meta?.post.wordCount ?? 0));
+      return bn.publishPanel.updatedOk;
+    });
+  const onDone = () =>
+    run(async (repo) => {
+      await writeMeta(repo);
+      return bn.publishPanel.savedOk;
+    });
+  const onRevert = () => {
+    if (!confirm(bn.publishPanel.confirmRevert)) return;
+    return run(async (repo) => {
+      // থাকা অপ্রকাশিত সম্পাদনা আগে posts-এ কপি, তারপর Draft (Arch §১২-গ) — কিছু হারায় না
+      await repo.applyDraft(postId, await wordCount(meta?.post.wordCount ?? 0));
+      await repo.update(postId, { status: "draft" });
+      return bn.publishPanel.savedOk;
+    });
+  };
+  const onDiscard = async () => {
+    if (!engine || busy || !confirm(bn.publishPanel.confirmDiscard)) return;
+    setBusy(true);
+    try {
+      await engine.exclusive((repo) => repo.discardDraft(postId));
+      await p.onDiscarded(); // লোকাল ড্রাফট মুছে রিলোড — রিমোটের প্রকাশিত লেখা ফেরে
+    } catch {
+      setMsg({ kind: "err", text: bn.publishPanel.failed });
+      setBusy(false);
+    }
+  };
+
+  const published = meta?.post.status === "published";
+  return (
+    <div className="fixed inset-0 z-40" role="presentation">
+      <div className="absolute inset-0 bg-black/40" onClick={onClose} aria-hidden />
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={bn.publishPanel.title}
+        className="absolute inset-x-0 bottom-0 max-h-[88dvh] overflow-y-auto rounded-t-3xl border border-line bg-surface p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom,0px))] shadow-xl md:inset-y-0 md:left-auto md:right-0 md:max-h-none md:w-96 md:rounded-none md:rounded-l-3xl"
+      >
+        <div className="mb-4 flex items-center">
+          <h2 className="flex-1 font-serif text-xl font-bold">{bn.publishPanel.title}</h2>
+          <button type="button" onClick={onClose} aria-label={bn.publishPanel.close} className="size-11 text-xl">
+            ✕
+          </button>
+        </div>
+
+        {state === "loading" && (
+          <p role="status" className="text-muted">
+            {bn.publishPanel.loading}
+          </p>
+        )}
+        {state === "empty" && <p className="text-muted">{bn.publishPanel.nothingYet}</p>}
+        {state === "error" && (
+          <p role="alert" className="text-muted">
+            {status === "conflict" ? bn.publishPanel.conflictFirst : bn.publishPanel.loadFailed}{" "}
+            <button type="button" onClick={() => void loadAll(true)} className="min-h-11 text-accent-text underline">
+              {bn.publishPanel.retry}
+            </button>
+          </p>
+        )}
+
+        {state === "ready" && meta && (
+          <div className="space-y-4">
+            <p className="text-sm">
+              <span className="text-muted">{bn.publishPanel.state}: </span>
+              <span className="rounded-full bg-line px-2 py-0.5">
+                {published ? bn.publishPanel.published : bn.publishPanel.draft}
+              </span>
+              {published && meta.hasDraft && (
+                <span className="ml-2 text-accent-text">{bn.publishPanel.unpublished}</span>
+              )}
+            </p>
+
+            <div>
+              <label htmlFor="pp-slug" className={field}>
+                {bn.publishPanel.slug}
+              </label>
+              <input
+                id="pp-slug"
+                ref={firstRef}
+                value={slugIn}
+                onChange={(e) => setSlugIn(e.target.value)}
+                lang="bn"
+                autoCapitalize="none"
+                spellCheck={false}
+                className={input}
+              />
+            </div>
+
+            <div>
+              <label htmlFor="pp-excerpt" className={field}>
+                {bn.publishPanel.excerpt}
+              </label>
+              <textarea
+                id="pp-excerpt"
+                value={p.excerpt}
+                onChange={(e) => {
+                  p.onExcerpt(e.target.value);
+                  // প্রকাশিত লেখায় সারাংশ-বদলও অপ্রকাশিত পরিবর্তন (drafts-এ যাবে)
+                  setMeta((m) => (m && m.post.status === "published" ? { ...m, hasDraft: true } : m));
+                }}
+                rows={3}
+                lang="bn"
+                className={`${input} py-2`}
+              />
+              <p className="mt-1 text-xs text-muted">{bn.publishPanel.excerptHint}</p>
+            </div>
+
+            <fieldset>
+              <legend className={field}>{bn.publishPanel.visibility}</legend>
+              <div className="flex gap-2">
+                {(["private", "public"] as const).map((v) => (
+                  <label
+                    key={v}
+                    className={`flex min-h-11 flex-1 cursor-pointer items-center justify-center rounded-xl border px-3 ${vis === v ? "border-accent bg-line" : "border-line"}`}
+                  >
+                    <input
+                      type="radio"
+                      name="pp-vis"
+                      checked={vis === v}
+                      onChange={() => setVis(v)}
+                      className="sr-only"
+                    />
+                    {v === "private" ? bn.publishPanel.private : bn.publishPanel.public}
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+
+            <div>
+              <label htmlFor="pp-date" className={field}>
+                {bn.publishPanel.publishedAt}
+              </label>
+              <input
+                id="pp-date"
+                type="datetime-local"
+                value={dateIn}
+                max={toZonedInput(Date.now())}
+                onChange={(e) => setDateIn(e.target.value)}
+                className={input}
+              />
+              <p className="mt-1 text-xs text-muted">{bn.publishPanel.publishedAtHint}</p>
+            </div>
+
+            {msg && (
+              <p role={msg.kind === "err" ? "alert" : "status"} className={msg.kind === "err" ? "text-accent-text" : "text-muted"}>
+                {msg.text}
+              </p>
+            )}
+
+            <div className="flex flex-wrap gap-2 pt-1">
+              {published ? (
+                <button type="button" onClick={onUpdate} disabled={busy || !meta.hasDraft} className={btnPrimary}>
+                  {busy ? bn.publishPanel.working : bn.publishPanel.update}
+                </button>
+              ) : (
+                <button type="button" onClick={onPublish} disabled={busy} className={btnPrimary}>
+                  {busy ? bn.publishPanel.working : bn.publishPanel.publish}
+                </button>
+              )}
+              <button type="button" onClick={onDone} disabled={busy} className={btnGhost}>
+                {bn.publishPanel.done}
+              </button>
+              {published && meta.hasDraft && (
+                <button type="button" onClick={onDiscard} disabled={busy} className={btnGhost}>
+                  {bn.publishPanel.discard}
+                </button>
+              )}
+              {published && (
+                <button type="button" onClick={onRevert} disabled={busy} className={btnGhost}>
+                  {bn.publishPanel.revert}
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

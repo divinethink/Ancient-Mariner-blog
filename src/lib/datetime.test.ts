@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { dayKey, formatDate } from "./datetime";
+import { dayKey, formatDate, fromZonedInput, toZonedInput } from "./datetime";
 
 describe("dayKey (Asia/Dhaka = UTC+6)", () => {
   it("UTC 17:59 একই দিন, 18:00 পরের দিন", () => {
@@ -20,5 +20,18 @@ describe("formatDate", () => {
     expect(s).toContain("অক্টোবর");
     expect(s).toContain("৫");
     expect(s).toContain("২০২৬");
+  });
+});
+
+describe("zoned input (প্রকাশের তারিখ)", () => {
+  it("Asia/Dhaka (UTC+6) round-trip", () => {
+    const utc = new Date("2026-10-05T18:30:00Z"); // ঢাকায় ০৬ অক্টোবর ০০:৩০
+    expect(toZonedInput(utc)).toBe("2026-10-06T00:30");
+    expect(fromZonedInput("2026-10-06T00:30")?.toISOString()).toBe("2026-10-05T18:30:00.000Z");
+  });
+  it("অন্য timezone (DST-সহ) ও অবৈধ ইনপুট", () => {
+    expect(fromZonedInput("2026-07-01T12:00", "America/New_York")?.toISOString()).toBe("2026-07-01T16:00:00.000Z");
+    expect(fromZonedInput("abc")).toBeNull();
+    expect(fromZonedInput("2026-02-31T10:00")).toBeNull();
   });
 });
