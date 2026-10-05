@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { runBulkAction } from "@/data/bulk.wire";
+import type { BulkRequest, BulkSpec, BulkSummary } from "@/data/bulkRun";
 import { draftStore } from "@/data/draftStore";
 import { getTaxonomyRepo } from "@/data/taxonomyRepo.wire";
 import type { TermWithId } from "@/data/taxonomyRepo";
@@ -11,17 +13,20 @@ import { getPostRepo } from "@/data/postRepo.wire";
 import { syncAllDirty } from "@/data/syncEngine";
 import { bn } from "@/i18n/bn";
 import { formatDate } from "@/lib/datetime";
-import { CONTENT_TYPE, type ContentType } from "@/lib/enums";
+import { CONTENT_TYPE, type ContentType, type PostStatus } from "@/lib/enums";
 import { FIND_LIMIT } from "@/lib/postFind";
 import { buildCategoryTree } from "@/lib/taxonomy";
 import { trashDaysLeft } from "@/lib/trash";
+import { BulkBar } from "./BulkBar";
 import { useSiteTimezone } from "./SiteSettingsProvider";
+import { useLongPress } from "./useLongPress";
 import { TrashList, type TrashItem } from "./TrashList";
 
 type Item = {
   id: string;
   title: string;
   status: "draft" | "published";
+  rawStatus: PostStatus; // archived আলাদা দেখাতে/ফিল্টারে
   localOnly: boolean; // Firestore-এ এখনো নেই
   wordCount: number;
   updatedAt: number;
@@ -32,6 +37,7 @@ const toItem = (p: PostWithId): Item => ({
   id: p.id,
   title: p.title,
   status: p.status === "published" ? "published" : "draft",
+  rawStatus: p.status,
   localOnly: false,
   wordCount: p.wordCount,
   updatedAt: p.updatedAt.getTime(),
@@ -39,7 +45,7 @@ const toItem = (p: PostWithId): Item => ({
   categoryName: p.categoryName,
 });
 type Found = { key: string; items: Item[] | null }; // items=null ⇒ ব্যর্থ
-type Filter = "all" | "draft" | "published" | "trash";
+type Filter = "all" | "draft" | "published" | "archived" | "trash";
 type Loaded = { items: Item[]; trashed: TrashItem[]; remoteFailed: boolean };
 type State = { kind: "loading" } | ({ kind: "ready" } & Loaded);
 
@@ -74,6 +80,7 @@ async function loadItems(): Promise<Loaded> {
       id: d.id,
       title: d.title,
       status: r?.status ?? "draft",
+      rawStatus: r?.rawStatus ?? "draft",
       localOnly: !r,
       wordCount: d.wordCount,
       updatedAt: d.updatedAt,
@@ -123,6 +130,11 @@ export function LibraryHome() {
   const [filter, setFilter] = useState<Filter>("all");
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  // Bulk select-mode (P3b-ক)
+  const [selecting, setSelecting] = useState(false);
+  const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
+  const [progress, setProgress] = useState<{ d: number; t: number } | null>(null);
+  const [lastReq, setLastReq] = useState<BulkRequest | null>(null);
   // 🔍 খোঁজ ও Type/Category ফিল্টার (P3a-২খ): শর্ত থাকলে সার্ভার-query-র ফল দেখায় (প্রথম ~৫০টা), নইলে স্বাভাবিক তালিকা
   const [searchOpen, setSearchOpen] = useState(false);
   const [q, setQ] = useState("");
@@ -237,6 +249,53 @@ export function LibraryHome() {
       return r.failed > 0 ? bn.trash.emptyPartial : undefined;
     });
 
+  const toggleSel = (id: string) =>
+    setSelected((cur) => {
+      const n = new Set(cur);
+      if (!n.delete(id)) n.add(id);
+      return n;
+    });
+  const startSelect = (id: string) => {
+    setSelecting(true);
+    setSelected(new Set([id]));
+  };
+  const exitSelect = () => {
+    setSelecting(false);
+    setSelected(new Set());
+  };
+  const longPress = useLongPress(startSelect);
+
+  /** Bulk ক্রিয়া চালায়: double-tap-এ দ্বিতীয়টা বাদ (busy); শেষে সারাংশ, দরকারে একটাই rebuild, তালিকা নতুন করে পড়া */
+  async function runBulkReq(req: BulkRequest) {
+    if (busy) return;
+    setBusy(true);
+    setNotice(null);
+    setProgress(null);
+    try {
+      const sum: BulkSummary = await runBulkAction(req, (d, t) => setProgress({ d, t }));
+      const parts = [bn.bulk.done(sum.updated)];
+      if (sum.unchanged) parts.push(bn.bulk.unchanged(sum.unchanged));
+      if (sum.notApplicable) parts.push(bn.bulk.notApplicable(sum.notApplicable));
+      if (sum.unsynced) parts.push(bn.bulk.unsynced(sum.unsynced));
+      if (sum.missing) parts.push(bn.bulk.missing(sum.missing));
+      if (sum.failedIds.length) parts.push(bn.bulk.failed(sum.failedIds.length));
+      let msg = parts.join(" · ");
+      if (sum.affectsPublic > 0) msg += ` · ${(await triggerSiteRebuild()) ? bn.build.liveIn : bn.build.triggerFailed}`;
+      setNotice(msg);
+      setLastReq(sum.failedIds.length > 0 ? req : null); // retry = একই request (idempotent)
+      setSelected(new Set(sum.failedIds));
+      if (sum.failedIds.length === 0) setSelecting(false);
+    } catch {
+      setNotice(bn.trash.actionFailed);
+    }
+    setProgress(null);
+    setFindTick((n) => n + 1); // খোঁজ-ফল চালু থাকলে নতুন করে
+    const fresh = await loadItems();
+    setState({ kind: "ready", ...fresh });
+    setBusy(false);
+  }
+  const runSpec = (spec: BulkSpec) => void runBulkReq({ ...spec, ids: [...selected] });
+
   if (state.kind === "loading") {
     return (
       <div role="status" aria-live="polite">
@@ -254,15 +313,46 @@ export function LibraryHome() {
   const findLoading = searching && found?.key !== findKey;
   const findFailed = searching && found?.key === findKey && found.items === null;
   const base = searching ? (found?.key === findKey ? (found.items ?? []) : []) : items;
-  const shown = base.filter((it) => filter === "all" || it.status === filter);
+  const shown = base.filter((it) => filter === "all" || it.rawStatus === filter);
+  // select-mode: নির্বাচিত id-গুলোর অবস্থা (প্রযোজ্যতার সংখ্যা) ও 'সব' = এই দৃশ্যের নির্বাচনযোগ্য সবাই
+  const known = new Map<string, PostStatus>([
+    ...items.map((i) => [i.id, i.rawStatus] as const),
+    ...(found?.items ?? []).map((i) => [i.id, i.rawStatus] as const),
+    ...trashed.map((t) => [t.id, "trashed" as PostStatus] as const),
+  ]);
+  const selectableIds = filter === "trash" ? trashed.map((t) => t.id) : shown.filter((i) => !i.localOnly).map((i) => i.id);
+  const selStatuses = [...selected].map((id) => known.get(id)).filter((x): x is PostStatus => !!x);
+  const allSelected = selectableIds.length > 0 && selectableIds.every((id) => selected.has(id));
+  const rowBody = (it: Item) => (
+    <>
+      <span className="min-w-0 flex-1">
+        <span className="block truncate font-serif text-lg font-bold">{it.title || bn.library.untitled}</span>
+        <span className="text-sm text-muted">
+          {formatDate(new Date(it.updatedAt), tz)} · {it.wordCount} {bn.library.words}
+          {it.contentType && it.contentType !== "post" && ` · ${bn.org.types[it.contentType] ?? it.contentType}`}
+          {it.categoryName && ` · ${it.categoryName}`}
+        </span>
+      </span>
+      <span className="shrink-0 rounded-full bg-line px-2 py-0.5 text-xs text-muted">
+        {it.localOnly
+          ? bn.library.localOnly
+          : it.rawStatus === "published"
+            ? bn.library.published
+            : it.rawStatus === "archived"
+              ? bn.library.archived
+              : bn.library.draft}
+      </span>
+    </>
+  );
   const chips: [Filter, string][] = [
     ["all", bn.library.filterAll],
     ["draft", bn.library.draft],
     ["published", bn.library.published],
+    ["archived", bn.library.filterArchived],
     ["trash", `${bn.library.filterTrash}${trashed.length ? ` (${trashed.length})` : ""}`],
   ];
   return (
-    <>
+    <div className={selecting ? "pb-64" : undefined}>
       {remoteFailed && (
         <p role="alert" className="mb-4 rounded-xl border border-line bg-surface p-3 text-muted">
           {bn.library.loadFailed}{" "}
@@ -274,9 +364,17 @@ export function LibraryHome() {
       {notice && (
         <p role="alert" className="mb-4 rounded-xl border border-line bg-surface p-3 text-muted">
           {notice}
+          {lastReq && !busy && (
+            <>
+              {" "}
+              <button type="button" onClick={() => void runBulkReq(lastReq)} className="min-h-11 text-accent-text underline">
+                {bn.bulk.retry(selected.size)}
+              </button>
+            </>
+          )}
         </p>
       )}
-      {latest && filter !== "trash" && (
+      {latest && filter !== "trash" && !selecting && (
         <Link
           href={`/dashboard/posts/${latest.id}/edit`}
           className="mb-5 block rounded-2xl bg-btn-bg p-4 text-btn-tx"
@@ -293,7 +391,11 @@ export function LibraryHome() {
             key={key}
             type="button"
             aria-pressed={filter === key}
-            onClick={() => setFilter(key)}
+            onClick={() => {
+              setFilter(key);
+              setSelected(new Set()); // অন্য দৃশ্যের লেখা নির্বাচনে থাকে না
+              setLastReq(null);
+            }}
             className={`min-h-11 rounded-full border px-4 text-sm ${
               filter === key ? "border-transparent bg-btn-bg text-btn-tx" : "border-line"
             }`}
@@ -301,6 +403,17 @@ export function LibraryHome() {
             {label}
           </button>
         ))}
+      </div>
+      <div className="mb-4">
+        <button
+          type="button"
+          aria-pressed={selecting}
+          disabled={busy}
+          onClick={() => (selecting ? exitSelect() : setSelecting(true))}
+          className="min-h-11 rounded-full border border-line px-4 text-sm"
+        >
+          {selecting ? bn.bulk.toggleOff : bn.bulk.toggle}
+        </button>
       </div>
       {filter !== "trash" && (
         <div className="mb-4">
@@ -381,6 +494,9 @@ export function LibraryHome() {
           onRestore={restorePost}
           onDelete={deletePost}
           onEmpty={emptyAll}
+          selecting={selecting}
+          selected={selected}
+          onToggle={toggleSel}
         />
       ) : searching ? (
         findLoading || findFailed ? null : shown.length === 0 ? (
@@ -393,34 +509,52 @@ export function LibraryHome() {
         <ul className="space-y-3">
           {shown.map((it) => (
             <li key={it.id} className="flex items-start gap-1">
-              <Link
-                href={`/dashboard/posts/${it.id}/edit`}
-                className="flex min-w-0 flex-1 items-start gap-3 rounded-2xl border border-line bg-surface p-4"
-              >
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate font-serif text-lg font-bold">
-                    {it.title || bn.library.untitled}
-                  </span>
-                  <span className="text-sm text-muted">
-                    {formatDate(new Date(it.updatedAt), tz)} · {it.wordCount} {bn.library.words}
-                    {it.contentType && it.contentType !== "post" && ` · ${bn.org.types[it.contentType] ?? it.contentType}`}
-                    {it.categoryName && ` · ${it.categoryName}`}
-                  </span>
-                </span>
-                <span className="shrink-0 rounded-full bg-line px-2 py-0.5 text-xs text-muted">
-                  {it.localOnly
-                    ? bn.library.localOnly
-                    : it.status === "published"
-                      ? bn.library.published
-                      : bn.library.draft}
-                </span>
-              </Link>
-              <PostMenu disabled={busy} onTrash={() => void trashPost(it.id)} />
+              {selecting ? (
+                <label
+                  className={`flex min-w-0 flex-1 items-start gap-3 rounded-2xl border bg-surface p-4 ${
+                    selected.has(it.id) ? "border-accent" : "border-line"
+                  } ${it.localOnly ? "opacity-60" : "cursor-pointer"}`}
+                >
+                  <input
+                    type="checkbox"
+                    aria-label={bn.bulk.pick(it.title || bn.library.untitled)}
+                    checked={selected.has(it.id)}
+                    disabled={it.localOnly || busy}
+                    onChange={() => toggleSel(it.id)}
+                    className="mt-1 size-6 shrink-0 accent-[var(--accent)]"
+                  />
+                  {rowBody(it)}
+                </label>
+              ) : (
+                <>
+                  <Link
+                    href={`/dashboard/posts/${it.id}/edit`}
+                    {...(it.localOnly ? {} : longPress(it.id))}
+                    className="flex min-w-0 flex-1 select-none items-start gap-3 rounded-2xl border border-line bg-surface p-4 [-webkit-touch-callout:none]"
+                  >
+                    {rowBody(it)}
+                  </Link>
+                  <PostMenu disabled={busy} onTrash={() => void trashPost(it.id)} />
+                </>
+              )}
+              {selecting && it.localOnly && <span className="sr-only">{bn.bulk.localOnlyNote}</span>}
             </li>
           ))}
         </ul>
       )}
       {searching && base.length >= FIND_LIMIT && <p className="mt-3 text-sm text-muted">{bn.org.find.limited(FIND_LIMIT)}</p>}
-    </>
+      {selecting && (
+        <BulkBar
+          statuses={selStatuses}
+          allSelected={allSelected}
+          trashView={filter === "trash"}
+          busy={busy}
+          progress={progress}
+          onToggleAll={() => setSelected(allSelected ? new Set() : new Set(selectableIds))}
+          onExit={exitSelect}
+          onRun={runSpec}
+        />
+      )}
+    </div>
   );
 }
