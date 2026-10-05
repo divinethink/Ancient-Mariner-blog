@@ -40,3 +40,21 @@ export const localStore = {
   /** logout-এ: লোকাল ড্রাফট ও search-index মোছা (UI-পছন্দ localStorage-এ, থাকে) */
   clearAll: () => run("readwrite", (s) => s.clear()).then(() => undefined),
 };
+
+/** UI-পছন্দ (থিম/আরাম-সেটিং) — localStorage, শুধু এই ফাইল দিয়ে (Arch §১ নং ৬); sync, ব্যর্থ হলে নীরবে উপেক্ষা */
+export const prefs = {
+  get(key: string): string | null {
+    try {
+      return localStorage.getItem(key);
+    } catch {
+      return null;
+    }
+  },
+  set(key: string, value: string): void {
+    try {
+      localStorage.setItem(key, value);
+    } catch {
+      // স্টোরেজ বন্ধ/পূর্ণ: পছন্দ এই সেশনেই প্রযোজ্য থাকে
+    }
+  },
+};

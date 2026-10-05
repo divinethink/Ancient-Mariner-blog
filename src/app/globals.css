@@ -42,13 +42,19 @@ body {
   }
 }
 
-/* Editor (P2a-২ক): লেখার ঘরের টাইপোগ্রাফি — Arch §১৩ (serif, line-height ~১.৯৫); আরাম-প্যানেল P2b */
+/* Editor: লেখার ঘরের টাইপোগ্রাফি — Arch §১৩; --ff/--fs/--lh/--mw আরাম-প্যানেল (P2b-১) বসায় */
+.editor-col {
+  position: relative;
+  left: 50%;
+  width: min(var(--mw, 680px), calc(100vw - 3rem));
+  transform: translateX(-50%);
+}
 .pm {
   outline: none;
   min-height: 55vh;
-  font-family: var(--font-serif);
-  font-size: 19px;
-  line-height: 1.95;
+  font-family: var(--ff, var(--font-serif));
+  font-size: var(--fs, 19px);
+  line-height: var(--lh, 1.9);
   caret-color: var(--accent);
 }
 .pm p {

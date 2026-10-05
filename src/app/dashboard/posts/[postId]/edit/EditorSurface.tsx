@@ -4,9 +4,11 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Editor } from "@tiptap/react";
+import { applyComfort, readComfort } from "@/data/comfortStore";
 import { draftStore, type EditorPos } from "@/data/draftStore";
 import { bn } from "@/i18n/bn";
 import { countWords, docToText, makeExcerpt, sanitizeDoc, type DocNode } from "@/lib/editorDoc";
+import { ComfortPanel } from "./ComfortPanel";
 import { PublishPanel } from "./PublishPanel";
 import { useRemoteSync, type PubInfo } from "./useRemoteSync";
 
@@ -36,6 +38,7 @@ export function EditorSurface({ postId, data }: { postId: string; data: Loaded }
   const [words, setWords] = useState(() => countWords(docToText(data.doc)));
   const [excerpt, setExcerpt] = useState(data.excerpt);
   const [panelOpen, setPanelOpen] = useState(false);
+  const [comfortOpen, setComfortOpen] = useState(false);
   const { status, pub, setPub, engine, edited, blur } = useRemoteSync(postId, data.pub);
 
   const editorRef = useRef<Editor | null>(null);
@@ -111,6 +114,9 @@ export function EditorSurface({ postId, data }: { postId: string; data: Loaded }
     },
     [persist],
   );
+
+  // সংরক্ষিত আরাম-সেটিং (ফন্ট/আকার/ফাঁক/চওড়া) প্রয়োগ
+  useEffect(() => applyComfort(readComfort()), []);
 
   // ট্যাব লুকালে/পেজ ছাড়লে/unmount-এ সাথে সাথে লোকাল সেভ
   useEffect(() => {
@@ -191,6 +197,15 @@ export function EditorSurface({ postId, data }: { postId: string; data: Loaded }
         </span>
         <button
           type="button"
+          aria-label={bn.editor.comfort.open}
+          aria-haspopup="dialog"
+          onClick={() => setComfortOpen(true)}
+          className="min-h-11 min-w-11 rounded-full text-base font-semibold"
+        >
+          Aa
+        </button>
+        <button
+          type="button"
           onClick={() => setPanelOpen(true)}
           className="min-h-11 rounded-full bg-btn-bg px-4 text-sm font-semibold text-btn-tx"
         >
@@ -230,30 +245,33 @@ export function EditorSurface({ postId, data }: { postId: string; data: Loaded }
         </div>
       )}
 
-      <textarea
-        value={title}
-        rows={1}
-        placeholder={bn.editor.titlePlaceholder}
-        aria-label={bn.editor.titlePlaceholder}
-        lang="bn"
-        onChange={(e) => {
-          setTitle(e.target.value);
-          titleRef.current = e.target.value;
-          schedule(true);
-        }}
-        onBlur={onBlur}
-        className="mb-3 block w-full resize-none bg-transparent font-serif text-3xl font-bold leading-snug outline-none field-sizing-content"
-      />
+      <div className="editor-col">
+        <textarea
+          value={title}
+          rows={1}
+          placeholder={bn.editor.titlePlaceholder}
+          aria-label={bn.editor.titlePlaceholder}
+          lang="bn"
+          onChange={(e) => {
+            setTitle(e.target.value);
+            titleRef.current = e.target.value;
+            schedule(true);
+          }}
+          onBlur={onBlur}
+          className="mb-3 block w-full resize-none bg-transparent font-serif text-3xl font-bold leading-snug outline-none field-sizing-content"
+        />
 
-      <TiptapEditor
-        initialDoc={data.doc}
-        pos={data.pos}
-        onContentChange={() => schedule(true)}
-        onCaretMove={() => schedule(false)}
-        onBlur={onBlur}
-        onEditor={onEditor}
-      />
+        <TiptapEditor
+          initialDoc={data.doc}
+          pos={data.pos}
+          onContentChange={() => schedule(true)}
+          onCaretMove={() => schedule(false)}
+          onBlur={onBlur}
+          onEditor={onEditor}
+        />
+      </div>
       <div className="h-24" aria-hidden />
+      {comfortOpen && <ComfortPanel onClose={() => setComfortOpen(false)} />}
       {panelOpen && (
       <PublishPanel
         onClose={() => setPanelOpen(false)}
