@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { renderRules } from "./renderRules";
 
@@ -18,5 +19,11 @@ describe("renderRules", () => {
   });
   it("অচেনা placeholder থাকলে ব্যর্থ", () => {
     expect(() => renderRules("__UNKNOWN__", UID)).toThrow();
+  });
+  it("আসল firestore.rules.tpl সম্পূর্ণ render হয় ও deny-all ফলব্যাক রাখে", () => {
+    const out = renderRules(readFileSync("firestore.rules.tpl", "utf8"), UID);
+    expect(out).toContain(`request.auth.uid == '${UID}'`);
+    expect(out).toContain("['draft', 'published', 'trashed']");
+    expect(out).toContain("match /{document=**}");
   });
 });
