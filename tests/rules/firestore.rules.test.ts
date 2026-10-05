@@ -131,6 +131,28 @@ describe.each(OWNER_ONLY_COLLECTIONS)("owner-only: %s", (name) => {
   });
 });
 
+// P3a: নাম/বিবরণ public-read, লেখা শুধু owner (Arch §৯)
+describe.each(["categories", "tags", "series"])("taxonomy: %s", (name) => {
+  it("public read সফল; non-owner/anonymous write ব্যর্থ; owner write সফল", async () => {
+    await seed(name, "a", { name: "ভ্রমণ", ownerUid: OWNER });
+    await assertSucceeds(getDoc(doc(anon(), name, "a")));
+    await assertSucceeds(getDocs(collection(anon(), name)));
+    await assertSucceeds(setDoc(doc(owner(), name, "b"), { name: "ডায়েরি", ownerUid: OWNER }));
+    await assertSucceeds(deleteDoc(doc(owner(), name, "b")));
+    await assertFails(setDoc(doc(other(), name, "c"), { name: "হ্যাক" }));
+    await assertFails(setDoc(doc(anon(), name, "c"), { name: "হ্যাক" }));
+    await assertFails(updateDoc(doc(other(), name, "a"), { name: "হ্যাক" }));
+    await assertFails(deleteDoc(doc(other(), name, "a")));
+  });
+});
+
+describe("posts: P3a enum", () => {
+  it("archived status ও আগের মান চলে; অবৈধ মান আটকায়", async () => {
+    await assertSucceeds(setDoc(doc(owner(), "posts", "x"), post({ status: "archived" })));
+    await assertFails(setDoc(doc(owner(), "posts", "y"), post({ status: "bogus" })));
+  });
+});
+
 describe("অন্য collection", () => {
   it("অনির্ধারিত collection-এ owner-ও read/write পারে না (deny-all)", async () => {
     await assertFails(setDoc(doc(owner(), "unknown", "a"), { x: 1 }));

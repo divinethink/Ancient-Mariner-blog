@@ -1,5 +1,5 @@
 rules_version = '2';
-// P1b: posts / slugs / siteSettings · P2a: drafts (Arch §৯)। বাকি collection phase-অনুযায়ী যোগ হয়; বাকি সব deny-all।
+// P1b: posts / slugs / siteSettings · P2a: drafts · P3a: categories / tags / series (Arch §৯)। বাকি collection phase-অনুযায়ী যোগ হয়; বাকি সব deny-all।
 // placeholder scripts/render-rules.ts বসায়; rendered firestore.rules git-এ commit হয় না।
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -32,6 +32,20 @@ service cloud.firestore {
     // প্রকাশিত লেখার অপ্রকাশিত সম্পাদনা — শুধু owner; পাবলিক read নেই
     match /drafts/{targetId} {
       allow read, write: if isOwner();
+    }
+
+    // নাম/বিবরণ পাবলিক-readable; লেখা শুধু owner (Arch §৬/§৯)
+    match /categories/{id} {
+      allow read: if true;
+      allow write: if isOwner();
+    }
+    match /tags/{id} {
+      allow read: if true;
+      allow write: if isOwner();
+    }
+    match /series/{id} {
+      allow read: if true;
+      allow write: if isOwner();
     }
 
     match /siteSettings/{docId} {
