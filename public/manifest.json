@@ -7,6 +7,14 @@
   "display": "standalone",
   "background_color": "#faf9f5",
   "theme_color": "#faf9f5",
+  "shortcuts": [
+    {
+      "name": "নতুন লেখা",
+      "short_name": "নতুন লেখা",
+      "url": "/dashboard/posts/new",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    }
+  ],
   "icons": [
     { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
     { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png" },

@@ -13,7 +13,8 @@
   // runtime-এ middleware/auth route-এর জন্য (secret নয়); OWNER_UID ও SESSION_SECRET Secret হিসেবে dashboard-এ
   "vars": {
     "FIREBASE_PROJECT_ID": "ancientmarinerblog",
-    "SITE_URL": "https://blog.ancientmariner.workers.dev"
+    "SITE_URL": "https://blog.ancientmariner.workers.dev",
+    "GITHUB_REPO": "divinethink/Ancient-Mariner-blog"
   },
   "observability": { "enabled": true }
 }

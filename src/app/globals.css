@@ -92,3 +92,52 @@ body {
   border-top: 1px solid var(--line);
   margin: 1.5em 0;
 }
+
+/* Public পাঠ (P2a-৩খ): editor-এর (.pm) টাইপোগ্রাফির সাথে মিল — Arch §১৩; drop-cap/progress P10b */
+.reading {
+  font-family: var(--font-serif);
+  font-size: 18.5px;
+  line-height: 1.95;
+}
+.reading p {
+  margin: 0 0 1em;
+}
+.reading h2,
+.reading h3 {
+  font-weight: 700;
+  line-height: 1.5;
+  margin: 1.4em 0 0.4em;
+}
+.reading h2 {
+  font-size: 1.25em;
+}
+.reading h3 {
+  font-size: 1.1em;
+}
+.reading blockquote {
+  margin: 1.2em 0;
+  padding-left: 16px;
+  border-left: 3px solid var(--accent);
+  color: var(--accent-text);
+}
+.reading ul,
+.reading ol {
+  margin: 0 0 1em;
+  padding-left: 1.5em;
+}
+.reading ul {
+  list-style: disc;
+}
+.reading ol {
+  list-style: decimal;
+}
+.reading a {
+  color: var(--accent-text);
+  text-decoration: underline;
+  overflow-wrap: anywhere;
+}
+.reading hr {
+  border: 0;
+  border-top: 1px solid var(--line);
+  margin: 1.5em 0;
+}

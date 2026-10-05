@@ -4,7 +4,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "build:cf": "opennextjs-cloudflare build && node scripts/build-public.mjs",
+    "fetch:public": "tsx scripts/fetch-public-data.ts",
+    "build:cf": "tsx scripts/fetch-public-data.ts && opennextjs-cloudflare build && node scripts/build-public.mjs && tsx scripts/build-redirects.ts",
     "typecheck": "tsc --noEmit",
     "deploy:dry": "wrangler deploy --dry-run",
     "lint": "eslint .",

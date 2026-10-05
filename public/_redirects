@@ -1,1 +1,1 @@
-# P0a যাচাই শেষ; আসল redirect P2a-তে (ASCII-সোর্স → এখানে, বাংলা পুরনো-slug → stub পেজ, Arch §২)
+# পুরনো-slug redirect build-সময়ে scripts/build-redirects.ts এখানে যোগ করে (ASCII → 308); বাংলা পুরনো-slug → stub পেজ (Arch §২)

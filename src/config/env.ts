@@ -23,7 +23,19 @@ function parse<T extends z.ZodType>(s: T): z.infer<T> {
   return r.data;
 }
 
+// পাবলিক পেজ build-সময়ে canonical-এর জন্য (CI `next build`-এও SITE_URL থাকে; না থাকলে কলার ধরে)
+const siteSchema = z.object({ SITE_URL: z.url() });
+
+// `/api/owner/rebuild` (Worker runtime): GitHub workflow_dispatch — GITHUB_TOKEN Worker secret, GITHUB_REPO `wrangler.jsonc` vars
+const rebuildSchema = z.object({
+  SITE_URL: z.url(),
+  GITHUB_TOKEN: z.string().min(1),
+  GITHUB_REPO: z.string().regex(/^[\w.-]+\/[\w.-]+$/),
+});
+
 // build-সময়ে ডাকা হয়; মিসিং থাকলে অস্পষ্ট error নয়, স্পষ্ট বার্তা
 export const getEnv = () => parse(schema);
 // runtime-এ ডাকা হয় (P1a); মিসিং হলে fail-closed
 export const getAuthEnv = () => parse(authSchema);
+export const getSiteUrl = () => parse(siteSchema).SITE_URL;
+export const getRebuildEnv = () => parse(rebuildSchema);

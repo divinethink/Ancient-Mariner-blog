@@ -4,12 +4,14 @@
 // সব রিমোট-লেখা `engine.exclusive`-এর ভেতরে (sync-এর সাথে ক্রমানুসারে); প্রতিটা ক্রিয়ার পর রিমোট পড়ে base বসানো।
 import { useCallback, useEffect, useRef, useState } from "react";
 import { draftStore } from "@/data/draftStore";
+import { triggerSiteRebuild } from "@/data/rebuildClient";
 import { PostNotFoundError, SlugTakenError, type PostRepo, type PostWithId } from "@/data/postRepo";
 import { bn } from "@/i18n/bn";
 import { toZonedInput } from "@/lib/datetime";
 import { parsePublishDate } from "@/lib/publish";
 import { isValidSlug, slugify } from "@/lib/slug";
 import type { SyncStatus } from "@/data/syncEngine";
+import { BuildStatus } from "@/app/dashboard/BuildStatus";
 import type { PubInfo, SyncEngine } from "./useRemoteSync";
 
 type Props = {
@@ -128,7 +130,8 @@ export function PublishPanel(p: Props) {
     if (Object.keys(patch).length) await repo.update(postId, patch);
   }
 
-  async function run(action: (repo: PostRepo) => Promise<string>) {
+  /** affectsSite = পাবলিক সাইটে প্রভাব পড়ে এমন ক্রিয়া → সফল হলে rebuild trigger (Arch §১২; autosave-এ কখনো না) */
+  async function run(action: (repo: PostRepo) => Promise<string>, affectsSite = false) {
     if (!engine || busy) return;
     setBusy(true);
     setMsg(null);
@@ -139,11 +142,12 @@ export function PublishPanel(p: Props) {
         setMsg({ kind: "err", text: bn.publishPanel.conflictFirst });
         return;
       }
-      const text = await engine.exclusive(async (repo) => {
+      let text = await engine.exclusive(async (repo) => {
         const t = await action(repo);
         await refresh(repo);
         return t;
       });
+      if (affectsSite) text += ` ${(await triggerSiteRebuild()) ? bn.build.liveIn : bn.build.triggerFailed}`;
       setMsg({ kind: "ok", text });
     } catch (e) {
       const reason = e instanceof Error ? e.message : "";
@@ -171,18 +175,18 @@ export function PublishPanel(p: Props) {
     run(async (repo) => {
       await writeMeta(repo, { status: "published" });
       return bn.publishPanel.publishedOk;
-    });
+    }, true);
   const onUpdate = () =>
     run(async (repo) => {
       await writeMeta(repo);
       await repo.applyDraft(postId, await wordCount(meta?.post.wordCount ?? 0));
       return bn.publishPanel.updatedOk;
-    });
+    }, true);
   const onDone = () =>
     run(async (repo) => {
       await writeMeta(repo);
       return bn.publishPanel.savedOk;
-    });
+    }, meta?.post.status === "published"); // slug/visibility/তারিখ-বদল প্রকাশিত লেখায় সাইটে প্রভাব ফেলে
   const onRevert = () => {
     if (!confirm(bn.publishPanel.confirmRevert)) return;
     return run(async (repo) => {
@@ -190,7 +194,7 @@ export function PublishPanel(p: Props) {
       await repo.applyDraft(postId, await wordCount(meta?.post.wordCount ?? 0));
       await repo.update(postId, { status: "draft" });
       return bn.publishPanel.savedOk;
-    });
+    }, true);
   };
   const onDiscard = async () => {
     if (!engine || busy || !confirm(bn.publishPanel.confirmDiscard)) return;
@@ -349,6 +353,7 @@ export function PublishPanel(p: Props) {
                 </button>
               )}
             </div>
+            {published && <BuildStatus />}
           </div>
         )}
       </div>

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { draftStore } from "@/data/draftStore";
 import type { PostWithId } from "@/data/postRepo";
+import { triggerSiteRebuild } from "@/data/rebuildClient";
 import { getPostRepo } from "@/data/postRepo.wire";
 import { syncAllDirty } from "@/data/syncEngine";
 import { bn } from "@/i18n/bn";
@@ -153,8 +154,11 @@ export function LibraryHome() {
       // সংরক্ষণহীন লোকাল লেখা আগে সার্ভারে — নইলে ট্র্যাশের সাথে লোকাল মোছায় হারাত
       await syncAllDirty(repo, draftStore);
       if ((await draftStore.loadDraft(id))?.dirty) return bn.library.trashUnsynced;
+      const wasPublished = state.kind === "ready" && state.items.find((i) => i.id === id)?.status === "published";
       await repo.trash(id);
       await draftStore.deleteDraft(id);
+      // প্রকাশিত লেখা ট্র্যাশে গেলে পাবলিক সাইট থেকে সরাতে rebuild (Arch §১২)
+      if (wasPublished) return (await triggerSiteRebuild()) ? bn.build.liveIn : bn.build.triggerFailed;
     });
   const restorePost = (id: string) => act((repo) => repo.restore(id));
   const deletePost = (id: string) =>

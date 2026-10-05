@@ -1,10 +1,11 @@
 // Next prerender করা public HTML → Workers assets-এ কপি (উপায় ১, Arch §৫ P0a)
-import { readdirSync, statSync, mkdirSync, copyFileSync, writeFileSync, existsSync } from "node:fs";
+import { readdirSync, statSync, mkdirSync, copyFileSync, writeFileSync, existsSync, readFileSync } from "node:fs";
 import { join, dirname, relative, sep } from "node:path";
 
 const SRC = ".next/server/app";
 const DEST = ".open-next/assets";
 const SKIP_FIRST = /^(_|dashboard|login|api)/;
+const SNAPSHOT = ".build-data/posts.json"; // scripts/fetch-public-data.ts-এর ফল
 const dec = (s) => { try { return decodeURIComponent(s); } catch { return s; } };
 
 function walk(dir) {
@@ -13,6 +14,13 @@ function walk(dir) {
     return statSync(p).isDirectory() ? walk(p) : [p];
   });
 }
+
+// Firestore-পড়া ছাড়া deploy নয় — নইলে নীরবে খালি সাইট যেত
+if (!existsSync(SNAPSHOT)) {
+  console.error("❌ build snapshot নেই — আগে `tsx scripts/fetch-public-data.ts`");
+  process.exit(1);
+}
+const builtAt = JSON.parse(readFileSync(SNAPSHOT, "utf8")).fetchedAt; // Firestore পড়া শুরুর UTC (Arch §১২)
 
 const copied = [];
 for (const f of walk(SRC)) {
@@ -28,7 +36,7 @@ if (copied.length === 0) {
   console.error("❌ কোনো public HTML কপি হয়নি");
   process.exit(1);
 }
-writeFileSync(join(DEST, "build.json"), JSON.stringify({ builtAt: new Date().toISOString() }));
+writeFileSync(join(DEST, "build.json"), JSON.stringify({ builtAt }));
 console.log("✅ assets-এ কপি:\n" + copied.map((c) => " - " + c).join("\n"));
 
 // _redirects / _headers assets-এ পৌঁছেছে কিনা

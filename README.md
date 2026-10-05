@@ -16,14 +16,15 @@ npm run dev
 | ------------------------------------- | ----------------------------------------- |
 | `npm run lint` / `typecheck` / `test` | CI-র তিন gate                             |
 | `npm run format`                      | Prettier (স্থানীয়; CI gate নেই)          |
-| `npm run build:cf`                    | OpenNext build + public HTML → assets কপি |
+| `npm run fetch:public`                | Firestore REST থেকে published+public পোস্ট → `.build-data/posts.json` (build:cf-এর প্রথম ধাপ) |
+| `npm run build:cf`                    | fetch → OpenNext build → public HTML → assets কপি → `_redirects` |
 | `npm run deploy:dry`                  | `wrangler deploy --dry-run` (আকার-যাচাই)  |
 | `npm run test:rules`                  | Firestore rules-test (Emulator; Java লাগে) |
 | `npm run deploy:rules`                | rules+indexes production-এ (`OWNER_UID` env, Firebase login) |
 
 ## Env তালিকা (`src/config/env.ts`, Zod boot-check)
 
-`FIREBASE_PROJECT_ID`, `FIREBASE_SERVER_API_KEY` (GitHub secret), `SITE_URL`। Deploy-secrets: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`। Worker secret (Cloudflare → Worker `blog` → Settings → Variables and Secrets, type = Secret): `OWNER_UID`, `SESSION_SECRET` (≥৩২ অক্ষরের random), `GITHUB_TOKEN` (P2a-তে ব্যবহার)। Build env (GitHub → Settings → Variables): `FIREBASE_BROWSER_API_KEY` → build-এ `NEXT_PUBLIC_FIREBASE_API_KEY` (browser-key; secret নয়)। শুধু `deploy:rules`-এর লোকাল env: `OWNER_UID` (Firebase Auth-এ owner-এর uid; P1a-র পর)।
+`FIREBASE_PROJECT_ID`, `FIREBASE_SERVER_API_KEY` (GitHub secret), `SITE_URL`। Deploy-secrets: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`। Worker secret (Cloudflare → Worker `blog` → Settings → Variables and Secrets, type = Secret): `OWNER_UID`, `SESSION_SECRET` (≥৩২ অক্ষরের random), `GITHUB_TOKEN` (`/api/owner/rebuild` ব্যবহার করে; fine-grained, শুধু এই repo-র Actions write)। `wrangler.jsonc` vars-এ `GITHUB_REPO` (`owner/repo`)। Build env (GitHub → Settings → Variables): `FIREBASE_BROWSER_API_KEY` → build-এ `NEXT_PUBLIC_FIREBASE_API_KEY` (browser-key; secret নয়)। শুধু `deploy:rules`-এর লোকাল env: `OWNER_UID` (Firebase Auth-এ owner-এর uid; P1a-র পর)।
 
 ## Auth (P1a)
 
@@ -49,7 +50,15 @@ ZIP আপলোড → `unzip.yml` commit → `ci` চলে। `deploy.yml` �
 - **dirty** আলাদা key `sync:<id>`-এর `syncedUpdatedAt` থেকে হিসাব (draft-key শুধু editor লেখে) — sync চলাকালে নতুন টাইপ কখনো মোছে না।
 - **Conflict:** sync-এর আগে রিমোট (post/drafts-এর বড় `updatedAt`) ≠ আমার base হলে লেখা বন্ধ, editor-এ [আমার লেখা রাখুন]/[সার্ভারের লেখা আনুন]; merge নেই (Arch §১২-ঙ)। কনটেন্ট হুবহু সমান হলে conflict নয় (retry-নিরাপদ)।
 - Publish panel (`PublishPanel.tsx`): slug/সারাংশ/দৃশ্যমানতা/প্রকাশের তারিখ + [প্রকাশ করুন] / [আপডেট প্রকাশ করুন] / [পরিবর্তন বাতিল] / [Draft-এ ফেরান]। সব রিমোট-লেখা `engine.exclusive`-এ।
-- সাইটে লাইভ হওয়া (rebuild trigger) P2a-৩-এ; তার আগে প্রকাশ মানে Firestore-এ `published+public`, পাবলিক সাইটে আনতে `deploy` workflow হাতে চালাতে হবে।
+- সাইটে লাইভ হওয়া: প্রকাশ/আপডেট/Draft-এ ফেরানো/প্রকাশিত লেখায় metadata-বদল/প্রকাশিত লেখা ট্র্যাশে পাঠানো সফল হলে `POST /api/owner/rebuild` (P2a-৩খ, নিচে)। autosave-এ কখনো rebuild নয়।
+
+## Public build ও rebuild (P2a-৩খ)
+
+- **একবারই Firestore-পড়া:** `build:cf` শুরুতে `scripts/fetch-public-data.ts` সব published+public পোস্ট REST-এ পড়ে `.build-data/posts.json`-এ রাখে (gitignored; `fetchedAt` = পড়া শুরুর UTC → `/build.json` `builtAt`)। পাবলিক পেজ (`/`, `/blog/[slug]`) ও `scripts/build-redirects.ts` শুধু এই ফাইল পড়ে (`src/data/publicSnapshot.ts`) — Next-এর একাধিক worker হলেও read বাড়ে না। পড়া ব্যর্থ হলে build/deploy থামে (বিদ্যমান সাইট অক্ষত); ফাইল ছাড়া `build-public.mjs` ব্যর্থ। CI-র `next build`-এ ফাইল থাকে না → সাইট খালি, শুধু কম্পাইল-যাচাই।
+- **`/blog/[slug]`:** `force-static` + `dynamicParams = false`; Tiptap `body` allowlist-renderer-এ (`components/public/PostBody.ts`, `.ts`+`createElement` ইচ্ছাকৃত — Vitest-এ JSX transform এড়াতে)। Home card-এ `body` নেই (`toPostCard`); সারাংশ খালি হলে লেখা থেকে।
+- **পুরনো slug:** ASCII → build-সময়ে `_redirects`-এ 308 (`scripts/build-redirects.ts`); বাংলা → একই `/blog/[slug]` রুটে stub পেজ (`<meta http-equiv=refresh>` + canonical + noindex, JS ছাড়া)। জীবিত slug-ের সাথে সংঘাতে নতুন পোস্টই জেতে (`lib/publicSite.ts`)।
+- **Rebuild:** `POST /api/owner/rebuild` (`middleware` session + `Origin` যাচাই) → `src/data/privileged/githubDispatch.ts` → GitHub `workflow_dispatch` (`deploy.yml`, `concurrency`-এ জমে)। Dashboard-এ `BuildStatus` (Settings ও প্রকাশিত লেখার Publish panel): `/build.json` (no-store) বনাম IndexedDB-র শেষ সাইট-বদল-চিহ্ন; ৫ মিনিট পার হলে 'হালনাগাদ হয়নি' ও [আবার build করুন]।
+- `postsPerPage` আপাতত `lib/publicSite.ts`-এর ধ্রুবক (১০); `siteSettings` REST-পড়া ও সম্পাদনা UI P2c-তে।
 
 ## Known shortcuts
 
