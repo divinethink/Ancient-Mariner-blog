@@ -6,6 +6,7 @@ import { readRebuildMark, triggerSiteRebuild } from "@/data/rebuildClient";
 import { bn } from "@/i18n/bn";
 import { buildState } from "@/lib/buildStatus";
 import { formatDateTime } from "@/lib/datetime";
+import { useSiteTimezone } from "./SiteSettingsProvider";
 
 type Snap = { builtAt: number | null; changedAt?: number; now: number };
 
@@ -24,6 +25,7 @@ async function readSnap(): Promise<Snap> {
 }
 
 export function BuildStatus() {
+  const tz = useSiteTimezone();
   const [snap, setSnap] = useState<Snap | null>(null);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
@@ -57,7 +59,7 @@ export function BuildStatus() {
     <section aria-label={bn.build.label} className="rounded-2xl border border-line bg-surface p-4">
       <h2 className="font-serif text-lg font-bold">{bn.build.label}</h2>
       <p className="mt-1 text-sm text-muted">
-        {snap?.builtAt ? `${bn.build.lastBuild}: ${formatDateTime(snap.builtAt)}` : snap ? bn.build.unknown : "…"}
+        {snap?.builtAt ? `${bn.build.lastBuild}: ${formatDateTime(snap.builtAt, tz)}` : snap ? bn.build.unknown : "…"}
       </p>
       {state === "pending" && (
         <p role="status" className="mt-2 text-sm">

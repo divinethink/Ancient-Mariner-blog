@@ -15,7 +15,7 @@ export const viewport: Viewport = { themeColor: "#faf9f5" };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="bn" data-default-theme="light" suppressHydrationWarning>
+    <html lang="bn" suppressHydrationWarning>
       <head>
         {/* eslint-disable-next-line @next/next/no-sync-scripts -- ইচ্ছাকৃত blocking: FOUC এড়াতে (Arch §১১) */}
         <script src="/theme-init.js" />

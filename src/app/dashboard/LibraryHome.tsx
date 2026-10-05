@@ -10,6 +10,7 @@ import { syncAllDirty } from "@/data/syncEngine";
 import { bn } from "@/i18n/bn";
 import { formatDate } from "@/lib/datetime";
 import { trashDaysLeft } from "@/lib/trash";
+import { useSiteTimezone } from "./SiteSettingsProvider";
 import { TrashList, type TrashItem } from "./TrashList";
 
 type Item = {
@@ -102,6 +103,7 @@ function PostMenu({ onTrash, disabled }: { onTrash: () => void; disabled: boolea
 }
 
 export function LibraryHome() {
+  const tz = useSiteTimezone();
   const [state, setState] = useState<State>({ kind: "loading" });
   const [attempt, setAttempt] = useState(0);
   const bgSynced = useRef(false);
@@ -258,7 +260,7 @@ export function LibraryHome() {
                     {it.title || bn.library.untitled}
                   </span>
                   <span className="text-sm text-muted">
-                    {formatDate(new Date(it.updatedAt))} · {it.wordCount} {bn.library.words}
+                    {formatDate(new Date(it.updatedAt), tz)} · {it.wordCount} {bn.library.words}
                   </span>
                 </span>
                 <span className="shrink-0 rounded-full bg-line px-2 py-0.5 text-xs text-muted">

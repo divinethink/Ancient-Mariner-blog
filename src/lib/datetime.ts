@@ -68,3 +68,15 @@ export function fromZonedInput(s: string, timeZone = DEFAULT_TIMEZONE): Date | n
   const out = new Date(guess);
   return toZonedInput(out, timeZone) === `${m[1]}-${m[2]}-${m[3]}T${pad(h)}:${pad(mi)}` ? out : null;
 }
+
+/** "Asia/Dhaka (GMT+6)" — Settings-এর timezone-তালিকার লেবেল; offset না পেলে শুধু id */
+export function tzLabel(timeZone: string, at: DateInput = new Date()): string {
+  try {
+    const off = new Intl.DateTimeFormat("en-US", { timeZone, timeZoneName: "shortOffset" })
+      .formatToParts(toDate(at))
+      .find((p) => p.type === "timeZoneName")?.value;
+    return off ? `${timeZone} (${off})` : timeZone;
+  } catch {
+    return timeZone;
+  }
+}

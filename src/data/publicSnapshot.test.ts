@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import type { PostWithId } from "./postRepo";
 import { readSnapshot, writeSnapshot } from "./publicSnapshot";
+import { DEFAULT_SETTINGS } from "./siteSettingsRepo";
 
 const post = (id: string, over: Partial<PostWithId> = {}): PostWithId => ({
   id,
@@ -46,5 +47,18 @@ describe("publicSnapshot", () => {
     expect((await readSnapshot(path))?.posts.map((p) => p.id)).toEqual(["a"]);
     await writeFile(path, '{"posts":1}', "utf8");
     await expect(readSnapshot(path)).rejects.toThrow();
+  });
+  it("settings লেখা-পড়ায় থাকে", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "snap-"));
+    const path = join(dir, "posts.json");
+    const settings = { ...DEFAULT_SETTINGS, siteTitle: "আমার ব্লগ", allowIndexing: true };
+    await writeSnapshot([post("a")], new Date(), path, settings);
+    expect((await readSnapshot(path))?.settings).toEqual(settings);
+  });
+  it("পুরনো snapshot (settings ছাড়া) → defaults", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "snap-"));
+    const path = join(dir, "old.json");
+    await writeFile(path, JSON.stringify({ fetchedAt: new Date().toISOString(), posts: [] }), "utf8");
+    expect((await readSnapshot(path))?.settings).toEqual(DEFAULT_SETTINGS);
   });
 });

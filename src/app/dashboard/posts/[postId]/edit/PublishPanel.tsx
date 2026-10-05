@@ -9,6 +9,7 @@ import { PostNotFoundError, SlugTakenError, type PostRepo, type PostWithId } fro
 import { bn } from "@/i18n/bn";
 import { toZonedInput } from "@/lib/datetime";
 import { parsePublishDate } from "@/lib/publish";
+import { useSiteTimezone } from "../../../SiteSettingsProvider";
 import { isValidSlug, slugify } from "@/lib/slug";
 import type { SyncStatus } from "@/data/syncEngine";
 import { BuildStatus } from "@/app/dashboard/BuildStatus";
@@ -41,6 +42,7 @@ const btnGhost = "min-h-11 rounded-full border border-line px-4 disabled:opacity
 
 export function PublishPanel(p: Props) {
   const { onClose, postId, engine, status } = p;
+  const tz = useSiteTimezone();
   const [meta, setMeta] = useState<Meta | null>(null);
   const [state, setState] = useState<"loading" | "ready" | "empty" | "error">("loading");
   const [busy, setBusy] = useState(false);
@@ -60,11 +62,11 @@ export function PublishPanel(p: Props) {
       setSlugIn(post.slug);
       // কখনো প্রকাশ না-হওয়া লেখায় প্রকাশের পথে Public শুরুর মান; নইলে বর্তমান
       setVis(post.publishedAt ? post.visibility : "public");
-      setDateIn(post.publishedAt ? toZonedInput(post.publishedAt) : "");
-      setMaxIn(toZonedInput(new Date()));
+      setDateIn(post.publishedAt ? toZonedInput(post.publishedAt, tz) : "");
+      setMaxIn(toZonedInput(new Date(), tz));
       onPub({ status: post.status === "published" ? "published" : "draft", hasUnpublished: hasDraft });
     },
-    [onPub],
+    [onPub, tz],
   );
 
   /** রিমোট পড়ে meta বসানো + base হালনাগাদ (নিজের লেখা যেন পরের sync-এ conflict না হয়) */
@@ -119,11 +121,11 @@ export function PublishPanel(p: Props) {
     const cur = meta.post;
     const slug = slugify(slugIn);
     if (!isValidSlug(slug)) throw new Error("slug");
-    const date = parsePublishDate(dateIn, Date.now());
+    const date = parsePublishDate(dateIn, Date.now(), tz);
     if (!date.ok) throw new Error(date.reason);
     if (slug !== cur.slug) await repo.changeSlug(postId, slug);
     const dateChanged =
-      date.date !== undefined && (!cur.publishedAt || toZonedInput(cur.publishedAt) !== dateIn);
+      date.date !== undefined && (!cur.publishedAt || toZonedInput(cur.publishedAt, tz) !== dateIn);
     const patch = {
       ...(vis !== cur.visibility ? { visibility: vis } : {}),
       ...(dateChanged ? { publishedAt: date.date } : {}),

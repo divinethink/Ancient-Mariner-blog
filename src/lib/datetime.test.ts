@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { dayKey, formatDate, fromZonedInput, toZonedInput } from "./datetime";
+import { dayKey, formatDate, fromZonedInput, toZonedInput, tzLabel } from "./datetime";
 
 describe("dayKey (Asia/Dhaka = UTC+6)", () => {
   it("UTC 17:59 একই দিন, 18:00 পরের দিন", () => {
@@ -33,5 +33,15 @@ describe("zoned input (প্রকাশের তারিখ)", () => {
     expect(fromZonedInput("2026-07-01T12:00", "America/New_York")?.toISOString()).toBe("2026-07-01T16:00:00.000Z");
     expect(fromZonedInput("abc")).toBeNull();
     expect(fromZonedInput("2026-02-31T10:00")).toBeNull();
+  });
+});
+
+describe("tzLabel", () => {
+  it("id + offset", () => {
+    expect(tzLabel("Asia/Dhaka", "2026-10-05T00:00:00Z")).toBe("Asia/Dhaka (GMT+6)");
+    expect(tzLabel("UTC", "2026-10-05T00:00:00Z")).toMatch(/^UTC/);
+  });
+  it("অবৈধ id-তে শুধু id (throw নয়)", () => {
+    expect(tzLabel("Mars/Base")).toBe("Mars/Base");
   });
 });

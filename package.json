@@ -5,7 +5,7 @@
     "dev": "next dev",
     "build": "next build",
     "fetch:public": "tsx scripts/fetch-public-data.ts",
-    "build:cf": "tsx scripts/fetch-public-data.ts && opennextjs-cloudflare build && node scripts/build-public.mjs && tsx scripts/build-redirects.ts",
+    "build:cf": "tsx scripts/fetch-public-data.ts && opennextjs-cloudflare build && node scripts/build-public.mjs && tsx scripts/build-redirects.ts && tsx scripts/build-theme-default.ts",
     "typecheck": "tsc --noEmit",
     "deploy:dry": "wrangler deploy --dry-run",
     "lint": "eslint .",

@@ -1,8 +1,6 @@
 // পাবলিক সাইট build-এর pure সহায়ক (SDK/UI-মুক্ত): excerpt-fallback, পুরনো-slug redirect পরিকল্পনা (Arch §২)।
 import { docToText, makeExcerpt, parseBody } from "./editorDoc";
 
-/** `siteSettings.postsPerPage`-এর শুরুর মান (Arch §৬); সম্পাদনা UI ও settings-পড়া P2c-তে */
-export const DEFAULT_POSTS_PER_PAGE = 10;
 /** Workers assets-এর `_redirects` static rule সীমা (Arch §৫ ঙ) */
 export const MAX_STATIC_REDIRECTS = 2000;
 

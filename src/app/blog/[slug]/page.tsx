@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PostBody } from "@/components/public/PostBody";
 import { getSiteUrl } from "@/config/env";
-import { listPublicPosts } from "@/data/publicSnapshot";
+import { getPublicSettings, listPublicPosts } from "@/data/publicSnapshot";
 import { bn } from "@/i18n/bn";
 import { formatDate } from "@/lib/datetime";
 import { blogPath, planSlugMoves, postExcerpt } from "@/lib/publicSite";
@@ -38,11 +38,11 @@ export async function generateStaticParams() {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const r = await resolve((await params).slug);
+  const [r, { siteTitle }] = await Promise.all([resolve((await params).slug), getPublicSettings()]);
   if (!r) return {};
   if (r.kind === "post") {
     return {
-      title: `${r.post.title || bn.library.untitled} — ${bn.siteName}`,
+      title: `${r.post.title || bn.library.untitled} — ${siteTitle}`,
       description: postExcerpt(r.post) || undefined,
     };
   }
@@ -53,14 +53,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     canonical = undefined; // SITE_URL ছাড়া (লোকাল dev) canonical বাদ
   }
   return {
-    title: `${bn.public.movedTitle} — ${bn.siteName}`,
+    title: `${bn.public.movedTitle} — ${siteTitle}`,
     alternates: canonical ? { canonical } : undefined,
     robots: { index: false, follow: true },
   };
 }
 
 export default async function BlogPost({ params }: Props) {
-  const r = await resolve((await params).slug);
+  const [r, { timezone: tz }] = await Promise.all([resolve((await params).slug), getPublicSettings()]);
   if (!r) notFound();
 
   if (r.kind === "moved") {
@@ -86,7 +86,7 @@ export default async function BlogPost({ params }: Props) {
       </Link>
       <h1 className="font-serif text-3xl font-bold leading-snug">{post.title || bn.library.untitled}</h1>
       <p className="mt-2 text-sm text-muted">
-        {post.publishedAt && <time dateTime={post.publishedAt.toISOString()}>{formatDate(post.publishedAt)}</time>}
+        {post.publishedAt && <time dateTime={post.publishedAt.toISOString()}>{formatDate(post.publishedAt, tz)}</time>}
         {" · "}
         {post.wordCount} {bn.library.words}
       </p>

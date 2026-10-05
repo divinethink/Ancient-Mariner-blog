@@ -5,18 +5,20 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { createLogger } from "../lib/logger";
 import { parsePost, type PostWithId } from "./postRepo";
+import { DEFAULT_SETTINGS, parseSiteSettings, type SiteSettings } from "./siteSettingsRepo";
 
 export const SNAPSHOT_PATH = join(".build-data", "posts.json");
 
-export type Snapshot = { fetchedAt: Date; posts: PostWithId[] };
+export type Snapshot = { fetchedAt: Date; posts: PostWithId[]; settings: SiteSettings };
 
 export async function writeSnapshot(
   posts: readonly PostWithId[],
   fetchedAt: Date,
   path = SNAPSHOT_PATH,
+  settings: SiteSettings = DEFAULT_SETTINGS,
 ): Promise<void> {
   await mkdir(dirname(path), { recursive: true });
-  await writeFile(path, JSON.stringify({ fetchedAt: fetchedAt.toISOString(), posts }), "utf8");
+  await writeFile(path, JSON.stringify({ fetchedAt: fetchedAt.toISOString(), posts, settings }), "utf8");
 }
 
 /** ফাইল না থাকলে null; থাকা-কিন্তু-বিকৃত হলে throw (নীরবে খালি সাইট নয়) */
@@ -28,14 +30,15 @@ export async function readSnapshot(path = SNAPSHOT_PATH): Promise<Snapshot | nul
     if ((e as { code?: string }).code === "ENOENT") return null;
     throw e;
   }
-  const json = JSON.parse(raw) as { fetchedAt?: unknown; posts?: unknown };
+  const json = JSON.parse(raw) as { fetchedAt?: unknown; posts?: unknown; settings?: unknown };
   if (typeof json.fetchedAt !== "string" || !Array.isArray(json.posts)) {
     throw new Error("build snapshot বিকৃত");
   }
   const posts = (json.posts as Record<string, unknown>[])
     .map((p) => parsePost(String(p.id), p)) // defensive read + ISO→Date
     .filter((p) => p.status === "published" && p.visibility === "public"); // defense-in-depth
-  return { fetchedAt: new Date(json.fetchedAt), posts };
+  // পুরনো snapshot-এ settings না থাকলে defaults (defensive read)
+  return { fetchedAt: new Date(json.fetchedAt), posts, settings: parseSiteSettings(json.settings) };
 }
 
 let memo: Promise<PostWithId[]> | undefined;
@@ -50,4 +53,12 @@ export function listPublicPosts(): Promise<PostWithId[]> {
     return s.posts;
   });
   return memo;
+}
+
+let settingsMemo: Promise<SiteSettings> | undefined;
+
+/** Next build-এর পাবলিক পেজগুলোর জন্য সাইট-সেটিং (snapshot থেকে); snapshot না থাকলে defaults */
+export function getPublicSettings(): Promise<SiteSettings> {
+  settingsMemo ??= readSnapshot().then((s) => s?.settings ?? DEFAULT_SETTINGS);
+  return settingsMemo;
 }

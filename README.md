@@ -17,7 +17,7 @@ npm run dev
 | `npm run lint` / `typecheck` / `test` | CI-র তিন gate                             |
 | `npm run format`                      | Prettier (স্থানীয়; CI gate নেই)          |
 | `npm run fetch:public`                | Firestore REST থেকে published+public পোস্ট → `.build-data/posts.json` (build:cf-এর প্রথম ধাপ) |
-| `npm run build:cf`                    | fetch → OpenNext build → public HTML → assets কপি → `_redirects` |
+| `npm run build:cf`                    | fetch → OpenNext build → public HTML → assets কপি → `_redirects` → `theme-init.js`-এ default থিম |
 | `npm run deploy:dry`                  | `wrangler deploy --dry-run` (আকার-যাচাই)  |
 | `npm run test:rules`                  | Firestore rules-test (Emulator; Java লাগে) |
 | `npm run deploy:rules`                | rules+indexes production-এ (`OWNER_UID` env, Firebase login) |
@@ -54,7 +54,7 @@ ZIP আপলোড → `unzip.yml` commit → `ci` চলে। `deploy.yml` �
 
 ## Public build ও rebuild (P2a-৩খ)
 
-- **একবারই Firestore-পড়া:** `build:cf` শুরুতে `scripts/fetch-public-data.ts` সব published+public পোস্ট REST-এ পড়ে `.build-data/posts.json`-এ রাখে (gitignored; `fetchedAt` = পড়া শুরুর UTC → `/build.json` `builtAt`)। পাবলিক পেজ (`/`, `/blog/[slug]`) ও `scripts/build-redirects.ts` শুধু এই ফাইল পড়ে (`src/data/publicSnapshot.ts`) — Next-এর একাধিক worker হলেও read বাড়ে না। পড়া ব্যর্থ হলে build/deploy থামে (বিদ্যমান সাইট অক্ষত); ফাইল ছাড়া `build-public.mjs` ব্যর্থ। CI-র `next build`-এ ফাইল থাকে না → সাইট খালি, শুধু কম্পাইল-যাচাই।
+- **একবারই Firestore-পড়া:** `build:cf` শুরুতে `scripts/fetch-public-data.ts` সব published+public পোস্ট ও `siteSettings/main` REST-এ পড়ে `.build-data/posts.json`-এ রাখে (settings doc না থাকলে defaults; অন্য ব্যর্থতায় build থামে) (gitignored; `fetchedAt` = পড়া শুরুর UTC → `/build.json` `builtAt`)। পাবলিক পেজ (`/`, `/blog/[slug]`) ও `scripts/build-redirects.ts` শুধু এই ফাইল পড়ে (`src/data/publicSnapshot.ts`) — Next-এর একাধিক worker হলেও read বাড়ে না। পড়া ব্যর্থ হলে build/deploy থামে (বিদ্যমান সাইট অক্ষত); ফাইল ছাড়া `build-public.mjs` ব্যর্থ। CI-র `next build`-এ ফাইল থাকে না → সাইট খালি, শুধু কম্পাইল-যাচাই।
 - **`/blog/[slug]`:** `force-static` + `dynamicParams = false`; Tiptap `body` allowlist-renderer-এ (`components/public/PostBody.ts`, `.ts`+`createElement` ইচ্ছাকৃত — Vitest-এ JSX transform এড়াতে)। Home card-এ `body` নেই (`toPostCard`); সারাংশ খালি হলে লেখা থেকে।
 - **পুরনো slug:** ASCII → build-সময়ে `_redirects`-এ 308 (`scripts/build-redirects.ts`); বাংলা → একই `/blog/[slug]` রুটে stub পেজ (`<meta http-equiv=refresh>` + canonical + noindex, JS ছাড়া)। জীবিত slug-ের সাথে সংঘাতে নতুন পোস্টই জেতে (`lib/publicSite.ts`)।
 - **Rebuild:** `POST /api/owner/rebuild` (`middleware` session + `Origin` যাচাই) → `src/data/privileged/githubDispatch.ts` → GitHub `workflow_dispatch` (`deploy.yml`, `concurrency`-এ জমে)। Dashboard-এ `BuildStatus` (Settings ও প্রকাশিত লেখার Publish panel): `/build.json` (no-store) বনাম IndexedDB-র শেষ সাইট-বদল-চিহ্ন; ৫ মিনিট পার হলে 'হালনাগাদ হয়নি' ও [আবার build করুন]।
@@ -72,4 +72,5 @@ ZIP আপলোড → `unzip.yml` commit → `ci` চলে। `deploy.yml` �
 - Sign-In popup-only; popup ব্লক/ব্যর্থ হলে error-বার্তা, redirect fallback নেই (owner-এর ফোন/PWA-যাচাইয়ের পর সিদ্ধান্ত)।
 - `middleware.ts` (edge) ব্যবহার হবে; Next 16-এর `proxy.ts` Node runtime-এ, OpenNext-এ unsupported — deprecation warning প্রত্যাশিত।
 - Publish panel-এ Mockup-এর 'অবস্থা' radio-র বদলে অবস্থা-ব্যাজ + ক্রিয়া-বোতাম (প্রকাশ/আপডেট/Draft-এ ফেরান) — owner-অনুমোদন বাকি; focus-trap নেই (aria-modal + Esc)।
-- সাইট এখন সর্বত্র `noindex` (লঞ্চ-যাচাইয়ের আগে); Google-ইনডেক্স টগল P2c-তে।
+- সাইট `noindex` থাকে যতক্ষণ Settings-এ [Google-এ ইনডেক্স হোক] চালু না হয় — `siteSettings` doc না থাকলে/পড়া না গেলে `allowIndexing` default `false` (Arch §৬-এর 'শুরুর true'-এর বদলে fail-closed; owner-অনুমোদিত ২০২৬-১০-০৫)। টগল ও meta/sitemap/robots P2c-২-তে।
+- Settings: `siteSettings/main`; সেভ = শুধু P2c-র ফিল্ডগুলোর `merge` (পরের phase-এর `menu/layout/design` অক্ষত), last-write-wins (একক owner)। Dashboard timezone/সেটিং প্রতি-ডিভাইস `prefs` cache থেকে সাথে সাথে, পেছনে ১ read-এ হালনাগাদ। থিম-default build-সময়ে assets-এর `theme-init.js`-এর `DEFAULT_THEME`-এ বসে (`scripts/build-theme-default.ts`); প্রতি-ডিভাইস পছন্দ জেতে।
