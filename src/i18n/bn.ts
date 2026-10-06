@@ -16,7 +16,8 @@ export const bn = {
   },
   importWp: {
     title: "WordPress ইমপোর্ট",
-    intro: "WordPress-এর XML export ফাইল পড়ে আগে হিসাব দেখায় — নিশ্চিত না করা পর্যন্ত কিছু লেখা হয় না। ইমপোর্টে সব লেখা Draft + Private থাকে; publish আপনি নিজে করবেন (লাইব্রেরির Bulk দিয়ে)।",
+    intro:
+      "WordPress-এর XML export ফাইল পড়ে আগে হিসাব দেখায় — নিশ্চিত না করা পর্যন্ত কিছু লেখা হয় না। ইমপোর্টে সব লেখা Draft + Private থাকে; publish আপনি নিজে করবেন (লাইব্রেরির Bulk দিয়ে)।",
     sourceLabel: "সোর্স-নাম (প্রতি ব্লগে আলাদা)",
     sourcePlaceholder: "যেমন: blog-১",
     pick: "XML ফাইল বাছুন",
@@ -26,20 +27,23 @@ export const bn = {
     retry: "আবার চেষ্টা করুন",
     site: (t: string) => `ব্লগ: ${t}`,
     posts: (n: number) => `${n}টি লেখা পাওয়া গেছে`,
-    bySource: (p: number, d: number, v: number) => `সোর্সে প্রকাশিত ${p} · ড্রাফট ${d} · প্রাইভেট ${v}`,
+    bySource: (p: number, d: number, v: number) =>
+      `সোর্সে প্রকাশিত ${p} · ড্রাফট ${d} · প্রাইভেট ${v}`,
     allDraft: "সবই Draft + Private হিসেবে ঢুকবে; সোর্সে যা-ই থাক।",
     categories: "ক্যাটাগরি",
     tags: (n: number) => `ট্যাগ ${n}টি`,
     words: (n: number) => `মোট ~${n} শব্দ`,
     imagesTitle: (n: number) => `ছবি ${n}টি — জায়গায় লিংক বসবে`,
-    imagesNote: "এডিটরে ছবি-node মিডিয়া ধাপ (P6) আগে নেই, তাই ছবির জায়গায় মূল ছবির লিংক (\"🖼 ছবি\") বসবে। পুরনো সাইট চালু রাখুন, নইলে লিংক ভাঙবে।",
+    imagesNote:
+      'এডিটরে ছবি-node মিডিয়া ধাপ (P6) আগে নেই, তাই ছবির জায়গায় মূল ছবির লিংক ("🖼 ছবি") বসবে। পুরনো সাইট চালু রাখুন, নইলে লিংক ভাঙবে।',
     droppedTitle: "বাদ-পড়া/বদলানো element",
     conflictsTitle: (n: number) => `slug-সংঘাত ${n}টি (ইমপোর্টে নম্বর-প্রত্যয় বসবে)`,
     conflictFile: "ফাইলের ভেতরে",
     conflictExisting: "বিদ্যমান লেখার সাথে",
     oversizeTitle: (n: number) => `৯০০KB ছাড়ানো ${n}টি`,
     flagsTitle: "লক্ষ্য করার মতো",
-    trashResidue: (n: number) => `${n}টির slug-এ WordPress-এর ট্র্যাশ-চিহ্ন ছিল (বাদ দেওয়া হয়েছে)`,
+    trashResidue: (n: number) =>
+      `${n}টির slug-এ WordPress-এর ট্র্যাশ-চিহ্ন ছিল (বাদ দেওয়া হয়েছে)`,
     empty: (n: number) => `${n}টি লেখা ফাঁকা`,
     noDate: (n: number) => `${n}টির মূল তারিখ নেই`,
     pagesTitle: "পেজ (ইমপোর্ট হবে না — হাতে বানাতে হবে)",
@@ -52,24 +56,37 @@ export const bn = {
     oversizeSkip: (n: number) => `৯০০KB-ছাড়ানো ${n}টি বাদ`,
     invalidSkip: (n: number) => `${n}টির WordPress-id নেই (বাদ)`,
     importBtn: "ইমপোর্ট করুন",
-    confirm: (n: number) => `${n}টি লেখা Draft + Private হিসেবে যোগ হবে। কিছু মোছা বা বদলানো হবে না; আবার চালালে আগেরগুলো বাদ যাবে।`,
+    confirm: (n: number) =>
+      `${n}টি লেখা Draft + Private হিসেবে যোগ হবে। কিছু মোছা বা বদলানো হবে না; আবার চালালে আগেরগুলো বাদ যাবে।`,
     confirmYes: "হ্যাঁ, ইমপোর্ট শুরু",
     cancel: "বাতিল",
     progressLabel: "ইমপোর্টের অগ্রগতি",
     progress: (d: number, t: number) => `লেখা হচ্ছে… ${d} / ${t} (পেজ বন্ধ করবেন না)`,
     runFailed: "ইমপোর্ট শেষ হয়নি — নেট দেখে আবার চেষ্টা করুন; যা লেখা হয়েছে তা বাদ যাবে।",
     doneTitle: (n: number) => `✓ ${n}টি লেখা ইমপোর্ট হয়েছে (Draft + Private)`,
-    termsMade: (c: number, t: number) => `নতুন ক্যাটাগরি ${c}টি, ট্যাগ ${t}টি তৈরি; বাকিগুলো নাম মিলিয়ে আগেরটাই ব্যবহার`,
+    termsMade: (c: number, t: number) =>
+      `নতুন ক্যাটাগরি ${c}টি, ট্যাগ ${t}টি তৈরি; বাকিগুলো নাম মিলিয়ে আগেরটাই ব্যবহার`,
     failedSome: (n: number) => `${n}টি লেখা যায়নি — "আবার চেষ্টা করুন" চাপুন`,
     nextStep: "এবার লাইব্রেরিতে লেখাগুলো দেখে Bulk দিয়ে একসাথে publish করতে পারেন।",
   },
   backup: {
     title: "ব্যাকআপ",
-    intro: "সব লেখা, ড্রাফট, slug, সাইট-সেটিং, আইডিয়া, নোট, ক্যাটাগরি, ট্যাগ ও সিরিজ একটি JSON ফাইলে নামান। শুধু পড়া হয় — কিছু লেখা বা মোছা হয় না।",
+    intro:
+      "সব লেখা, ড্রাফট, slug, সাইট-সেটিং, আইডিয়া, নোট, ক্যাটাগরি, ট্যাগ ও সিরিজ একটি JSON ফাইলে নামান। শুধু পড়া হয় — কিছু লেখা বা মোছা হয় না।",
     countBtn: "আগে গণনা করুন",
     counting: "গণনা হচ্ছে…",
     countsLabel: "ব্যাকআপে যা থাকবে",
-    col: { posts: "লেখা", drafts: "ড্রাফট", slugs: "slug", siteSettings: "সাইট-সেটিং", ideas: "আইডিয়া", notes: "নোট", categories: "ক্যাটাগরি", tags: "ট্যাগ", series: "সিরিজ" } as Record<string, string>,
+    col: {
+      posts: "লেখা",
+      drafts: "ড্রাফট",
+      slugs: "slug",
+      siteSettings: "সাইট-সেটিং",
+      ideas: "আইডিয়া",
+      notes: "নোট",
+      categories: "ক্যাটাগরি",
+      tags: "ট্যাগ",
+      series: "সিরিজ",
+    } as Record<string, string>,
     estimate: (n: number, pct: number, limit: number) =>
       `~${n}টি read লাগবে — দিনের ${limit.toLocaleString("en-US")} read-সীমার ${pct}%।`,
     heavy: "সীমার অর্ধেকের বেশি — আজ আর বড় কাজ না করাই ভালো।",
@@ -82,6 +99,20 @@ export const bn = {
     again: "আবার গণনা করুন",
     failed: "ব্যাকআপ হয়নি (আংশিক ফাইল দেওয়া হয় না)। নেট দেখে আবার চেষ্টা করুন।",
     retry: "আবার চেষ্টা করুন",
+    auto: {
+      title: "Drive-এ স্বয়ংক্রিয় ব্যাকআপ",
+      intro: "প্রতিদিন ভোর ২টায় (ঢাকা) Google Drive-এ নিজে থেকে ব্যাকআপ হয়।",
+      last: (when: string) => `সর্বশেষ সফল ব্যাকআপ: ${when} ✓`,
+      none: "এখনো কোনো সফল ব্যাকআপ নেই।",
+      stale:
+        "⚠ ৩ দিনের বেশি হয়ে গেছে — ব্যাকআপ হচ্ছে না। নিচের বোতামে চালিয়ে দেখুন; না হলে GitHub → Actions → backup-এর লগ দেখুন।",
+      loading: "দেখা হচ্ছে…",
+      loadFailed: "অবস্থা পড়া যায়নি। নেট দেখে পাতা রিফ্রেশ করুন।",
+      now: "এখনই ব্যাকআপ নিন",
+      starting: "শুরু হচ্ছে…",
+      started: "ব্যাকআপ শুরু হয়েছে — ১–২ মিনিট পরে পাতা রিফ্রেশ করে সময় দেখুন।",
+      startFailed: "শুরু করা যায়নি। আবার চেষ্টা করুন।",
+    },
   },
   auth: {
     signIn: "Google দিয়ে সাইন-ইন",
@@ -95,7 +126,14 @@ export const bn = {
     signOutFailed: "সাইন-আউট করা যায়নি। নেট দেখে আবার চেষ্টা করুন।",
     confirmDiscard: "সংরক্ষণহীন লেখা মুছে যাবে — নিশ্চিত?",
   },
-  dashboard: { library: "লাইব্রেরি", menu: "মেনু", settings: "সেটিংস", organize: "সংগঠন", ideasInbox: "আইডিয়া ও ইনবক্স", importWp: "ইমপোর্ট" },
+  dashboard: {
+    library: "লাইব্রেরি",
+    menu: "মেনু",
+    settings: "সেটিংস",
+    organize: "সংগঠন",
+    ideasInbox: "আইডিয়া ও ইনবক্স",
+    importWp: "ইমপোর্ট",
+  },
   nav: {
     label: "ড্যাশবোর্ড নেভিগেশন",
     library: "লাইব্রেরি",
@@ -126,7 +164,8 @@ export const bn = {
     trashIt: "ট্র্যাশে পাঠান",
     history: "ইতিহাস",
     trashFailed: "ট্র্যাশে পাঠানো যায়নি। নেট দেখে আবার চেষ্টা করুন।",
-    trashUnsynced: "এই লেখার সংরক্ষণহীন পরিবর্তন সার্ভারে যায়নি — আগে সিঙ্ক হতে দিন, তারপর ট্র্যাশে পাঠান।",
+    trashUnsynced:
+      "এই লেখার সংরক্ষণহীন পরিবর্তন সার্ভারে যায়নি — আগে সিঙ্ক হতে দিন, তারপর ট্র্যাশে পাঠান।",
   },
   bulk: {
     toggle: "☑ নির্বাচন",
@@ -153,14 +192,21 @@ export const bn = {
     },
     confirm: {
       publish: (n: number) => `${n.toLocaleString("bn-BD")}টি লেখা প্রকাশ হবে — নিশ্চিত?`,
-      unpublish: (n: number) => `${n.toLocaleString("bn-BD")}টি লেখা Draft-এ ফিরবে (প্রকাশিত হলে সাইট থেকে সরবে) — নিশ্চিত?`,
-      archive: (n: number) => `${n.toLocaleString("bn-BD")}টি লেখা Archive হবে (প্রকাশিত হলে সাইট থেকে সরবে) — নিশ্চিত?`,
-      trash: (n: number) => `${n.toLocaleString("bn-BD")}টি লেখা ট্র্যাশে যাবে (৭ দিন ফেরানো যাবে) — নিশ্চিত?`,
+      unpublish: (n: number) =>
+        `${n.toLocaleString("bn-BD")}টি লেখা Draft-এ ফিরবে (প্রকাশিত হলে সাইট থেকে সরবে) — নিশ্চিত?`,
+      archive: (n: number) =>
+        `${n.toLocaleString("bn-BD")}টি লেখা Archive হবে (প্রকাশিত হলে সাইট থেকে সরবে) — নিশ্চিত?`,
+      trash: (n: number) =>
+        `${n.toLocaleString("bn-BD")}টি লেখা ট্র্যাশে যাবে (৭ দিন ফেরানো যাবে) — নিশ্চিত?`,
       restore: (n: number) => `${n.toLocaleString("bn-BD")}টি লেখা Draft হিসেবে ফিরবে — নিশ্চিত?`,
-      deleteForever: (n: number) => `${n.toLocaleString("bn-BD")}টি লেখা স্থায়ীভাবে মুছে যাবে — নিশ্চিত?`,
-      private: (n: number) => `${n.toLocaleString("bn-BD")}টি লেখা Private হবে (প্রকাশিত হলে সাইট থেকে সরবে) — নিশ্চিত?`,
-      public: (n: number) => `${n.toLocaleString("bn-BD")}টি লেখা Public হবে (প্রকাশিত হলে সাইটে দেখাবে) — নিশ্চিত?`,
-      category: (n: number, name: string) => `${n.toLocaleString("bn-BD")}টি লেখার ক্যাটাগরি "${name}" হবে — নিশ্চিত?`,
+      deleteForever: (n: number) =>
+        `${n.toLocaleString("bn-BD")}টি লেখা স্থায়ীভাবে মুছে যাবে — নিশ্চিত?`,
+      private: (n: number) =>
+        `${n.toLocaleString("bn-BD")}টি লেখা Private হবে (প্রকাশিত হলে সাইট থেকে সরবে) — নিশ্চিত?`,
+      public: (n: number) =>
+        `${n.toLocaleString("bn-BD")}টি লেখা Public হবে (প্রকাশিত হলে সাইটে দেখাবে) — নিশ্চিত?`,
+      category: (n: number, name: string) =>
+        `${n.toLocaleString("bn-BD")}টি লেখার ক্যাটাগরি "${name}" হবে — নিশ্চিত?`,
       series: (n: number, name: string) =>
         `${n.toLocaleString("bn-BD")}টি লেখা সিরিজ "${name}"-এ যাবে; পর্ব-নম্বর তারিখ-ক্রমে বসবে — নিশ্চিত?`,
       rest: (n: number) => ` (বাকি ${n.toLocaleString("bn-BD")}টিতে প্রযোজ্য নয়)`,
@@ -175,12 +221,14 @@ export const bn = {
     noCategories: "এখনো কোনো ক্যাটাগরি নেই — আগে ⚙ সংগঠনে বানান।",
     noSeries: "এখনো কোনো সিরিজ নেই — আগে ⚙ সংগঠনে বানান।",
     termsFailed: "তালিকা আনা যায়নি। নেট দেখে আবার চেষ্টা করুন।",
-    progress: (d: number, t: number) => `${d.toLocaleString("bn-BD")}/${t.toLocaleString("bn-BD")} চলছে…`,
+    progress: (d: number, t: number) =>
+      `${d.toLocaleString("bn-BD")}/${t.toLocaleString("bn-BD")} চলছে…`,
     running: "চলছে…",
     done: (n: number) => `${n.toLocaleString("bn-BD")}টি সম্পন্ন`,
     unchanged: (n: number) => `${n.toLocaleString("bn-BD")}টি আগেই ঠিক ছিল`,
     notApplicable: (n: number) => `${n.toLocaleString("bn-BD")}টিতে প্রযোজ্য নয়`,
-    unsynced: (n: number) => `${n.toLocaleString("bn-BD")}টি সংরক্ষণহীন পরিবর্তনের কারণে বাদ — সিঙ্ক হতে দিয়ে আবার করুন`,
+    unsynced: (n: number) =>
+      `${n.toLocaleString("bn-BD")}টি সংরক্ষণহীন পরিবর্তনের কারণে বাদ — সিঙ্ক হতে দিয়ে আবার করুন`,
     missing: (n: number) => `${n.toLocaleString("bn-BD")}টি পাওয়া যায়নি`,
     failed: (n: number) => `${n.toLocaleString("bn-BD")}টি ব্যর্থ`,
     retry: (n: number) => `আবার চেষ্টা (${n.toLocaleString("bn-BD")}টি বাকি)`,
@@ -204,7 +252,10 @@ export const bn = {
     openFromLibrary: "⚙ সংগঠন",
     tabs: "সংগঠনের ধরন",
     kind: { categories: "ক্যাটাগরি", tags: "ট্যাগ", series: "সিরিজ" } as Record<string, string>,
-    newKind: { categories: "নতুন ক্যাটাগরি", tags: "নতুন ট্যাগ", series: "নতুন সিরিজ" } as Record<string, string>,
+    newKind: { categories: "নতুন ক্যাটাগরি", tags: "নতুন ট্যাগ", series: "নতুন সিরিজ" } as Record<
+      string,
+      string
+    >,
     name: "নাম",
     parent: "parent ক্যাটাগরি",
     noParent: "— শীর্ষ স্তর —",
@@ -285,12 +336,14 @@ export const bn = {
       loading: "খোঁজা হচ্ছে…",
       none: "মেলে এমন লেখা নেই।",
       failed: "খোঁজা যায়নি। নেট দেখে আবার চেষ্টা করুন।",
-      limited: (n: number) => `সর্বোচ্চ ${n.toLocaleString("bn-BD")}টি দেখানো হচ্ছে — আরও সংকীর্ণ করুন।`,
+      limited: (n: number) =>
+        `সর্বোচ্চ ${n.toLocaleString("bn-BD")}টি দেখানো হচ্ছে — আরও সংকীর্ণ করুন।`,
       prefixNote: "শিরোনামের শুরুর অংশ মেলানো হয়; লেখার ভেতরে খোঁজা পরে আসবে।",
     },
     migration: {
       title: "ক্যাটাগরিহীন লেখায় ডিফল্ট ক্যাটাগরি (Migration 001)",
-      intro: "যেসব লেখায় ক্যাটাগরি নেই (ট্র্যাশ বাদে) সেগুলোতে ডিফল্ট ক্যাটাগরি বসে। শুধু ফিল্ড যোগ হয় — কিছু মোছা বা বদলানো হয় না; আবার চালালেও নিরাপদ।",
+      intro:
+        "যেসব লেখায় ক্যাটাগরি নেই (ট্র্যাশ বাদে) সেগুলোতে ডিফল্ট ক্যাটাগরি বসে। শুধু ফিল্ড যোগ হয় — কিছু মোছা বা বদলানো হয় না; আবার চালালেও নিরাপদ।",
       dry: "আগে গণনা করুন",
       drying: "গণনা হচ্ছে…",
       none: "সব লেখায় ক্যাটাগরি আছে — কিছু করার নেই ✓",
@@ -361,7 +414,8 @@ export const bn = {
     save: "সংরক্ষণ করুন",
     saving: "সংরক্ষণ হচ্ছে…",
     saved: "সংরক্ষিত ✓ — পাবলিক সাইট হালনাগাদ হবে ~১–২ মিনিটে।",
-    savedNoRebuild: "সংরক্ষিত ✓ — কিন্তু সাইট হালনাগাদের অনুরোধ যায়নি; নিচে [আবার build করুন] চাপুন।",
+    savedNoRebuild:
+      "সংরক্ষিত ✓ — কিন্তু সাইট হালনাগাদের অনুরোধ যায়নি; নিচে [আবার build করুন] চাপুন।",
     saveFailed: "সংরক্ষণ করা যায়নি। নেট দেখে আবার চেষ্টা করুন।",
     invalid: "কিছু মান ঠিক নেই — লাল চিহ্নিত ঘর দেখুন।",
     errTitle: "নাম ১–৮০ অক্ষরের মধ্যে দিন।",
@@ -468,7 +522,8 @@ export const bn = {
   history: {
     title: "ইতিহাস",
     back: "← লেখায় ফিরুন",
-    intro: "প্রতি লেখার সর্বশেষ ২০টা ভার্সন। Restore করলে বর্তমান অবস্থাও আগে একটা ভার্সন হিসেবে রাখা হয় — কিছু হারায় না।",
+    intro:
+      "প্রতি লেখার সর্বশেষ ২০টা ভার্সন। Restore করলে বর্তমান অবস্থাও আগে একটা ভার্সন হিসেবে রাখা হয় — কিছু হারায় না।",
     loading: "ইতিহাস আনা হচ্ছে…",
     loadFailed: "ইতিহাস আনা যায়নি। নেট দেখে আবার চেষ্টা করুন।",
     retry: "আবার চেষ্টা করুন",
@@ -481,13 +536,16 @@ export const bn = {
     saved: "বর্তমান অবস্থার একটা ভার্সন সংরক্ষিত হয়েছে।",
     unchanged: "বর্তমান অবস্থা সর্বশেষ ভার্সনের সাথে একই — নতুন ভার্সন লাগেনি।",
     restore: "এই ভার্সনে Restore",
-    confirmRestore: "বর্তমান লেখা এই ভার্সন দিয়ে বদলে যাবে (আগে বর্তমানটাও সংরক্ষিত হবে) — নিশ্চিত?",
+    confirmRestore:
+      "বর্তমান লেখা এই ভার্সন দিয়ে বদলে যাবে (আগে বর্তমানটাও সংরক্ষিত হবে) — নিশ্চিত?",
     restoredDraft: "Restore হয়েছে। লেখা খুলে দেখুন।",
-    restoredPublished: "Restore হয়েছে — অপ্রকাশিত পরিবর্তন হিসেবে। পাবলিকে যাবে [আপডেট প্রকাশ করুন]-এর পর।",
+    restoredPublished:
+      "Restore হয়েছে — অপ্রকাশিত পরিবর্তন হিসেবে। পাবলিকে যাবে [আপডেট প্রকাশ করুন]-এর পর।",
     same: "এই ভার্সন ও বর্তমান লেখা হুবহু এক — কিছু বদলায়নি।",
     unavailable: "লেখাটি এখন Restore করা যাচ্ছে না।",
     failed: "কাজটি হয়নি। নেট দেখে আবার চেষ্টা করুন।",
-    unsynced: "এই লেখার সংরক্ষণহীন পরিবর্তন এখনো সার্ভারে যায়নি — আগে লেখাটি খুলে sync হতে দিন, তারপর Restore করুন।",
+    unsynced:
+      "এই লেখার সংরক্ষণহীন পরিবর্তন এখনো সার্ভারে যায়নি — আগে লেখাটি খুলে sync হতে দিন, তারপর Restore করুন।",
     openEditor: "লেখা খুলুন",
   },
   ideas: {
@@ -512,7 +570,10 @@ export const bn = {
     empty: "এখনো কোনো আইডিয়া নেই — ＋ চেপে Quick Idea লিখুন।",
     newIdea: "＋ নতুন আইডিয়া",
     more: "আরও দেখান",
-    types: { quick: "দ্রুত", dialogue: "সংলাপ", character: "চরিত্র", concept: "ধারণা" } as Record<string, string>,
+    types: { quick: "দ্রুত", dialogue: "সংলাপ", character: "চরিত্র", concept: "ধারণা" } as Record<
+      string,
+      string
+    >,
     typeLabel: "ধরন",
     titleLabel: "শিরোনাম (ঐচ্ছিক)",
     textLabel: "আইডিয়া",

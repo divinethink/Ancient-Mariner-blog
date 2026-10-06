@@ -69,6 +69,12 @@ ZIP আপলোড → `unzip.yml` commit → `ci` চলে। `deploy.yml` �
 - **যাচাই (deploy-এর পর):** Cloudflare → Worker `blog` → Settings → Trigger Events-এ Cron দেখা; Observability → Logs-এ `cron.done` লাইন (`"failed":0`) — প্রথম run সর্বোচ্চ ৬ ঘণ্টার মধ্যে। কাজ আসলে চলছে দেখতে: একটা পরীক্ষামূলক লেখা ট্র্যাশে পাঠিয়ে Firebase Console-এ তার `trashedAt` ৮ দিন আগের করে দিন — পরের run-এ লেখাটা ও তার slug-lock চলে যাবে (`cron.trashPurge.ok` লগে `purgedPosts: 1`)।
 - ব্যর্থ হলে invocation 'error' দেখায় ও লগে `cron.<কাজ>.fail` + কারণ (token/key কখনো নয়); পাবলিক সাইট ও dashboard অক্ষত থাকে।
 
+## Drive backup (P5b-২)
+- `.github/workflows/backup.yml` → `scripts/backup.ts`: প্রতি দিন 20:00 UTC (ঢাকায় ভোর ২টা); [এখনই ব্যাকআপ নিন] = `POST /api/owner/backup` → একই workflow (`manual` ধরন)।
+- GitHub secrets: `FIREBASE_SERVICE_ACCOUNT`, `GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET`, `GOOGLE_OAUTH_REFRESH_TOKEN` (ঐচ্ছিক `OWNER_UID`)। OAuth consent screen অবশ্যই Production status-এ (Testing-এ token ~৭ দিনে মরে)।
+- Drive-এ `ancient-mariner-backup-YYYYMMDD-HHmm/<collection>.json` (প্রতি ফাইল = এক-collection ম্যানুয়াল-export কাঠামো); retention: ৭ দৈনিক + ৪ রবিবার + ৩ manual (`lib/backupPolicy`)।
+- `backups/{folder-নাম}` doc শুধু যাচাই-সম্পূর্ণ হলে; ৩ দিনের বেশি পুরনো হলে dashboard-এ লাল সতর্কতা। কেন REST (firebase-admin নয়): নতুন dependency/lock-বদল ছাড়াই P5a-৩-র verified client reuse।
+
 ## Known shortcuts
 
 - ফন্ট `next/font/google`-এর বদলে npm-এর `@fontsource` (Noto Sans/Serif Bengali, OFL) — একই ফন্ট, self-hosted, build-এ Google-এ নির্ভর নেই; `.woff`ও emit হয় (asset-সংখ্যা সীমার অনেক নিচে)। preload নেই (সব subset `unicode-range`-এ লোড)।

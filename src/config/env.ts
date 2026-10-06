@@ -47,3 +47,15 @@ export const getSiteUrl = () => parse(siteSchema).SITE_URL;
 export const getRebuildEnv = () => parse(rebuildSchema);
 /** `scheduled` handler-এর নিজস্ব `env` দিয়ে (process.env-এর ওপর নির্ভর না করে); মিসিং হলে fail-closed */
 export const getCronEnv = (source: unknown) => parse(cronSchema, source);
+
+// Drive backup job (`scripts/backup.ts`, GitHub Actions; P5b-২): সব GitHub secrets। OWNER_UID ঐচ্ছিক (না থাকলে পড়া doc থেকে)
+const backupJobSchema = z.object({
+  FIREBASE_PROJECT_ID: z.string().min(1),
+  FIREBASE_SERVICE_ACCOUNT: z.string().min(1),
+  GOOGLE_OAUTH_CLIENT_ID: z.string().min(1),
+  GOOGLE_OAUTH_CLIENT_SECRET: z.string().min(1),
+  GOOGLE_OAUTH_REFRESH_TOKEN: z.string().min(1),
+  BACKUP_TYPE: z.enum(["auto", "manual"]).default("manual"),
+  OWNER_UID: z.string().optional(),
+});
+export const getBackupJobEnv = (source: unknown = process.env) => parse(backupJobSchema, source);
