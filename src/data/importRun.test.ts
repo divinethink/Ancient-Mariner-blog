@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import type { ImportRow } from "@/data/importPosts.client";
-import { runImport, type ImportDeps } from "@/data/importRun";
+import { runImport, type ImportDeps, type TermKind } from "@/data/importRun";
 import { planImport, type WxrFile, type WxrItem } from "@/lib/import/plan";
 
 const item = (o: Partial<WxrItem>): WxrItem => ({
@@ -17,11 +17,11 @@ function kit(over: Partial<ImportDeps> = {}) {
   const deps: ImportDeps = {
     owners: async () => new Map(owners),
     terms: async (k) => [...terms[k]],
-    createTerm: vi.fn(async (k, id, name) => {
+    createTerm: vi.fn(async (k: TermKind, id: string, name: string) => {
       terms[k].push({ id, name });
       return { id };
     }),
-    commit: vi.fn(async (rows) => {
+    commit: vi.fn(async (rows: ImportRow[]) => {
       for (const r of rows) {
         written.push(r);
         owners.set(r.draft.slug, r.draft.id);
