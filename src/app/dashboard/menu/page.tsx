@@ -13,6 +13,14 @@ export default function MenuPage() {
           <IdeaInboxMenuItem />
         </li>
         <li>
+          <Link href="/dashboard/import" className="flex min-h-12 items-center justify-between px-4">
+            <span>📥 {bn.dashboard.importWp}</span>
+            <span aria-hidden className="text-muted">
+              ›
+            </span>
+          </Link>
+        </li>
+        <li>
           <Link href="/dashboard/library" className="flex min-h-12 items-center justify-between px-4">
             <span>🗂️ {bn.dashboard.organize}</span>
             <span aria-hidden className="text-muted">
