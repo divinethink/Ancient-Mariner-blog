@@ -131,6 +131,27 @@ describe.each(OWNER_ONLY_COLLECTIONS)("owner-only: %s", (name) => {
   });
 });
 
+// P5a: revisions — owner read/create; update/delete কারো জন্য নয় (prune শুধু Cron/privileged) (Arch §৯)
+describe("revisions", () => {
+  const rev = { targetType: "post", targetId: "p1", snapshot: "{}", versionNumber: 1, trigger: "manual", ownerUid: OWNER };
+  it("owner read/create পারে; update/delete owner-ও পারে না", async () => {
+    await assertSucceeds(setDoc(doc(owner(), "revisions", "r1"), rev));
+    await assertSucceeds(getDoc(doc(owner(), "revisions", "r1")));
+    await assertFails(updateDoc(doc(owner(), "revisions", "r1"), { snapshot: "x" }));
+    await assertFails(setDoc(doc(owner(), "revisions", "r1"), rev)); // বিদ্যমান id-তে overwrite = update
+    await assertFails(deleteDoc(doc(owner(), "revisions", "r1")));
+  });
+  it("non-owner ও anonymous read/create পারে না", async () => {
+    await seed("revisions", "r2", rev);
+    await assertFails(getDoc(doc(other(), "revisions", "r2")));
+    await assertFails(getDoc(doc(anon(), "revisions", "r2")));
+    await assertFails(setDoc(doc(other(), "revisions", "r3"), rev));
+    await assertFails(setDoc(doc(anon(), "revisions", "r3"), rev));
+    await assertFails(getDocs(collection(anon(), "revisions")));
+    await assertFails(deleteDoc(doc(other(), "revisions", "r2")));
+  });
+});
+
 // P3a: নাম/বিবরণ public-read, লেখা শুধু owner (Arch §৯)
 describe.each(["categories", "tags", "series"])("taxonomy: %s", (name) => {
   it("public read সফল; non-owner/anonymous write ব্যর্থ; owner write সফল", async () => {

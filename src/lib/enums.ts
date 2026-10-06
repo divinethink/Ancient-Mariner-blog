@@ -25,6 +25,9 @@ export const PAGE_STATUS = ["draft", "published"] as const;
 export const IDEA_TYPE = ["quick", "dialogue", "character", "concept"] as const;
 // P3b: notes — Inbox = `organized==false`; P7b-তে ফোন-শেয়ার `shared` ব্যবহার করবে
 export const NOTE_KIND = ["note", "shared"] as const;
+// P5a: revisions (Arch §৬) — chapter P14a-তে যোগ হবে; rules-এ enum-তালিকা লাগে না (owner-only, Zod boundary-তে যাচাই)
+export const REVISION_TARGET_TYPE = ["post"] as const;
+export const REVISION_TRIGGER = ["publish", "manual", "interval"] as const;
 // Auto = সিস্টেম অনুযায়ী light/dark (Arch §১১)
 export const THEME = ["auto", "light", "sepia", "warm", "dark", "amoled"] as const;
 
@@ -36,6 +39,8 @@ export const IdeaType = z.enum(IDEA_TYPE);
 export const NoteKind = z.enum(NOTE_KIND);
 export const TaxonomyKind = z.enum(TAXONOMY_KIND);
 export const Theme = z.enum(THEME);
+export const RevisionTargetType = z.enum(REVISION_TARGET_TYPE);
+export const RevisionTrigger = z.enum(REVISION_TRIGGER);
 
 export type PostStatus = z.infer<typeof PostStatus>;
 export type PostVisibility = z.infer<typeof PostVisibility>;
@@ -45,3 +50,5 @@ export type IdeaType = z.infer<typeof IdeaType>;
 export type NoteKind = z.infer<typeof NoteKind>;
 export type TaxonomyKind = z.infer<typeof TaxonomyKind>;
 export type Theme = z.infer<typeof Theme>;
+export type RevisionTargetType = z.infer<typeof RevisionTargetType>;
+export type RevisionTrigger = z.infer<typeof RevisionTrigger>;

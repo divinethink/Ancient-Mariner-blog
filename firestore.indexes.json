@@ -47,6 +47,24 @@
       ]
     },
     {
+      "collectionGroup": "revisions",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "targetType",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "targetId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "versionNumber",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
       "collectionGroup": "notes",
       "queryScope": "COLLECTION",
       "fields": [
@@ -70,6 +88,11 @@
     {
       "collectionGroup": "drafts",
       "fieldPath": "body",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "revisions",
+      "fieldPath": "snapshot",
       "indexes": []
     }
   ]
