@@ -9,7 +9,7 @@ export type RestValue = {
   arrayValue?: { values?: RestValue[] };
   mapValue?: { fields?: Record<string, RestValue> };
 };
-export type RestDocument = { name: string; fields?: Record<string, RestValue> };
+export type RestDocument = { name: string; fields?: Record<string, RestValue>; updateTime?: string };
 
 export function decodeValue(v: RestValue): unknown {
   if ("stringValue" in v) return v.stringValue;

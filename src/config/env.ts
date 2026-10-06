@@ -14,8 +14,8 @@ const authSchema = z.object({
   SESSION_SECRET: z.string().min(32),
 });
 
-function parse<T extends z.ZodType>(s: T): z.infer<T> {
-  const r = s.safeParse(process.env);
+function parse<T extends z.ZodType>(s: T, source: unknown = process.env): z.infer<T> {
+  const r = s.safeParse(source);
   if (!r.success) {
     const keys = r.error.issues.map((i) => i.path.join(".")).join(", ");
     throw new Error(`Env মিসিং/ভুল: ${keys}`);
@@ -33,9 +33,17 @@ const rebuildSchema = z.object({
   GITHUB_REPO: z.string().regex(/^[\w.-]+\/[\w.-]+$/),
 });
 
+// Cron (`scheduled`, P5a-৩): FIREBASE_SERVICE_ACCOUNT = Worker secret (service-account JSON, Firestore access; শুধু Cron-এ)
+const cronSchema = z.object({
+  FIREBASE_PROJECT_ID: z.string().min(1),
+  FIREBASE_SERVICE_ACCOUNT: z.string().min(1),
+});
+
 // build-সময়ে ডাকা হয়; মিসিং থাকলে অস্পষ্ট error নয়, স্পষ্ট বার্তা
 export const getEnv = () => parse(schema);
 // runtime-এ ডাকা হয় (P1a); মিসিং হলে fail-closed
 export const getAuthEnv = () => parse(authSchema);
 export const getSiteUrl = () => parse(siteSchema).SITE_URL;
 export const getRebuildEnv = () => parse(rebuildSchema);
+/** `scheduled` handler-এর নিজস্ব `env` দিয়ে (process.env-এর ওপর নির্ভর না করে); মিসিং হলে fail-closed */
+export const getCronEnv = (source: unknown) => parse(cronSchema, source);

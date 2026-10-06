@@ -1,7 +1,8 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "blog",
-  "main": ".open-next/worker.js",
+  // custom entry: OpenNext fetch + scheduled (Cron) — P5a-৩
+  "main": "worker.ts",
   "compatibility_date": "2025-06-01",
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
   "assets": {
@@ -18,5 +19,7 @@
     "SITE_URL": "https://blog.ancientmariner.workers.dev",
     "GITHUB_REPO": "divinethink/Ancient-Mariner-blog"
   },
+  // Cron (UTC): প্রতি ৬ ঘণ্টায় — revision prune ও ৭ দিনের trash purge (P5a-৩)। FIREBASE_SERVICE_ACCOUNT Worker secret লাগে
+  "triggers": { "crons": ["17 */6 * * *"] },
   "observability": { "enabled": true }
 }

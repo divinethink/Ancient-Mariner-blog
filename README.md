@@ -24,7 +24,7 @@ npm run dev
 
 ## Env তালিকা (`src/config/env.ts`, Zod boot-check)
 
-`FIREBASE_PROJECT_ID`, `FIREBASE_SERVER_API_KEY` (GitHub secret), `SITE_URL`। Deploy-secrets: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`। Worker secret (Cloudflare → Worker `blog` → Settings → Variables and Secrets, type = Secret): `OWNER_UID`, `SESSION_SECRET` (≥৩২ অক্ষরের random), `GITHUB_TOKEN` (`/api/owner/rebuild` ব্যবহার করে; fine-grained, শুধু এই repo-র Actions write)। `wrangler.jsonc` vars-এ `GITHUB_REPO` (`owner/repo`)। Build env (GitHub → Settings → Variables): `FIREBASE_BROWSER_API_KEY` → build-এ `NEXT_PUBLIC_FIREBASE_API_KEY` (browser-key; secret নয়)। শুধু `deploy:rules`-এর লোকাল env: `OWNER_UID` (Firebase Auth-এ owner-এর uid; P1a-র পর)।
+`FIREBASE_PROJECT_ID`, `FIREBASE_SERVER_API_KEY` (GitHub secret), `SITE_URL`। Deploy-secrets: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`। Worker secret (Cloudflare → Worker `blog` → Settings → Variables and Secrets, type = Secret): `OWNER_UID`, `SESSION_SECRET` (≥৩২ অক্ষরের random), `FIREBASE_SERVICE_ACCOUNT` (Cron, P5a-৩ — নিচে), `GITHUB_TOKEN` (`/api/owner/rebuild` ব্যবহার করে; fine-grained, শুধু এই repo-র Actions write)। `wrangler.jsonc` vars-এ `GITHUB_REPO` (`owner/repo`)। Build env (GitHub → Settings → Variables): `FIREBASE_BROWSER_API_KEY` → build-এ `NEXT_PUBLIC_FIREBASE_API_KEY` (browser-key; secret নয়)। শুধু `deploy:rules`-এর লোকাল env: `OWNER_UID` (Firebase Auth-এ owner-এর uid; P1a-র পর)।
 
 ## Auth (P1a)
 
@@ -60,6 +60,15 @@ ZIP আপলোড → `unzip.yml` commit → `ci` চলে। `deploy.yml` �
 - **Rebuild:** `POST /api/owner/rebuild` (`middleware` session + `Origin` যাচাই) → `src/data/privileged/githubDispatch.ts` → GitHub `workflow_dispatch` (`deploy.yml`, `concurrency`-এ জমে)। Dashboard-এ `BuildStatus` (Settings ও প্রকাশিত লেখার Publish panel): `/build.json` (no-store) বনাম IndexedDB-র শেষ সাইট-বদল-চিহ্ন; ৫ মিনিট পার হলে 'হালনাগাদ হয়নি' ও [আবার build করুন]।
 - `postsPerPage` আপাতত `lib/publicSite.ts`-এর ধ্রুবক (১০); `siteSettings` REST-পড়া ও সম্পাদনা UI P2c-তে।
 
+## Cron (P5a-৩)
+
+- **Entry:** `wrangler.jsonc` `main` = `worker.ts` — OpenNext-এর `fetch` + নিজস্ব `scheduled` (`src/cron/run.ts`)। সময়সূচি `triggers.crons` = `17 */6 * * *` (UTC, প্রতি ৬ ঘণ্টায়)। P11a (D1 cleanup) ও P11c (scheduled-publish) একই `scheduled`-এ যোগ হবে।
+- **Secret (একবার):** Firebase Console → Project settings → Service accounts → [Generate new private key] → ডাউনলোড-করা JSON-এর পুরো লেখা Cloudflare → Worker `blog` → Settings → Variables and Secrets-এ type=Secret, নাম `FIREBASE_SERVICE_ACCOUNT`। (আরও সীমিত চাইলে Google Cloud IAM-এ আলাদা service account + শুধু `Cloud Datastore User` role।) key কোথাও commit/chat-এ নয়।
+- **কাজ (শুধু `src/data/privileged/revisionCron.ts`, সিদ্ধান্ত `lib/prune.ts`):** (১) `status=='trashed'` ও `trashedAt` ≥ ৭ দিন পুরনো লেখা স্থায়ীভাবে মোছা — post + নিজের `slugs` lock (doc-এর `postId` মিললে) + `drafts` + সব `revisions`, `posts` doc `updateTime`-precondition-সহ (মোছার মুহূর্তে পুনরুদ্ধার হলে কিছু মোছা হয় না); (২) গত ২ দিনে নতুন revision আছে এমন লেখায় সর্বশেষ ২০টা রেখে বাকি মোছা; লেখা আর নেই (batchGet-এ স্পষ্ট `missing`) এমন target-এর revision-ও মোছা।
+- **সীমা:** Workers Free-র ৫০ subrequest/১০ms CPU — এক run-এ সর্বোচ্চ ৮টা লেখা purge, ১২টা লেখা prune, subrequest budget ৪৫; বাকিটা পরের run-এ। কোনো নতুন Firestore index/rules লাগে না।
+- **যাচাই (deploy-এর পর):** Cloudflare → Worker `blog` → Settings → Trigger Events-এ Cron দেখা; Observability → Logs-এ `cron.done` লাইন (`"failed":0`) — প্রথম run সর্বোচ্চ ৬ ঘণ্টার মধ্যে। কাজ আসলে চলছে দেখতে: একটা পরীক্ষামূলক লেখা ট্র্যাশে পাঠিয়ে Firebase Console-এ তার `trashedAt` ৮ দিন আগের করে দিন — পরের run-এ লেখাটা ও তার slug-lock চলে যাবে (`cron.trashPurge.ok` লগে `purgedPosts: 1`)।
+- ব্যর্থ হলে invocation 'error' দেখায় ও লগে `cron.<কাজ>.fail` + কারণ (token/key কখনো নয়); পাবলিক সাইট ও dashboard অক্ষত থাকে।
+
 ## Known shortcuts
 
 - ফন্ট `next/font/google`-এর বদলে npm-এর `@fontsource` (Noto Sans/Serif Bengali, OFL) — একই ফন্ট, self-hosted, build-এ Google-এ নির্ভর নেই; `.woff`ও emit হয় (asset-সংখ্যা সীমার অনেক নিচে)। preload নেই (সব subset `unicode-range`-এ লোড)।
@@ -81,3 +90,4 @@ ZIP আপলোড → `unzip.yml` commit → `ci` চলে। `deploy.yml` �
 - Settings: `siteSettings/main`; সেভ = শুধু P2c-র ফিল্ডগুলোর `merge` (পরের phase-এর `menu/layout/design` অক্ষত), last-write-wins (একক owner)। Dashboard timezone/সেটিং প্রতি-ডিভাইস `prefs` cache থেকে সাথে সাথে, পেছনে ১ read-এ হালনাগাদ। থিম-default build-সময়ে assets-এর `theme-init.js`-এর `DEFAULT_THEME`-এ বসে (`scripts/build-theme-default.ts`); প্রতি-ডিভাইস পছন্দ জেতে।
 - taxonomy slug-একক্ত্ব `where slug ==` পূর্ব-যাচাইয়ে (transaction/lock-doc নয়) — single-owner বলে race-ঝুঁকি গ্রহণযোগ্য (P3a-১); taxonomy slug তৈরির পর অপরিবর্তিত (rename = শুধু `name`)। `taxonomyRepo.server.ts` (public-REST) P4a-তে।
 - Rename-propagation/backfill-এ পোস্ট read-modify-write batch-এ (transaction নয়) — single-owner, খোলা editor-এর সাথে একই মুহূর্তের race-ঝুঁকি নগণ্য; `updatedAt` ইচ্ছাকৃত অপরিবর্তিত (conflict-সতর্কতা না জাগাতে)। Migration 001-এর run-tracking doc নেই (idempotent)। ডিফল্ট ক্যাটাগরি বসে প্রকাশে (২খ) ও backfill-এ; নতুন draft-এ নয়।
+- Cron (P5a-৩): trash purge `status=='trashed'` একটা single-field query-তে (সর্বোচ্চ ২০০, `body` select-এ নেই) — `trashedAt` filter কোডে (`selectPurgeable`), যাতে নতুন composite index/deploy না লাগে। Revision prune শুধু গত ২ দিনে সক্রিয় লেখায়; তার চেয়ে পুরনো orphan (hard-delete-এর পর কোনো নতুন revision নেই) ধরা পড়ে না — ক্ষতিহীন (ইতিহাস-তালিকা সর্বশেষ ২০টাই দেখায়), পূর্ণ sweep দরকার হলে পরে।
