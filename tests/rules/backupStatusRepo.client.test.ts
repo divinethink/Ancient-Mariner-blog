@@ -10,22 +10,24 @@ const OWNER = "testOwnerUid1234567890";
 let env: RulesTestEnvironment;
 const fs = (x: unknown) => x as Firestore;
 const repo = () => createBackupStatusRepoClient(fs(env.authenticatedContext(OWNER).firestore()));
-const seed = (id: string, iso: string, extra: Record<string, unknown> = {}) =>
-  env.withSecurityRulesDisabled((ctx) =>
-    setDoc(doc(fs(ctx.firestore()), "backups", id), {
-      type: "auto",
-      format: "json",
-      status: "complete",
-      driveFolderId: `F-${id}`,
-      counts: { posts: 2 },
-      completedAt: Timestamp.fromDate(new Date(iso)),
-      ownerUid: OWNER,
-      createdAt: Timestamp.fromDate(new Date(iso)),
-      updatedAt: Timestamp.fromDate(new Date(iso)),
-      schemaVersion: 1,
-      ...extra,
-    }),
-  );
+const seed = (id: string, iso: string, extra: Record<string, unknown> = {}) => {
+  const base: Record<string, unknown> = {
+    type: "auto",
+    format: "json",
+    status: "complete",
+    driveFolderId: `F-${id}`,
+    counts: { posts: 2 },
+    completedAt: Timestamp.fromDate(new Date(iso)),
+    ownerUid: OWNER,
+    createdAt: Timestamp.fromDate(new Date(iso)),
+    updatedAt: Timestamp.fromDate(new Date(iso)),
+    schemaVersion: 1,
+    ...extra,
+  };
+  // Firestore SDK undefined লিখতে দেয় না — `undefined` মানে ফিল্ডটা doc-এ নেই (পুরনো doc-এর মতো)
+  for (const k of Object.keys(base)) if (base[k] === undefined) delete base[k];
+  return env.withSecurityRulesDisabled((ctx) => setDoc(doc(fs(ctx.firestore()), "backups", id), base));
+};
 
 beforeAll(async () => {
   const rules = renderRules(readFileSync("firestore.rules.tpl", "utf8"), OWNER);
