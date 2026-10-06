@@ -9,6 +9,24 @@ const MAX_BODY_BYTES = 900 * 1024; // UTF-8 byte (বাংলা ≈ ৩ byte/�
 const utf8Bytes = (s: string) => new TextEncoder().encode(s).length;
 const Body = z.string().refine((s) => utf8Bytes(s) <= MAX_BODY_BYTES, "body সীমা ছাড়িয়েছে");
 
+/** Firestore Timestamp / ISO-string / Date → Date (importSource-এর nested তারিখ; `normalizeRaw` শুধু top-level বদলায়) */
+const AnyDate = z.preprocess((v) => {
+  if (v && typeof v === "object" && typeof (v as { toDate?: unknown }).toDate === "function") return (v as { toDate(): Date }).toDate();
+  return typeof v === "string" ? new Date(v) : v;
+}, z.date());
+
+/** P3c-খ: ইমপোর্ট-উৎস (additive, optional) — `{site, wpPostId}` = পুনরায় ইমপোর্টে skip-এর চাবি; মূল তারিখ/লিংক/ক্যাটাগরি-ট্যাগ অক্ষত */
+export const ImportSourceSchema = z.object({
+  site: z.string().min(1),
+  wpPostId: z.string().min(1),
+  originalDate: AnyDate.optional(),
+  originalUrl: z.string().optional(),
+  sourceStatus: z.string().optional(),
+  categories: z.array(z.string()).default([]),
+  tags: z.array(z.string()).default([]),
+});
+export type ImportSource = z.infer<typeof ImportSourceSchema>;
+
 export const PostSchema = z.object({
   title: z.string(),
   slug: z.string().min(1),
@@ -26,6 +44,7 @@ export const PostSchema = z.object({
   tagNames: z.array(z.string()).default([]),
   seriesId: z.string().min(1).optional(),
   seriesOrder: z.number().int().nonnegative().optional(),
+  importSource: ImportSourceSchema.optional(), // P3c-খ; বিকৃত হলে `parsePost` বাদ দেয়
   publishedAt: z.date().optional(),
   trashedAt: z.date().optional(),
   ownerUid: z.string().min(1),
@@ -124,10 +143,12 @@ export function normalizeRaw(raw: Record<string, unknown>): Record<string, unkno
   return out;
 }
 
-export const parsePost = (id: string, raw: Record<string, unknown>): PostWithId => ({
-  ...PostSchema.parse(normalizeRaw(raw)),
-  id,
-});
+export const parsePost = (id: string, raw: Record<string, unknown>): PostWithId => {
+  const n = normalizeRaw(raw);
+  // বিকৃত importSource পুরো লেখা ভাঙে না — শুধু বাদ (defensive read, Dev Rules §৩)
+  if (n.importSource !== undefined && !ImportSourceSchema.safeParse(n.importSource).success) delete n.importSource;
+  return { ...PostSchema.parse(n), id };
+};
 export const parseDraft = (raw: Record<string, unknown>): Draft =>
   DraftSchema.parse(normalizeRaw(raw));
 

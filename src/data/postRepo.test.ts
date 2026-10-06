@@ -128,3 +128,18 @@ describe("P3a সংগঠন-ফিল্ড", () => {
     expect(() => PostPatchSchema.parse({ tagIds: many, tagNames: many })).toThrow();
   });
 });
+
+describe("P3c-খ importSource (additive, defensive read)", () => {
+  it("না থাকলে undefined; আছে — Timestamp-সদৃশ/ISO-string তারিখ Date হয়, default খালি তালিকা", () => {
+    expect(parsePost("i", raw()).importSource).toBeUndefined();
+    const a = parsePost("i", raw({ importSource: { site: "s", wpPostId: "1", originalDate: { toDate: () => T } } }));
+    expect(a.importSource).toMatchObject({ site: "s", wpPostId: "1", originalDate: T, categories: [], tags: [] });
+    const b = parsePost("i", raw({ importSource: { site: "s", wpPostId: "1", originalDate: "2026-10-05T00:00:00Z" } }));
+    expect(b.importSource?.originalDate).toEqual(T);
+  });
+  it("বিকৃত importSource লেখা ভাঙে না — শুধু বাদ পড়ে", () => {
+    const p = parsePost("i", raw({ importSource: { site: "", wpPostId: 5 } }));
+    expect(p.importSource).toBeUndefined();
+    expect(p.title).toBe("শিরোনাম");
+  });
+});

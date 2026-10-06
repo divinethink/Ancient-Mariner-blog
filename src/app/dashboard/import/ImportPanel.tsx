@@ -1,13 +1,16 @@
 "use client";
 
-// P3c-ক: শুধু dry-run — XML পড়ে হিসাব দেখায়, কিছু লেখে না (লেখা P3c-খ-তে)।
-import { useState } from "react";
-import { getExistingSlugs } from "@/data/importKeys";
+// P3c-ক: XML পড়ে dry-run হিসাব (কিছু লেখে না) · P3c-খ: নিশ্চিত করলে Draft + Private হিসেবে ইমপোর্ট (idempotent, আবার চালানো নিরাপদ)।
+import { useMemo, useState } from "react";
+import { getSlugOwners } from "@/data/importKeys";
+import type { ImportResult } from "@/data/importRun";
 import { bn } from "@/i18n/bn";
+import { planWrites } from "@/lib/import/commit";
 import { planImport, type ImportPlan } from "@/lib/import/plan";
 import { parseWxr } from "./wxrDom";
 
 type Phase = "idle" | "reading" | "done" | "error";
+type Run = "idle" | "confirm" | "running" | "finished" | "failed";
 const box = "rounded-2xl border border-line bg-surface p-4";
 const t = bn.importWp;
 
@@ -17,11 +20,17 @@ export function ImportPanel() {
   const [source, setSource] = useState("");
   const [site, setSite] = useState("");
   const [plan, setPlan] = useState<ImportPlan | null>(null);
+  const [owners, setOwners] = useState<Map<string, string>>(new Map());
+  const [run, setRun] = useState<Run>("idle");
+  const [progress, setProgress] = useState<[number, number]>([0, 0]);
+  const [result, setResult] = useState<ImportResult | null>(null);
 
   async function onFile(f: File | undefined) {
     if (!f) return;
     setPhase("reading");
     setPlan(null);
+    setRun("idle");
+    setResult(null);
     let wxr;
     try {
       wxr = parseWxr(await f.text());
@@ -31,13 +40,33 @@ export function ImportPanel() {
       return;
     }
     try {
-      const existing = await getExistingSlugs();
+      const own = await getSlugOwners();
       setSite(wxr.siteTitle);
-      setPlan(planImport(wxr, { existingSlugs: existing }));
+      setSource((cur) => cur.trim() || wxr.siteTitle.trim());
+      setOwners(own);
+      setPlan(planImport(wxr, { existingSlugs: new Set(own.keys()) }));
       setPhase("done");
     } catch {
       setErr(t.slugsError);
       setPhase("error");
+    }
+  }
+
+  // সোর্স-নামই post-id-র অংশ ⇒ নাম বদলালে "নতুন/আগেই-ইমপোর্টেড" হিসাবও বদলায়
+  const wp = useMemo(() => (plan && source.trim() ? planWrites(plan, source, owners) : null), [plan, source, owners]);
+
+  async function startImport() {
+    if (!plan || !wp) return;
+    setRun("running");
+    setProgress([0, wp.writes.length]);
+    try {
+      const { runWpImport } = await import("@/data/importRun.wire");
+      const r = await runWpImport(plan, source, (d, t) => setProgress([d, t]));
+      setResult(r);
+      setOwners(await getSlugOwners().catch(() => owners));
+      setRun("finished");
+    } catch {
+      setRun("failed");
     }
   }
 
@@ -182,11 +211,80 @@ export function ImportPanel() {
               ))}
             </ul>
           </section>
-          <p role="status" className="text-sm text-muted">
-            {t.noWrite}
-          </p>
+          <section className={box} aria-live="polite">
+            {!source.trim() && <p className="text-accent-text">{t.needSource}</p>}
+            {wp && run !== "finished" && (
+              <p className="mb-2">
+                {t.willImport(wp.writes.length)}
+                {wp.already > 0 && <span className="text-muted"> · {t.alreadyDone(wp.already)}</span>}
+                {wp.oversize.length > 0 && <span className="text-muted"> · {t.oversizeSkip(wp.oversize.length)}</span>}
+              </p>
+            )}
+            {run === "running" && (
+              <div className="mb-2">
+                <progress className="w-full" max={progress[1]} value={progress[0]} aria-label={t.progressLabel} />
+                <p className="text-sm text-muted">{t.progress(progress[0], progress[1])}</p>
+              </div>
+            )}
+            {run === "failed" && (
+              <p role="alert" className="mb-2 text-accent-text">
+                {t.runFailed}
+              </p>
+            )}
+            {result && (run === "finished" || run === "failed") && <ResultView r={result} />}
+            {run === "confirm" && <p className="mb-2 text-sm text-muted">{t.confirm(wp?.writes.length ?? 0)}</p>}
+            <div className="flex flex-wrap gap-2">
+              {run === "confirm" ? (
+                <>
+                  <button type="button" onClick={() => void startImport()} className="min-h-11 rounded-full bg-btn-bg px-5 text-btn-tx">
+                    {t.confirmYes}
+                  </button>
+                  <button type="button" onClick={() => setRun("idle")} className="min-h-11 rounded-full border border-line px-5">
+                    {t.cancel}
+                  </button>
+                </>
+              ) : (
+                run !== "running" &&
+                wp &&
+                wp.writes.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => (run === "idle" ? setRun("confirm") : void startImport())}
+                    className="min-h-11 rounded-full bg-btn-bg px-5 text-btn-tx"
+                  >
+                    {run === "failed" || (result && result.failed > 0) ? t.retry : t.importBtn}
+                  </button>
+                )
+              )}
+            </div>
+            {run === "idle" && <p className="mt-2 text-sm text-muted">{t.noWriteUntil}</p>}
+          </section>
         </div>
       )}
+    </div>
+  );
+}
+
+function ResultView({ r }: { r: ImportResult }) {
+  return (
+    <div className="mb-2 space-y-1">
+      <p className="font-semibold">{t.doneTitle(r.imported)}</p>
+      {r.already > 0 && <p className="text-sm text-muted">{t.alreadyDone(r.already)}</p>}
+      {(r.termsCreated.categories > 0 || r.termsCreated.tags > 0) && (
+        <p className="text-sm text-muted">{t.termsMade(r.termsCreated.categories, r.termsCreated.tags)}</p>
+      )}
+      {r.oversize.length > 0 && (
+        <p className="text-sm text-muted">
+          {t.oversizeSkip(r.oversize.length)}: {r.oversize.join(", ")}
+        </p>
+      )}
+      {r.invalid > 0 && <p className="text-sm text-muted">{t.invalidSkip(r.invalid)}</p>}
+      {r.failed > 0 && (
+        <p role="alert" className="text-accent-text">
+          {t.failedSome(r.failed)}: {r.failedTitles.join(", ")}
+        </p>
+      )}
+      {r.failed === 0 && <p className="text-sm text-muted">{t.nextStep}</p>}
     </div>
   );
 }
