@@ -28,6 +28,9 @@ export const NOTE_KIND = ["note", "shared"] as const;
 // P5a: revisions (Arch §৬) — chapter P14a-তে যোগ হবে; rules-এ enum-তালিকা লাগে না (owner-only, Zod boundary-তে যাচাই)
 export const REVISION_TARGET_TYPE = ["post"] as const;
 export const REVISION_TRIGGER = ["publish", "manual", "interval"] as const;
+// P5b: backups (Arch §৬) — doc লেখা হয় শুধু সম্পূর্ণ সফল backup-এ; rules-এ enum-তালিকা লাগে না (client write নেই, Zod boundary-তে যাচাই)
+export const BACKUP_TYPE = ["auto", "manual"] as const;
+export const BACKUP_STATUS = ["complete"] as const;
 // Auto = সিস্টেম অনুযায়ী light/dark (Arch §১১)
 export const THEME = ["auto", "light", "sepia", "warm", "dark", "amoled"] as const;
 
@@ -41,6 +44,8 @@ export const TaxonomyKind = z.enum(TAXONOMY_KIND);
 export const Theme = z.enum(THEME);
 export const RevisionTargetType = z.enum(REVISION_TARGET_TYPE);
 export const RevisionTrigger = z.enum(REVISION_TRIGGER);
+export const BackupType = z.enum(BACKUP_TYPE);
+export const BackupStatus = z.enum(BACKUP_STATUS);
 
 export type PostStatus = z.infer<typeof PostStatus>;
 export type PostVisibility = z.infer<typeof PostVisibility>;
@@ -52,3 +57,5 @@ export type TaxonomyKind = z.infer<typeof TaxonomyKind>;
 export type Theme = z.infer<typeof Theme>;
 export type RevisionTargetType = z.infer<typeof RevisionTargetType>;
 export type RevisionTrigger = z.infer<typeof RevisionTrigger>;
+export type BackupType = z.infer<typeof BackupType>;
+export type BackupStatus = z.infer<typeof BackupStatus>;

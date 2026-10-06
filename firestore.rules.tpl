@@ -1,5 +1,5 @@
 rules_version = '2';
-// P1b: posts / slugs / siteSettings · P2a: drafts · P3a: categories / tags / series · P3b: ideas / notes · P5a: revisions (Arch §৯)। বাকি collection phase-অনুযায়ী যোগ হয়; বাকি সব deny-all।
+// P1b: posts / slugs / siteSettings · P2a: drafts · P3a: categories / tags / series · P3b: ideas / notes · P5a: revisions · P5b: backups (Arch §৯)। বাকি collection phase-অনুযায়ী যোগ হয়; বাকি সব deny-all।
 // placeholder scripts/render-rules.ts বসায়; rendered firestore.rules git-এ commit হয় না।
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -60,6 +60,12 @@ service cloud.firestore {
     match /revisions/{revisionId} {
       allow read, create: if isOwner();
       allow update, delete: if false;
+    }
+
+    // Backup-মেটা (সম্পূর্ণ সফল backup-এর রেকর্ড): owner read; client write নেই — লেখে শুধু backup job (privileged, P5b-২) (Arch §৯ P5b)
+    match /backups/{backupId} {
+      allow read: if isOwner();
+      allow write: if false;
     }
 
     match /siteSettings/{docId} {

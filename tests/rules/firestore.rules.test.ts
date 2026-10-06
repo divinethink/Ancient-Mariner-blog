@@ -167,6 +167,28 @@ describe.each(["categories", "tags", "series"])("taxonomy: %s", (name) => {
   });
 });
 
+// P5b: backups — owner read; client write কারো জন্য নয় (লেখে শুধু backup job/privileged) (Arch §৯)
+describe("backups", () => {
+  const meta = { type: "auto", status: "complete", ownerUid: OWNER };
+  it("owner read পারে; owner-ও write/delete পারে না", async () => {
+    await seed("backups", "b1", meta);
+    await assertSucceeds(getDoc(doc(owner(), "backups", "b1")));
+    await assertSucceeds(getDocs(collection(owner(), "backups")));
+    await assertFails(setDoc(doc(owner(), "backups", "b2"), meta));
+    await assertFails(updateDoc(doc(owner(), "backups", "b1"), { status: "x" }));
+    await assertFails(deleteDoc(doc(owner(), "backups", "b1")));
+  });
+  it("non-owner ও anonymous read/write পারে না", async () => {
+    await seed("backups", "b3", meta);
+    await assertFails(getDoc(doc(other(), "backups", "b3")));
+    await assertFails(getDoc(doc(anon(), "backups", "b3")));
+    await assertFails(getDocs(collection(anon(), "backups")));
+    await assertFails(setDoc(doc(other(), "backups", "b4"), meta));
+    await assertFails(setDoc(doc(anon(), "backups", "b4"), meta));
+    await assertFails(deleteDoc(doc(other(), "backups", "b3")));
+  });
+});
+
 describe("posts: P3a enum", () => {
   it("archived status ও আগের মান চলে; অবৈধ মান আটকায়", async () => {
     await assertSucceeds(setDoc(doc(owner(), "posts", "x"), post({ status: "archived" })));
