@@ -33,6 +33,16 @@ describe("planBulk — publish", () => {
       affectsPublic: true,
     });
   });
+  it("ইমপোর্টেড লেখা: প্রথম প্রকাশে publishedAt = মূল তারিখ (originalDate নেই হলে now)", () => {
+    const orig = d("2015-03-24T12:58:09Z");
+    const r = planBulk(
+      [{ ...post("a"), importSource: { originalDate: orig } }, { ...post("b"), importSource: {} }],
+      { kind: "publish", defaultCategory: null },
+      now,
+    );
+    expect(r.updates[0].patch).toMatchObject({ visibility: "public", publishedAt: orig });
+    expect(r.updates[1].patch).toMatchObject({ publishedAt: now });
+  });
   it("আগে প্রকাশিত ছিল (publishedAt আছে) ⇒ visibility/তারিখ অক্ষত; আগের ক্যাটাগরি অক্ষত", () => {
     const p = post("a", {
       publishedAt: d("2025-05-05T00:00:00Z"),

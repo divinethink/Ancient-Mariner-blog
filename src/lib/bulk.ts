@@ -41,6 +41,8 @@ export type BulkPost = {
   categoryName?: string;
   seriesId?: string;
   seriesOrder?: number;
+  /** ইমপোর্টের মূল তারিখ (P3c) — প্রথম প্রকাশে `publishedAt` হয় */
+  importSource?: { originalDate?: Date };
 };
 
 export type BulkUpdate = {
@@ -129,10 +131,10 @@ export function planBulk(posts: readonly BulkPost[], action: BulkAction, now: Da
           skip(p, "unchanged");
           break;
         }
-        // প্রথম প্রকাশে public + এখনকার সময়; আগে প্রকাশিত ছিল হলে visibility/তারিখ অক্ষত (Publish panel-এর মতো)
+        // প্রথম প্রকাশে public + এখনকার সময় (ইমপোর্টেড লেখায় মূল তারিখ); আগে প্রকাশিত ছিল হলে visibility/তারিখ অক্ষত (Publish panel-এর মতো)
         const patch: BulkPatch = {
           status: "published",
-          ...(p.publishedAt ? {} : { visibility: "public" as const, publishedAt: now }),
+          ...(p.publishedAt ? {} : { visibility: "public" as const, publishedAt: p.importSource?.originalDate ?? now }),
           ...(!p.categoryId && action.defaultCategory
             ? { categoryId: action.defaultCategory.id, categoryName: action.defaultCategory.name }
             : {}),
