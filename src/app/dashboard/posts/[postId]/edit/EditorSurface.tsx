@@ -40,6 +40,7 @@ export function EditorSurface({ postId, data }: { postId: string; data: Loaded }
   const [excerpt, setExcerpt] = useState(data.excerpt);
   const [panelOpen, setPanelOpen] = useState(false);
   const [comfortOpen, setComfortOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
   const [focus, setFocus] = useState(readFocus); // ফোকাস মোড: প্রতি-ডিভাইস পছন্দ
   const [typing, setTyping] = useState(false);
   const focusRef = useRef(focus);
@@ -283,6 +284,26 @@ export function EditorSurface({ postId, data }: { postId: string; data: Loaded }
         >
           {bn.editor.publish}
         </button>
+        <div className="relative">
+          <button
+            type="button"
+            aria-label={bn.editor.moreOpen}
+            aria-expanded={moreOpen}
+            onClick={() => setMoreOpen((o) => !o)}
+            className="min-h-11 min-w-11 rounded-full text-xl"
+          >
+            ⋯
+          </button>
+          {moreOpen && (
+            <Link
+              href={`/dashboard/posts/${postId}/history`}
+              onClick={flush}
+              className="absolute right-0 top-11 z-30 flex min-h-11 items-center whitespace-nowrap rounded-xl border border-line bg-surface px-4 shadow"
+            >
+              {bn.editor.history}
+            </Link>
+          )}
+        </div>
       </header>
 
       {status === "failed" && (

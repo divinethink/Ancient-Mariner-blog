@@ -92,7 +92,7 @@ async function loadItems(): Promise<Loaded> {
   return { items, trashed, remoteFailed: remote === null };
 }
 
-function PostMenu({ onTrash, disabled }: { onTrash: () => void; disabled: boolean }) {
+function PostMenu({ id, onTrash, disabled }: { id: string; onTrash: () => void; disabled: boolean }) {
   const [open, setOpen] = useState(false);
   return (
     <div className="relative shrink-0">
@@ -106,17 +106,25 @@ function PostMenu({ onTrash, disabled }: { onTrash: () => void; disabled: boolea
         ⋯
       </button>
       {open && (
-        <button
-          type="button"
-          disabled={disabled}
-          onClick={() => {
-            setOpen(false);
-            onTrash();
-          }}
-          className="absolute right-0 top-11 z-10 min-h-11 whitespace-nowrap rounded-xl border border-line bg-surface px-4 shadow disabled:opacity-50"
-        >
-          {bn.library.trashIt}
-        </button>
+        <div className="absolute right-0 top-11 z-10 flex flex-col rounded-xl border border-line bg-surface shadow">
+          <Link
+            href={`/dashboard/posts/${id}/history`}
+            className="flex min-h-11 items-center whitespace-nowrap px-4"
+          >
+            {bn.library.history}
+          </Link>
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={() => {
+              setOpen(false);
+              onTrash();
+            }}
+            className="min-h-11 whitespace-nowrap px-4 text-left disabled:opacity-50"
+          >
+            {bn.library.trashIt}
+          </button>
+        </div>
       )}
     </div>
   );
@@ -534,7 +542,7 @@ export function LibraryHome() {
                   >
                     {rowBody(it)}
                   </Link>
-                  <PostMenu disabled={busy} onTrash={() => void trashPost(it.id)} />
+                  <PostMenu id={it.id} disabled={busy} onTrash={() => void trashPost(it.id)} />
                 </>
               )}
               {selecting && it.localOnly && <span className="sr-only">{bn.bulk.localOnlyNote}</span>}

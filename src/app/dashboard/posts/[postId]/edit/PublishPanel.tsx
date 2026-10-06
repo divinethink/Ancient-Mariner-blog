@@ -5,6 +5,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { draftStore } from "@/data/draftStore";
 import { triggerSiteRebuild } from "@/data/rebuildClient";
+import { snapshotOnPublish } from "@/data/revisionHooks";
 import { PostNotFoundError, SlugTakenError, type PostRepo, type PostWithId } from "@/data/postRepo";
 import { getTaxonomyOps } from "@/data/taxonomyOps.wire";
 import { getTaxonomyRepo } from "@/data/taxonomyRepo.wire";
@@ -242,12 +243,14 @@ export function PublishPanel(p: Props) {
   const onPublish = () =>
     run(async (repo) => {
       await writeMeta(repo, { status: "published" }, { defaultCategory: true });
+      await snapshotOnPublish(postId).catch(() => undefined); // ইতিহাস best-effort — প্রকাশ আটকায় না
       return bn.publishPanel.publishedOk;
     }, true);
   const onUpdate = () =>
     run(async (repo) => {
       await writeMeta(repo);
       await repo.applyDraft(postId, await wordCount(meta?.post.wordCount ?? 0));
+      await snapshotOnPublish(postId).catch(() => undefined);
       return bn.publishPanel.updatedOk;
     }, true);
   const onDone = () =>

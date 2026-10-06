@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { draftStore } from "@/data/draftStore";
 import { getPostRepo } from "@/data/postRepo.wire";
+import { snapshotAfterSync } from "@/data/revisionHooks";
 import { createSyncEngine, type SyncStatus } from "@/data/syncEngine";
 
 export type SyncEngine = ReturnType<typeof createSyncEngine>;
@@ -19,7 +20,10 @@ export function useRemoteSync(postId: string, initial: PubInfo) {
       getRepo: getPostRepo,
       store: draftStore,
       onStatus: setStatus,
-      onSynced: (r) => setPub({ status: r.status, hasUnpublished: r.hasUnpublished }),
+      onSynced: (r) => {
+        setPub({ status: r.status, hasUnpublished: r.hasUnpublished });
+        void snapshotAfterSync(postId).catch(() => undefined); // ইতিহাস best-effort — sync/লেখা আটকায় না
+      },
     }),
   );
   const engRef = useRef<SyncEngine | null>(null);

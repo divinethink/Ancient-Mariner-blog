@@ -8,3 +8,13 @@ export const utf8Bytes = (s: string): number => new TextEncoder().encode(s).leng
 /** সর্বশেষ versionNumber (না থাকলে undefined) → পরেরটা */
 export const nextVersionNumber = (latest: number | undefined): number =>
   Number.isInteger(latest) && (latest as number) >= 1 ? (latest as number) + 1 : 1;
+
+/** সক্রিয় লেখায় interval-snapshot এখন বানানো যায় কিনা (শেষ snapshot ≥ ১০ মিনিট আগে, বা নেই, বা ঘড়ি পিছিয়েছে) */
+export const intervalDue = (lastMs: number | undefined, nowMs: number): boolean => {
+  if (lastMs === undefined || !Number.isFinite(lastMs)) return true;
+  const d = nowMs - lastMs;
+  return d < 0 || d >= REVISION_INTERVAL_MS;
+};
+
+/** ডিভাইস-লোকাল 'শেষ snapshot-সময়' key (IndexedDB) */
+export const revisionKey = (postId: string): string => `rev:${postId}`;

@@ -14,3 +14,15 @@ describe("revision", () => {
     expect(utf8Bytes("আ")).toBe(3);
   });
 });
+
+import { intervalDue, REVISION_INTERVAL_MS } from "./revision";
+describe("intervalDue", () => {
+  it("নেই/অবৈধ ⇒ due; ১০ মিনিটের আগে নয়; পরে due; ঘড়ি পিছালে due", () => {
+    const now = 1_000_000_000;
+    expect(intervalDue(undefined, now)).toBe(true);
+    expect(intervalDue(Number.NaN, now)).toBe(true);
+    expect(intervalDue(now - REVISION_INTERVAL_MS + 1, now)).toBe(false);
+    expect(intervalDue(now - REVISION_INTERVAL_MS, now)).toBe(true);
+    expect(intervalDue(now + 5000, now)).toBe(true);
+  });
+});
