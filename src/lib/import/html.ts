@@ -171,7 +171,10 @@ function emitParas(buf: Item[], out: DocNode[]) {
     if (p) out.push(p);
     group = [];
   };
-  for (const x of buf) (x.t === "split" ? flush() : group.push(x));
+  for (const x of buf) {
+    if (x.t === "split") flush();
+    else group.push(x);
+  }
   flush();
 }
 
@@ -206,12 +209,6 @@ export function htmlToDoc(raw: string): ConvertResult {
         inline(n.kids, mk && !marks.some((m) => m.type === mk.type) ? [...marks, mk] : marks, buf, split);
       }
     }
-  }
-
-  function inlineParas(nodes: Node[], out: DocNode[]) {
-    const buf: Item[] = [];
-    inline(nodes, [], buf, false);
-    emitParas(buf, out);
   }
 
   function blocks(nodes: Node[]): DocNode[] {
