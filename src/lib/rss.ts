@@ -12,8 +12,13 @@ export const FEED_PATH = "/rss.xml";
 const esc = (s: string): string =>
   s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&apos;");
 
-// XML 1.0-এ অবৈধ control character বাদ (পেস্ট-করা লেখায় আসতে পারে — নইলে পুরো feed অবৈধ হয়)
-const strip = (s: string): string => s.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\uFFFE\uFFFF]/g, "");
+// XML 1.0-এ অবৈধ character বাদ (পেস্ট-করা লেখায় আসতে পারে — নইলে পুরো feed অবৈধ হয়); regex নয় (ESLint no-control-regex)
+const xmlOk = (c: number): boolean =>
+  c === 9 || c === 10 || c === 13 || (c >= 0x20 && c <= 0xd7ff) || (c >= 0xe000 && c <= 0xfffd) || (c >= 0x10000 && c <= 0x10ffff);
+const strip = (s: string): string =>
+  Array.from(s)
+    .filter((ch) => xmlOk(ch.codePointAt(0) ?? 0))
+    .join("");
 const x = (s: string): string => esc(strip(s));
 
 const rfc822 = (d: Date): string => d.toUTCString();
