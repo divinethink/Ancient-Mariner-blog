@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { PostArticle } from "@/components/public/PostArticle";
 import { PublicShell } from "@/components/public/PublicShell";
 import { getPublicScopes } from "@/data/publicLists";
-import { PostBody } from "@/components/public/PostBody";
 import { getSiteUrl } from "@/config/env";
 import { hasDefaultOgImage } from "@/data/publicAssets";
 import { getPublicSettings, listPublicPosts } from "@/data/publicSnapshot";
@@ -103,38 +103,20 @@ export default async function BlogPost({ params }: Props) {
   // category/tag লিংক scope-ডেটার card থেকে (একই build-ডেটা)
   const card = (await getPublicScopes()).find((s) => s.kind === "blog")?.cards.find((c) => c.id === post.id);
   const minutes = readingMinutes(post.wordCount);
+  const meta = (
+    <>
+      {post.publishedAt && <time dateTime={post.publishedAt.toISOString()}>{formatDate(post.publishedAt, tz)}</time>}
+      {" · "}
+      {post.wordCount} {bn.library.words}
+      {minutes > 0 && ` · ${bn.public.readMinutes(minutes)}`}
+    </>
+  );
   return (
     <PublicShell>
-    <article>
       <Link href="/" prefetch={false} className="mb-3 inline-flex min-h-11 items-center text-accent-text">
         ← {bn.public.home}
       </Link>
-      <h1 className="font-serif text-3xl font-bold leading-snug">{post.title || bn.library.untitled}</h1>
-      <p className="mt-2 text-sm text-muted">
-        {post.publishedAt && <time dateTime={post.publishedAt.toISOString()}>{formatDate(post.publishedAt, tz)}</time>}
-        {" · "}
-        {post.wordCount} {bn.library.words}
-        {minutes > 0 && ` · ${bn.public.readMinutes(minutes)}`}
-      </p>
-      {card && (card.category || card.tags.length > 0) && (
-        <div className="mt-2 flex flex-wrap gap-2">
-          {[...(card.category ? [card.category] : []), ...card.tags.map((t) => ({ ...t, name: `#${t.name}` }))].map((l) =>
-            l.href ? (
-              <Link key={l.name} href={l.href} prefetch={false} className="inline-flex min-h-11 items-center rounded-full border border-line px-3 text-sm text-accent-text">
-                {l.name}
-              </Link>
-            ) : (
-              <span key={l.name} className="inline-flex min-h-11 items-center rounded-full border border-line px-3 text-sm text-muted">
-                {l.name}
-              </span>
-            ),
-          )}
-        </div>
-      )}
-      <div className="reading mt-6">
-        <PostBody body={post.body} />
-      </div>
-    </article>
+      <PostArticle title={post.title} meta={meta} links={card ? [...(card.category ? [card.category] : []), ...card.tags.map((t) => ({ ...t, name: `#${t.name}` }))] : []} body={post.body} />
     </PublicShell>
   );
 }

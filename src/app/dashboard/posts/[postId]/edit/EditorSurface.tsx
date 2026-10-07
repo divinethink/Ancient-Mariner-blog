@@ -295,13 +295,22 @@ export function EditorSurface({ postId, data }: { postId: string; data: Loaded }
             ⋯
           </button>
           {moreOpen && (
-            <Link
-              href={`/dashboard/posts/${postId}/history`}
-              onClick={flush}
-              className="absolute right-0 top-11 z-30 flex min-h-11 items-center whitespace-nowrap rounded-xl border border-line bg-surface px-4 shadow"
-            >
-              {bn.editor.history}
-            </Link>
+            <div className="absolute right-0 top-11 z-30 flex flex-col rounded-xl border border-line bg-surface shadow">
+              <Link
+                href={`/dashboard/posts/${postId}/preview`}
+                onClick={flush}
+                className="flex min-h-11 items-center whitespace-nowrap px-4"
+              >
+                {bn.editor.preview}
+              </Link>
+              <Link
+                href={`/dashboard/posts/${postId}/history`}
+                onClick={flush}
+                className="flex min-h-11 items-center whitespace-nowrap px-4"
+              >
+                {bn.editor.history}
+              </Link>
+            </div>
           )}
         </div>
       </header>

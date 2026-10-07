@@ -479,6 +479,9 @@ export const bn = {
     errTimezone: "সময়ক্ষেত্র ঠিক নয়।",
   },
   editor: {
+    preview: "প্রিভিউ",
+    previewBanner: "প্রিভিউ — পাবলিকে নেই। পাবলিকে এই লেখা এভাবেই দেখাবে।",
+    previewBack: "← লেখায় ফিরুন",
     titlePlaceholder: "শিরোনাম (ঐচ্ছিক)",
     back: "ফিরুন",
     moreOpen: "আরও",

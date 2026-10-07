@@ -9,7 +9,7 @@ import { EMPTY_DOC, docToText, makeExcerpt, parseBody } from "@/lib/editorDoc";
 import { remoteChanged } from "@/lib/syncPlan";
 import { EditorSurface, type Loaded } from "./EditorSurface";
 
-type State = { kind: "loading" } | { kind: "error" } | { kind: "ready"; data: Loaded };
+export type State = { kind: "loading" } | { kind: "error" } | { kind: "ready"; data: Loaded };
 
 const fromLocal = async (postId: string, l: LocalDraft, pub?: Loaded["pub"]): Promise<State> => {
   const doc = parseBody(l.body);
@@ -32,7 +32,7 @@ const fromLocal = async (postId: string, l: LocalDraft, pub?: Loaded["pub"]): Pr
  * (২) নইলে রিমোট (drafts/{id} → posts/{id}); রিমোট বদলে থাকলে পুরনো ক্লিন লোকাল কপি বাতিল;
  * (৩) রিমোটে না পৌঁছালে ক্লিন লোকাল কপি; (৪) কিছুই না থাকলে খালি নতুন লেখা
  */
-async function load(postId: string, isNew: boolean): Promise<State> {
+export async function load(postId: string, isNew: boolean): Promise<State> {
   const local = await draftStore.loadDraft(postId).catch(() => undefined);
   if (local?.dirty) {
     const pub = await getPostRepo()
