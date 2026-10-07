@@ -1,0 +1,80 @@
+// পাবলিক post-card view-model ও [আরও দেখান] chunk (Arch §২ 'Public payload', §১৭ P4a)। pure, SDK/UI-মুক্ত।
+// CardView JSON-serializable — build-সময়ে তৈরি হয়ে static পেজ ও `/data/cards/*.json`-এ যায়; `body` কখনো না।
+import { formatDate, formatDayMonth } from "./datetime";
+import { categoryPath, postExcerpt, blogPath, tagPath } from "./publicSite";
+import { readingMinutes } from "./readingTime";
+
+export type CardLink = { name: string; href?: string };
+export type CardView = {
+  id: string;
+  title: string;
+  href: string;
+  excerpt: string;
+  dateISO?: string;
+  dateLabel?: string;
+  day?: string;
+  month?: string;
+  category?: CardLink;
+  /** পড়ার সময় (মিনিট); শব্দ না থাকলে ০ */
+  minutes: number;
+  tags: CardLink[];
+};
+
+export type CardPost = {
+  id: string;
+  title: string;
+  slug: string;
+  excerpt: string;
+  body: string;
+  publishedAt?: Date;
+  wordCount: number;
+  categoryId?: string;
+  categoryName?: string;
+  tagIds: readonly string[];
+  tagNames: readonly string[];
+};
+export type CardTerm = { id: string; slug: string };
+export type CardCtx = {
+  timeZone: string;
+  categories: ReadonlyMap<string, CardTerm>;
+  tags: ReadonlyMap<string, CardTerm>;
+};
+
+export function toCardView(p: CardPost, ctx: CardCtx): CardView {
+  const cat = p.categoryId ? ctx.categories.get(p.categoryId) : undefined;
+  const category: CardLink | undefined = p.categoryName
+    ? { name: p.categoryName, href: cat ? categoryPath(cat.slug) : undefined }
+    : undefined;
+  const tags: CardLink[] = p.tagIds.flatMap((id, i) => {
+    const name = p.tagNames[i];
+    if (!name) return [];
+    const t = ctx.tags.get(id);
+    return [{ name, href: t ? tagPath(t.slug) : undefined }];
+  });
+  const d = p.publishedAt;
+  return {
+    id: p.id,
+    title: p.title,
+    href: blogPath(p.slug),
+    excerpt: postExcerpt(p),
+    ...(d && { dateISO: d.toISOString(), dateLabel: formatDate(d, ctx.timeZone), ...formatDayMonth(d, ctx.timeZone) }),
+    ...(category && { category }),
+    minutes: readingMinutes(p.wordCount),
+    tags,
+  };
+}
+
+/** chunk-ফাইলের নামে শুধু নিরাপদ ASCII key (Firestore auto-id); নইলে সব card প্রথম পেজে — chunk নেই */
+export const SAFE_KEY = /^[A-Za-z0-9_-]+$/;
+export const cardChunkPath = (key: string, n: number): string => `/data/cards/${key}-${n}.json`;
+
+export type CardPages = { first: CardView[]; chunks: CardView[][] };
+
+/** প্রথম `pageSize`টা সরাসরি, বাকি `pageSize`-এর chunk-এ (chunk-নম্বর ২ থেকে) */
+export function splitCards(cards: readonly CardView[], pageSize: number, key: string): CardPages {
+  const size = Math.max(1, Math.floor(pageSize));
+  if (!SAFE_KEY.test(key)) return { first: [...cards], chunks: [] };
+  const chunks: CardView[][] = [];
+  for (let i = size; i < cards.length; i += size) chunks.push(cards.slice(i, i + size));
+  return { first: cards.slice(0, size), chunks };
+}

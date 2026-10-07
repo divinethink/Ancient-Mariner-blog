@@ -10,6 +10,13 @@ export function formatDate(d: DateInput, timeZone = DEFAULT_TIMEZONE): string {
   return new Intl.DateTimeFormat("bn-BD", { timeZone, dateStyle: "long" }).format(toDate(d));
 }
 
+/** তারিখ-ব্যাজের জন্য দিন ও মাস আলাদা: { day: "৪", month: "অক্টো" } */
+export function formatDayMonth(d: DateInput, timeZone = DEFAULT_TIMEZONE): { day: string; month: string } {
+  const parts = new Intl.DateTimeFormat("bn-BD", { timeZone, day: "numeric", month: "short" }).formatToParts(toDate(d));
+  const pick = (t: string) => parts.find((x) => x.type === t)?.value ?? "";
+  return { day: pick("day"), month: pick("month") };
+}
+
 /** তারিখ ও সময়, বাংলায় */
 export function formatDateTime(d: DateInput, timeZone = DEFAULT_TIMEZONE): string {
   return new Intl.DateTimeFormat("bn-BD", {

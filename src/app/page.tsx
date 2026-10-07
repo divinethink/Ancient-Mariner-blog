@@ -1,16 +1,15 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Analytics } from "@/components/public/Analytics";
+import { PostCardList } from "@/components/public/PostCard";
+import { PublicShell } from "@/components/public/PublicShell";
 import { getSiteUrl } from "@/config/env";
 import { hasDefaultOgImage } from "@/data/publicAssets";
-import { toPostCard } from "@/data/postRepo";
-import { getPublicSettings, listPublicPosts } from "@/data/publicSnapshot";
+import { getPublicScopes } from "@/data/publicLists";
+import { getPublicSettings } from "@/data/publicSnapshot";
 import { bn } from "@/i18n/bn";
-import { formatDate } from "@/lib/datetime";
-import { blogPath, postExcerpt } from "@/lib/publicSite";
 import { buildSeo } from "@/lib/seo";
 
-// build-সময়ে prerender; পাঠক-রিকোয়েস্টে Worker চলে না (Arch §১২)। card-এ `body` নেই (toPostCard)।
+// build-সময়ে prerender; পাঠক-রিকোয়েস্টে Worker চলে না (Arch §১২)। card-এ `body` নেই (CardView)।
 export const dynamic = "force-static";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -34,42 +33,19 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function Home() {
-  const [posts, settings] = await Promise.all([listPublicPosts(), getPublicSettings()]);
-  const tz = settings.timezone;
-  const cards = posts
-    .slice(0, settings.postsPerPage)
-    .map((p) => ({ ...toPostCard(p), excerpt: postExcerpt(p) }));
+  const [scopes, settings] = await Promise.all([getPublicScopes(), getPublicSettings()]);
+  const cards = (scopes.find((s) => s.kind === "blog")?.cards ?? []).slice(0, settings.postsPerPage);
   return (
-    <>
-      <Analytics />
+    <PublicShell>
       <h1 className="font-serif text-3xl font-bold">{settings.siteTitle}</h1>
       {settings.tagline && <p className="mt-1 text-muted">{settings.tagline}</p>}
       <h2 className="mb-4 mt-8 font-serif text-xl font-bold">{bn.public.latest}</h2>
-      {cards.length === 0 ? (
-        <p className="text-muted">{bn.public.empty}</p>
-      ) : (
-        <ul className="space-y-4">
-          {cards.map((c) => (
-            <li key={c.id}>
-              <Link
-                href={blogPath(c.slug)}
-                prefetch={false}
-                className="block rounded-2xl border border-line bg-surface p-4"
-              >
-                <span className="block font-serif text-xl font-bold leading-snug">
-                  {c.title || bn.library.untitled}
-                </span>
-                <span className="mt-1 block text-sm text-muted">
-                  {c.publishedAt && <time dateTime={c.publishedAt.toISOString()}>{formatDate(c.publishedAt, tz)}</time>}
-                  {" · "}
-                  {c.wordCount} {bn.library.words}
-                </span>
-                {c.excerpt && <span className="mt-2 line-clamp-2 block text-muted">{c.excerpt}</span>}
-              </Link>
-            </li>
-          ))}
-        </ul>
+      {cards.length === 0 ? <p className="text-muted">{bn.public.empty}</p> : <PostCardList cards={cards} />}
+      {cards.length > 0 && (
+        <Link href="/blog" prefetch={false} className="mt-4 inline-flex min-h-11 items-center text-accent-text underline">
+          {bn.public.allPosts} →
+        </Link>
       )}
-    </>
+    </PublicShell>
   );
 }

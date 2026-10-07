@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Analytics } from "@/components/public/Analytics";
+import { PublicShell } from "@/components/public/PublicShell";
+import { getPublicScopes } from "@/data/publicLists";
 import { PostBody } from "@/components/public/PostBody";
 import { getSiteUrl } from "@/config/env";
 import { hasDefaultOgImage } from "@/data/publicAssets";
@@ -9,6 +10,7 @@ import { getPublicSettings, listPublicPosts } from "@/data/publicSnapshot";
 import { bn } from "@/i18n/bn";
 import { formatDate } from "@/lib/datetime";
 import { blogPath, planSlugMoves, postExcerpt } from "@/lib/publicSite";
+import { readingMinutes } from "@/lib/readingTime";
 import { buildSeo } from "@/lib/seo";
 
 // build-সময়ে সব published+public লেখার (এবং বাংলা পুরনো-slug-এর redirect-stub) পেজ; অন্য slug = 404 (Arch §২, §১২)
@@ -98,9 +100,12 @@ export default async function BlogPost({ params }: Props) {
   }
 
   const { post } = r;
+  // category/tag লিংক scope-ডেটার card থেকে (একই build-ডেটা)
+  const card = (await getPublicScopes()).find((s) => s.kind === "blog")?.cards.find((c) => c.id === post.id);
+  const minutes = readingMinutes(post.wordCount);
   return (
+    <PublicShell>
     <article>
-      <Analytics />
       <Link href="/" prefetch={false} className="mb-3 inline-flex min-h-11 items-center text-accent-text">
         ← {bn.public.home}
       </Link>
@@ -109,10 +114,27 @@ export default async function BlogPost({ params }: Props) {
         {post.publishedAt && <time dateTime={post.publishedAt.toISOString()}>{formatDate(post.publishedAt, tz)}</time>}
         {" · "}
         {post.wordCount} {bn.library.words}
+        {minutes > 0 && ` · ${bn.public.readMinutes(minutes)}`}
       </p>
+      {card && (card.category || card.tags.length > 0) && (
+        <div className="mt-2 flex flex-wrap gap-2">
+          {[...(card.category ? [card.category] : []), ...card.tags.map((t) => ({ ...t, name: `#${t.name}` }))].map((l) =>
+            l.href ? (
+              <Link key={l.name} href={l.href} prefetch={false} className="inline-flex min-h-11 items-center rounded-full border border-line px-3 text-sm text-accent-text">
+                {l.name}
+              </Link>
+            ) : (
+              <span key={l.name} className="inline-flex min-h-11 items-center rounded-full border border-line px-3 text-sm text-muted">
+                {l.name}
+              </span>
+            ),
+          )}
+        </div>
+      )}
       <div className="reading mt-6">
         <PostBody body={post.body} />
       </div>
     </article>
+    </PublicShell>
   );
 }

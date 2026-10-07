@@ -36,6 +36,13 @@ describe("buildSeo", () => {
 });
 
 describe("renderSitemap", () => {
+  it("extraPaths (/blog, category…) home-এর পরে আসে; সীমায় গোনা হয়", () => {
+    const x = renderSitemap("https://ex.dev", [{ slug: "a", updatedAt: new Date("2026-02-01T00:00:00Z") }], ["/blog", "/category/x"]);
+    expect(x).toContain("<loc>https://ex.dev/blog</loc>");
+    expect(x).toContain("<loc>https://ex.dev/category/x</loc>");
+    const posts = Array.from({ length: MAX_SITEMAP_URLS - 1 }, () => ({ slug: "a", updatedAt: new Date() }));
+    expect(() => renderSitemap("https://ex.dev", posts, ["/blog"])).toThrow();
+  });
   it("home + লেখা, XML-escape ও lastmod", () => {
     const x = renderSitemap("https://ex.dev/", [{ slug: "a&b", updatedAt: new Date("2026-02-01T00:00:00Z") }]);
     expect(x).toContain("<loc>https://ex.dev/</loc><lastmod>2026-02-01T00:00:00.000Z</lastmod>");

@@ -99,10 +99,11 @@ const xmlEscape = (s: string): string =>
 
 export type SitemapPost = { slug: string; publishedAt?: Date; updatedAt: Date };
 
-/** Home + প্রতিটি পাবলিক লেখা; `lastmod` = updatedAt (অবৈধ হলে বাদ) */
-export function renderSitemap(siteUrl: string, posts: readonly SitemapPost[]): string {
-  if (posts.length + 1 > MAX_SITEMAP_URLS) {
-    throw new Error(`sitemap সীমা (${MAX_SITEMAP_URLS}) ছাড়িয়েছে: ${posts.length + 1} — owner-আলোচনা`);
+/** Home + extraPaths (`/blog`, category/tag/series — percent-encoded) + প্রতিটি পাবলিক লেখা; `lastmod` = updatedAt (অবৈধ হলে বাদ) */
+export function renderSitemap(siteUrl: string, posts: readonly SitemapPost[], extraPaths: readonly string[] = []): string {
+  const total = posts.length + extraPaths.length + 1;
+  if (total > MAX_SITEMAP_URLS) {
+    throw new Error(`sitemap সীমা (${MAX_SITEMAP_URLS}) ছাড়িয়েছে: ${total} — owner-আলোচনা`);
   }
   const base = trimSlash(siteUrl);
   const entry = (loc: string, d?: Date) => {
@@ -113,6 +114,7 @@ export function renderSitemap(siteUrl: string, posts: readonly SitemapPost[]): s
   return (
     `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
     entry(`${base}/`, latest) +
+    extraPaths.map((path) => entry(`${base}${path}`, latest)).join("") +
     posts.map((p) => entry(`${base}${blogPath(p.slug)}`, p.updatedAt)).join("") +
     `</urlset>\n`
   );

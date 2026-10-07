@@ -3,6 +3,7 @@ import { writeFile } from "node:fs/promises";
 import { readSnapshot } from "../src/data/publicSnapshot";
 import { getSiteUrl } from "../src/config/env";
 import { renderRobots, renderSitemap } from "../src/lib/seo";
+import { writeCardChunks } from "./cardChunks";
 
 const DIR = ".open-next/assets";
 
@@ -11,9 +12,11 @@ async function main() {
   if (!snap) throw new Error("build snapshot নেই");
   const siteUrl = getSiteUrl();
   const { allowIndexing, blockAiCrawlers } = snap.settings;
+  // P4a-২: [আরও দেখান] card-JSON chunk (assets/data/cards) — package.json অপরিবর্তিত রাখতে এই ধাপেই (build:cf-এ আগে থেকেই চলে)
+  const scopes = await writeCardChunks(snap, DIR);
   await writeFile(`${DIR}/robots.txt`, renderRobots({ siteUrl, allowIndexing, blockAiCrawlers }), "utf8");
   if (allowIndexing) {
-    await writeFile(`${DIR}/sitemap.xml`, renderSitemap(siteUrl, snap.posts), "utf8");
+    await writeFile(`${DIR}/sitemap.xml`, renderSitemap(siteUrl, snap.posts, scopes.map((x) => x.path)), "utf8");
   }
   console.log(`✅ robots.txt (ইনডেক্স ${allowIndexing ? "চালু" : "বন্ধ"}, AI-ব্লক ${blockAiCrawlers ? "চালু" : "বন্ধ"})${allowIndexing ? ` + sitemap.xml (${snap.posts.length + 1} URL)` : "; sitemap নেই"}`);
 }

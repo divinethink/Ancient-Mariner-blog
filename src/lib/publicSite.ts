@@ -10,6 +10,12 @@ export type SlugMove = { from: string; to: string };
 /** পাবলিক লেখার পথ; slug percent-encoded (বাংলা slug-সহ) */
 export const blogPath = (slug: string): string => `/blog/${encodeURIComponent(slug)}`;
 
+/** পাবলিক সংগঠন-পথ; slug percent-encoded (taxonomy slug তৈরির পর অপরিবর্তিত — P3a-১) */
+export const BLOG_INDEX_PATH = "/blog";
+export const categoryPath = (slug: string): string => `/category/${encodeURIComponent(slug)}`;
+export const tagPath = (slug: string): string => `/tag/${encodeURIComponent(slug)}`;
+export const seriesPath = (slug: string): string => `/series/${encodeURIComponent(slug)}`;
+
 /** নিজের সারাংশ খালি হলে লেখা থেকে স্বয়ংক্রিয় (Publish panel-এর hint-এর সাথে সঙ্গতি) */
 export function postExcerpt(p: { excerpt: string; body: string }): string {
   const own = p.excerpt.trim();

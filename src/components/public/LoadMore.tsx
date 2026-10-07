@@ -1,0 +1,54 @@
+"use client";
+import { useState } from "react";
+import { bn } from "@/i18n/bn";
+import { cardChunkPath, type CardView } from "@/lib/cards";
+import { PostCardList } from "./PostCard";
+
+/** [আরও দেখান]: build-সময়ের card-JSON chunk fetch (Firestore নয়, Arch §২); ব্যর্থ হলে স্পষ্ট error + আবার চেষ্টা */
+export function LoadMore({ scopeKey, chunks }: { scopeKey: string; chunks: number }) {
+  const [loaded, setLoaded] = useState<CardView[]>([]);
+  const [next, setNext] = useState(2); // chunk-নম্বর ২ থেকে
+  const [busy, setBusy] = useState(false);
+  const [failed, setFailed] = useState(false);
+
+  async function more() {
+    setBusy(true);
+    setFailed(false);
+    try {
+      const res = await fetch(cardChunkPath(scopeKey, next), { signal: AbortSignal.timeout(8000) });
+      if (!res.ok) throw new Error(String(res.status));
+      const items = (await res.json()) as CardView[];
+      setLoaded((l) => [...l, ...items]);
+      setNext((n) => n + 1);
+    } catch {
+      setFailed(true);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <>
+      {loaded.length > 0 && (
+        <div className="mt-4">
+          <PostCardList cards={loaded} />
+        </div>
+      )}
+      {failed && (
+        <p role="alert" className="mt-4 text-sm text-red-600">
+          {bn.public.loadFailed}
+        </p>
+      )}
+      {next <= chunks + 1 && (
+        <button
+          type="button"
+          onClick={more}
+          disabled={busy}
+          className="mt-4 inline-flex min-h-11 items-center rounded-full bg-btn-bg px-5 text-btn-tx disabled:opacity-60"
+        >
+          {busy ? bn.public.loading : failed ? bn.public.retry : bn.public.loadMore}
+        </button>
+      )}
+    </>
+  );
+}
