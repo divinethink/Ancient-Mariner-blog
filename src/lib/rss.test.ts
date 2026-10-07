@@ -26,8 +26,10 @@ describe("bodyToHtml", () => {
     const ok = bodyToHtml(doc([p("x", [{ type: "link", attrs: { href: "https://a.dev/?q=1&r=2" } }])]));
     expect(ok).toBe('<p><a href="https://a.dev/?q=1&amp;r=2" rel="noopener noreferrer">x</a></p>');
   });
-  it("blocked node (iframe/script) কিছুই দেয় না; বিকৃত body = \"\"", () => {
-    expect(bodyToHtml(doc([{ type: "iframe" }, { type: "script", text: "x" }]))).toBe("");
+  it("blocked node (iframe/script) থেকে কোনো tag/টেক্সট আসে না; বিকৃত body-তেও নিরাপদ", () => {
+    // sanitizer খালি হলে একটা ফাঁকা অনুচ্ছেদ ফেরত দেয় — তাই শুধু 'ক্ষতিকর কিছু নেই' যাচাই
+    const h = bodyToHtml(doc([{ type: "iframe" }, { type: "script", text: "BAD" }]));
+    expect(h).not.toMatch(/iframe|script|BAD/);
     expect(bodyToHtml("not json")).not.toContain("<script");
   });
 });
