@@ -79,3 +79,10 @@ export interface TaxonomyRepo {
   /** categories: সন্তান থাকলে TermRuleError। 'পোস্টে ব্যবহৃত' ও default-ক্যাটাগরি যাচাই P3a-২-তে UI খোলার আগে। */
   delete(id: string): Promise<void>;
 }
+
+/** পথ খ (build-সময়ে unauthenticated REST) — পুরো তালিকা, নাম-ক্রমে নয় (গ্রুপিং `lib/postGroups`-এ) */
+export type PublicTerms = { categories: TermWithId[]; tags: TermWithId[]; series: TermWithId[] };
+export interface PublicTaxonomySource {
+  listAll(): Promise<PublicTerms>;
+}
+export const EMPTY_TERMS: PublicTerms = { categories: [], tags: [], series: [] };

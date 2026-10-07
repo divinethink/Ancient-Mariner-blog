@@ -88,3 +88,22 @@ describe("publicSnapshot", () => {
     expect((await readSnapshot(path))?.settings).toEqual(DEFAULT_SETTINGS);
   });
 });
+
+describe("publicSnapshot — terms (P4a-১)", () => {
+  it("terms লেখা-পড়ায় অক্ষত; পুরনো snapshot (terms নেই) = খালি", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "snap-terms-"));
+    const path = join(dir, "posts.json");
+    const t = (id: string) => ({
+      id, name: "ভ্রমণ", slug: `s-${id}`, description: "", ownerUid: "u",
+      createdAt: new Date("2026-10-01T00:00:00Z"), updatedAt: new Date("2026-10-01T00:00:00Z"), schemaVersion: 1,
+    });
+    await writeSnapshot([post("a")], new Date(), path, DEFAULT_SETTINGS, { categories: [t("c1")], tags: [t("t1")], series: [] });
+    const s = await readSnapshot(path);
+    expect(s?.terms.categories[0]).toMatchObject({ id: "c1", slug: "s-c1" });
+    expect(s?.terms.categories[0].createdAt).toBeInstanceOf(Date);
+    expect(s?.terms.tags).toHaveLength(1);
+    const old = join(dir, "old.json");
+    await writeFile(old, JSON.stringify({ fetchedAt: new Date().toISOString(), posts: [] }), "utf8");
+    expect((await readSnapshot(old))?.terms).toEqual({ categories: [], tags: [], series: [] });
+  });
+});

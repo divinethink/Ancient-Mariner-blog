@@ -44,3 +44,8 @@ export function publishedPostsQuery() {
     },
   };
 }
+
+/** পুরো collection (ছোট taxonomy-collection-এর জন্য; categories/tags/series public-read — rules) */
+export const collectionQuery = (collectionId: string) => ({
+  structuredQuery: { from: [{ collectionId }] },
+});
