@@ -77,3 +77,29 @@ describe("P4b-২ ফিল্ড: authorBio, feedItems, feedMode", () => {
     expect(ok.authorBio).toBe("আমি");
   });
 });
+
+describe("P4b-৩ ফিল্ড: socialLinks, links, layout", () => {
+  it("default: ফেসবুক খালি, লিংক ফাঁকা, layout ফাঁকা — পুরনো doc-এ না থাকলেও", () => {
+    const r = parseSiteSettings({ siteTitle: "ব্লগ" });
+    expect(r.socialLinks).toEqual({ facebook: "" });
+    expect(r.links).toEqual([]);
+    expect(r.layout).toEqual({ sidebar: [], home: [] });
+  });
+  it("অনিরাপদ URL (javascript:/data:) শুধু সেই ফিল্ডকে default-এ ফেরায়", () => {
+    const r = parseSiteSettings({ ...valid, socialLinks: { facebook: "javascript:alert(1)" }, links: [{ label: "x", url: "data:text/html,hi" }] });
+    expect(r.socialLinks.facebook).toBe("");
+    expect(r.links).toEqual([]);
+    expect(r.postsPerPage).toBe(12);
+  });
+  it("http/https গ্রহণ, লেবেল trim; layout আকৃতি ঠিক থাকলে রাখে", () => {
+    const ok = SiteSettingsInputSchema.parse({
+      ...valid,
+      socialLinks: { facebook: "https://facebook.com/page" },
+      links: [{ label: " প্রথম আলো ", url: "https://prothomalo.com" }],
+      layout: { sidebar: [{ id: "recent", enabled: true }], home: [] },
+    });
+    expect(ok.links[0]?.label).toBe("প্রথম আলো");
+    expect(ok.layout.sidebar).toEqual([{ id: "recent", enabled: true }]);
+    expect(SiteSettingsInputSchema.safeParse({ ...valid, links: Array.from({ length: 21 }, () => ({ label: "a", url: "https://a.dev" })) }).success).toBe(false);
+  });
+});

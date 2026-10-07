@@ -58,6 +58,7 @@ export function PublishPanel(p: Props) {
   const [slugIn, setSlugIn] = useState("");
   const [vis, setVis] = useState<"private" | "public">("public");
   const [dateIn, setDateIn] = useState("");
+  const [feat, setFeat] = useState(false);
   /** প্রকাশের তারিখের `max` — render-এ Date.now() নয়, meta লোডের সময় বসে */
   const [maxIn, setMaxIn] = useState("");
   const [org, setOrg] = useState<OrgState | null>(null);
@@ -77,6 +78,7 @@ export function PublishPanel(p: Props) {
       // কখনো প্রকাশ না-হওয়া লেখায় প্রকাশের পথে Public শুরুর মান; নইলে বর্তমান
       setVis(post.publishedAt ? post.visibility : "public");
       setDateIn(post.publishedAt ? toZonedInput(post.publishedAt, tz) : "");
+      setFeat(post.featured === true);
       setMaxIn(toZonedInput(new Date(), tz));
       setOrg(orgFromPost(post));
       setOrderIn(post.seriesId && post.seriesOrder !== undefined ? String(post.seriesOrder) : "");
@@ -168,6 +170,7 @@ export function PublishPanel(p: Props) {
     const patch = {
       ...orgChange,
       ...(vis !== cur.visibility ? { visibility: vis } : {}),
+      ...(feat !== (cur.featured === true) ? { featured: feat } : {}),
       ...(dateChanged ? { publishedAt: date.date } : {}),
       ...extra,
     };
@@ -378,6 +381,14 @@ export function PublishPanel(p: Props) {
                 ))}
               </div>
             </fieldset>
+
+            <label className="flex min-h-11 cursor-pointer items-start gap-3">
+              <input type="checkbox" checked={feat} onChange={(e) => setFeat(e.target.checked)} className="mt-1 size-5" />
+              <span>
+                {bn.publishPanel.featured}
+                <span className="block text-xs text-muted">{bn.publishPanel.featuredHint}</span>
+              </span>
+            </label>
 
             {org && (
               <OrgSection

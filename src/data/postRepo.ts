@@ -45,6 +45,7 @@ export const PostSchema = z.object({
   seriesId: z.string().min(1).optional(),
   seriesOrder: z.number().int().nonnegative().optional(),
   importSource: ImportSourceSchema.optional(), // P3c-খ; বিকৃত হলে `parsePost` বাদ দেয়
+  featured: z.boolean().optional(), // P4b-৩: Home-এ featured (পুরনো doc-এ নেই = false)
   publishedAt: z.date().optional(),
   trashedAt: z.date().optional(),
   ownerUid: z.string().min(1),
@@ -75,6 +76,7 @@ export const PostPatchSchema = z
     tagNames: z.array(z.string()).max(MAX_TAGS_PER_POST).optional(),
     seriesId: z.string().min(1).nullable().optional(),
     seriesOrder: z.number().int().nonnegative().nullable().optional(),
+    featured: z.boolean().optional(),
   })
   .refine((p) => (p.tagIds === undefined) === (p.tagNames === undefined), "tagIds ও tagNames একসাথে দিতে হবে")
   .refine((p) => p.tagIds === undefined || p.tagIds.length === p.tagNames?.length, "tagIds/tagNames দৈর্ঘ্য অমিল")
@@ -147,6 +149,7 @@ export const parsePost = (id: string, raw: Record<string, unknown>): PostWithId 
   const n = normalizeRaw(raw);
   // বিকৃত importSource পুরো লেখা ভাঙে না — শুধু বাদ (defensive read, Dev Rules §৩)
   if (n.importSource !== undefined && !ImportSourceSchema.safeParse(n.importSource).success) delete n.importSource;
+  if (n.featured !== undefined && typeof n.featured !== "boolean") delete n.featured; // বিকৃত featured শুধু বাদ
   return { ...PostSchema.parse(n), id };
 };
 export const parseDraft = (raw: Record<string, unknown>): Draft =>

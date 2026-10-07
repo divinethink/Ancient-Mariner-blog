@@ -143,3 +143,13 @@ describe("P3c-খ importSource (additive, defensive read)", () => {
     expect(p.title).toBe("শিরোনাম");
   });
 });
+
+describe("featured (P4b-৩)", () => {
+  it("পুরনো doc-এ নেই = undefined; true/false রাখে; বিকৃত মান পড়া ভাঙে না (বাদ); patch কঠোর", () => {
+    expect(parsePost("id1", raw()).featured).toBeUndefined();
+    expect(parsePost("id1", raw({ featured: true })).featured).toBe(true);
+    expect(parsePost("id1", raw({ featured: "yes" })).featured).toBeUndefined();
+    expect(PostPatchSchema.safeParse({ featured: false }).success).toBe(true);
+    expect(PostPatchSchema.safeParse({ featured: "yes" }).success).toBe(false);
+  });
+});

@@ -1,6 +1,6 @@
 // siteSettingsRepo = interface + Zod boundary (Arch §২ 'Repo গঠন'); adapter: .client.ts (পথ ক), .server.ts (পথ খ)।
 // সম্পাদনাযোগ্য ফিল্ড: নাম, ট্যাগলাইন, থিম-default, timezone, postsPerPage, ইনডেক্স/AI-crawler টগল (P2c-১); authorBio, feedItems, feedMode (P4b-২)।
-// পরের phase-এর ফিল্ড (menu/footer/layout/design…) এই schema-য় নেই — সেভ `merge` বলে সেগুলো অক্ষত থাকে।
+// socialLinks.facebook, links, layout (sidebar/home ক্রম) — পাঠ P4b-৩; সম্পাদনা UI P9a। পরের phase-এর ফিল্ড (menu/footer/design…) এই schema-য় নেই — সেভ `merge` বলে সেগুলো অক্ষত থাকে।
 import { z } from "zod";
 import { DEFAULT_TIMEZONE } from "@/lib/datetime";
 import { FeedMode, Theme } from "@/lib/enums";
@@ -9,12 +9,18 @@ import {
   DEFAULT_FEED_ITEMS,
   DEFAULT_POSTS_PER_PAGE,
   FEED_ITEMS_RANGE,
+  LINKS_MAX,
+  URL_MAX,
+  isHttpUrl,
   POSTS_PER_PAGE_RANGE,
   SITE_TITLE_MAX,
   TAGLINE_MAX,
   isValidTimeZone,
 } from "@/lib/siteSettings";
 import { bn } from "@/i18n/bn";
+
+const HttpUrl = z.string().trim().max(URL_MAX).refine(isHttpUrl, "http/https URL দরকার");
+const LayoutItem = z.object({ id: z.string().min(1).max(40), enabled: z.boolean() });
 
 const fields = {
   siteTitle: z.string().trim().min(1).max(SITE_TITLE_MAX),
@@ -27,6 +33,9 @@ const fields = {
   authorBio: z.string().trim().max(AUTHOR_BIO_MAX),
   feedItems: z.number().int().min(FEED_ITEMS_RANGE.min).max(FEED_ITEMS_RANGE.max),
   feedMode: FeedMode,
+  socialLinks: z.object({ facebook: z.union([z.literal(""), HttpUrl]) }),
+  links: z.array(z.object({ label: z.string().trim().min(1).max(60), url: HttpUrl })).max(LINKS_MAX),
+  layout: z.object({ sidebar: z.array(LayoutItem).max(30), home: z.array(LayoutItem).max(30) }),
 };
 
 /** সেভের আগের কঠোর যাচাই (client+server) */
@@ -48,6 +57,9 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   authorBio: "",
   feedItems: DEFAULT_FEED_ITEMS,
   feedMode: "full",
+  socialLinks: { facebook: "" },
+  links: [],
+  layout: { sidebar: [], home: [] },
 };
 
 /** Defensive read: প্রতিটা ফিল্ড আলাদাভাবে যাচাই — অবৈধ/অনুপস্থিত মান শুধু সেই ফিল্ডের default-এ ফেরে */

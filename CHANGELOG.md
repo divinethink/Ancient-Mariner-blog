@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- P4b-৩ (কোড): পাবলিক sidebar (`Sidebar.tsx`: facebook, ক্যাটাগরি+সংখ্যা, লিংক, নতুন-লেখা-পেতে, recent, লেখক; `layout.sidebar` ক্রম/চালু-বন্ধ), Home-সেকশন (hero/featured/recent; `layout.home`), `posts.featured` + Publish panel-এ 'Home-এ featured' টগল; settings-এ `socialLinks.facebook`, `links[]`, `layout` (default ফাঁকা — সম্পাদনা UI P9a; তাই ফেসবুক/লিংক widget P9a-র আগে লুকানো)। rules/index/dependency বদল নেই।
 - P4b-২ (কোড): `/rss.xml` (`lib/rss.ts`, `lib/docHtml.ts`; build-সময়ে `build-seo.ts`-এ; `feedItems`/`feedMode`), পোস্টের শেষে লেখক-পরিচিতি (`AuthorBox`, `authorBio`), footer-এ RSS লিংক, Settings-এ তিনটি নতুন ফিল্ড (পুরনো doc-এ default; rules/index/dependency বদল নেই)। CI ও owner-যাচাই বাকি।
 - P0a: static পরিবেশন, `_headers`, Firestore REST-পড়া যাচাই সম্পন্ন; হ্যালো-পেজ সরানো, Firestore rule deny-all।
 - P0b: Tailwind v4, ESLint 9 (architecture guardrails), Prettier, Vitest, README/CHANGELOG, CI-তে lint+test।

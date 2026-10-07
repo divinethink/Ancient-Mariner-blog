@@ -8,6 +8,18 @@ export const SITE_TITLE_MAX = 80;
 export const TAGLINE_MAX = 160;
 export const POSTS_PER_PAGE_RANGE = { min: 5, max: 30 } as const;
 export const DEFAULT_POSTS_PER_PAGE = 10;
+export const LINKS_MAX = 20;
+export const URL_MAX = 300;
+
+/** সাইটের লিংক/ফেসবুক URL শুধু http/https (javascript:/data: নয়) */
+export function isHttpUrl(u: string): boolean {
+  try {
+    const p = new URL(u).protocol;
+    return p === "http:" || p === "https:";
+  } catch {
+    return false;
+  }
+}
 /** লেখক-পরিচিতি: plain-text, সর্বোচ্চ ২০০ অক্ষর (Arch §৬) */
 export const AUTHOR_BIO_MAX = 200;
 export const FEED_ITEMS_RANGE = { min: 5, max: 50 } as const;

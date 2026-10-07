@@ -1,12 +1,15 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { FeaturedCard } from "@/components/public/FeaturedCard";
 import { PostCardList } from "@/components/public/PostCard";
 import { PublicShell } from "@/components/public/PublicShell";
 import { getSiteUrl } from "@/config/env";
 import { hasDefaultOgImage } from "@/data/publicAssets";
 import { getPublicScopes } from "@/data/publicLists";
-import { getPublicSettings } from "@/data/publicSnapshot";
+import { getPublicSettings, listPublicPosts } from "@/data/publicSnapshot";
 import { bn } from "@/i18n/bn";
+import { pickFeatured } from "@/lib/featured";
+import { DEFAULT_HOME, resolveLayout } from "@/lib/layout";
 import { buildSeo } from "@/lib/seo";
 
 // build-সময়ে prerender; পাঠক-রিকোয়েস্টে Worker চলে না (Arch §১২)। card-এ `body` নেই (CardView)।
@@ -33,19 +36,36 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function Home() {
-  const [scopes, settings] = await Promise.all([getPublicScopes(), getPublicSettings()]);
-  const cards = (scopes.find((s) => s.kind === "blog")?.cards ?? []).slice(0, settings.postsPerPage);
+  const [scopes, settings, posts] = await Promise.all([getPublicScopes(), getPublicSettings(), listPublicPosts()]);
+  const all = scopes.find((s) => s.kind === "blog")?.cards ?? [];
+  const sections = resolveLayout(settings.layout.home, DEFAULT_HOME).filter((x) => x.enabled);
+  const featuredId = sections.some((x) => x.id === "featured") ? pickFeatured(posts) : undefined;
+  const featured = featuredId ? all.find((c) => c.id === featuredId) : undefined;
+  // featured কার্ড recent তালিকায় আবার দেখানো হয় না
+  const recent = all.filter((c) => c.id !== featured?.id).slice(0, settings.postsPerPage);
   return (
-    <PublicShell>
-      <h1 className="font-serif text-3xl font-bold">{settings.siteTitle}</h1>
-      {settings.tagline && <p className="mt-1 text-muted">{settings.tagline}</p>}
-      <h2 className="mb-4 mt-8 font-serif text-xl font-bold">{bn.public.latest}</h2>
-      {cards.length === 0 ? <p className="text-muted">{bn.public.empty}</p> : <PostCardList cards={cards} />}
-      {cards.length > 0 && (
-        <Link href="/blog" prefetch={false} className="mt-4 inline-flex min-h-11 items-center text-accent-text underline">
-          {bn.public.allPosts} →
-        </Link>
-      )}
+    <PublicShell sidebar>
+      {sections.map(({ id }) => {
+        if (id === "hero")
+          return (
+            <section key={id}>
+              <h1 className="font-serif text-3xl font-bold">{settings.siteTitle}</h1>
+              {settings.tagline && <p className="mt-1 text-muted">{settings.tagline}</p>}
+            </section>
+          );
+        if (id === "featured") return featured ? <section key={id} className="mt-6"><FeaturedCard c={featured} /></section> : null;
+        return (
+          <section key={id}>
+            <h2 className="mb-4 mt-8 font-serif text-xl font-bold">{bn.public.latest}</h2>
+            {all.length === 0 ? <p className="text-muted">{bn.public.empty}</p> : recent.length > 0 && <PostCardList cards={recent} />}
+            {all.length > 0 && (
+              <Link href="/blog" prefetch={false} className="mt-4 inline-flex min-h-11 items-center text-accent-text underline">
+                {bn.public.allPosts} →
+              </Link>
+            )}
+          </section>
+        );
+      })}
     </PublicShell>
   );
 }

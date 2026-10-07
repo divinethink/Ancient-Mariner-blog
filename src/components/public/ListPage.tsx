@@ -20,7 +20,7 @@ export async function ListPage({ scope }: { scope: Scope }) {
     ...(scope.parent ? [{ label: scope.parent.name, href: undefined as string | undefined }] : []),
   ];
   return (
-    <PublicShell>
+    <PublicShell sidebar>
       <nav aria-label={bn.public.breadcrumbLabel} className="text-sm text-muted">
         <ol className="flex flex-wrap items-center gap-x-2">
           {crumbs.map((c) => (
