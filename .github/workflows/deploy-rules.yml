@@ -1,0 +1,26 @@
+name: deploy-rules
+on:
+  workflow_dispatch:
+    inputs:
+      owner_uid:
+        description: 'Firebase OWNER_UID'
+        required: true
+jobs:
+  rules:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm i -g firebase-tools@14
+      - name: Service account
+        run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > "$RUNNER_TEMP/sa.json"
+      - name: Deploy rules + indexes
+        env:
+          OWNER_UID: ${{ inputs.owner_uid }}
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/sa.json
+        run: npm run deploy:rules
