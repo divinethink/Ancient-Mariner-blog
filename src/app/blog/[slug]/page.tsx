@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { AuthorBox } from "@/components/public/AuthorBox";
 import { PostArticle } from "@/components/public/PostArticle";
 import { PublicShell } from "@/components/public/PublicShell";
 import { getPublicScopes } from "@/data/publicLists";
@@ -81,7 +82,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function BlogPost({ params }: Props) {
-  const [r, { timezone: tz }] = await Promise.all([resolve((await params).slug), getPublicSettings()]);
+  const [r, { timezone: tz, siteTitle, authorBio }] = await Promise.all([resolve((await params).slug), getPublicSettings()]);
   if (!r) notFound();
 
   if (r.kind === "moved") {
@@ -117,6 +118,7 @@ export default async function BlogPost({ params }: Props) {
         ← {bn.public.home}
       </Link>
       <PostArticle title={post.title} meta={meta} links={card ? [...(card.category ? [card.category] : []), ...card.tags.map((t) => ({ ...t, name: `#${t.name}` }))] : []} body={post.body} />
+      <AuthorBox name={siteTitle} bio={authorBio} />
     </PublicShell>
   );
 }

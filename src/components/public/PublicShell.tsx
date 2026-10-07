@@ -5,6 +5,7 @@ import { getPublicScopes } from "@/data/publicLists";
 import { getPublicSettings } from "@/data/publicSnapshot";
 import { bn } from "@/i18n/bn";
 import { BLOG_INDEX_PATH } from "@/lib/publicSite";
+import { FEED_PATH } from "@/lib/rss";
 
 const nav = "inline-flex min-h-11 items-center";
 
@@ -56,7 +57,13 @@ export async function PublicShell({ children }: { children: ReactNode }) {
         </nav>
       </header>
       {children}
-      <footer className="mt-10 border-t border-line pt-4 text-sm text-muted">© {settings.siteTitle}</footer>
+      <footer className="mt-10 flex flex-wrap items-center justify-between gap-x-4 border-t border-line pt-4 text-sm text-muted">
+        <span>© {settings.siteTitle}</span>
+        {/* static ফাইল — Next <Link> নয়, সরাসরি <a> (build-seo `rss.xml` লেখে) */}
+        <a href={FEED_PATH} className="inline-flex min-h-11 items-center text-accent-text underline">
+          {bn.public.rss}
+        </a>
+      </footer>
     </>
   );
 }

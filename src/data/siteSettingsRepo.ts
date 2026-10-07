@@ -1,11 +1,14 @@
 // siteSettingsRepo = interface + Zod boundary (Arch §২ 'Repo গঠন'); adapter: .client.ts (পথ ক), .server.ts (পথ খ)।
-// P2c-১-এ সম্পাদনাযোগ্য ফিল্ড: নাম, ট্যাগলাইন, থিম-default, timezone, postsPerPage, ইনডেক্স/AI-crawler টগল।
-// পরের phase-এর ফিল্ড (menu/footer/layout/design/authorBio…) এই schema-য় নেই — সেভ `merge` বলে সেগুলো অক্ষত থাকে।
+// সম্পাদনাযোগ্য ফিল্ড: নাম, ট্যাগলাইন, থিম-default, timezone, postsPerPage, ইনডেক্স/AI-crawler টগল (P2c-১); authorBio, feedItems, feedMode (P4b-২)।
+// পরের phase-এর ফিল্ড (menu/footer/layout/design…) এই schema-য় নেই — সেভ `merge` বলে সেগুলো অক্ষত থাকে।
 import { z } from "zod";
 import { DEFAULT_TIMEZONE } from "@/lib/datetime";
-import { Theme } from "@/lib/enums";
+import { FeedMode, Theme } from "@/lib/enums";
 import {
+  AUTHOR_BIO_MAX,
+  DEFAULT_FEED_ITEMS,
   DEFAULT_POSTS_PER_PAGE,
+  FEED_ITEMS_RANGE,
   POSTS_PER_PAGE_RANGE,
   SITE_TITLE_MAX,
   TAGLINE_MAX,
@@ -21,6 +24,9 @@ const fields = {
   postsPerPage: z.number().int().min(POSTS_PER_PAGE_RANGE.min).max(POSTS_PER_PAGE_RANGE.max),
   allowIndexing: z.boolean(),
   blockAiCrawlers: z.boolean(),
+  authorBio: z.string().trim().max(AUTHOR_BIO_MAX),
+  feedItems: z.number().int().min(FEED_ITEMS_RANGE.min).max(FEED_ITEMS_RANGE.max),
+  feedMode: FeedMode,
 };
 
 /** সেভের আগের কঠোর যাচাই (client+server) */
@@ -39,6 +45,9 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   postsPerPage: DEFAULT_POSTS_PER_PAGE,
   allowIndexing: false,
   blockAiCrawlers: false,
+  authorBio: "",
+  feedItems: DEFAULT_FEED_ITEMS,
+  feedMode: "full",
 };
 
 /** Defensive read: প্রতিটা ফিল্ড আলাদাভাবে যাচাই — অবৈধ/অনুপস্থিত মান শুধু সেই ফিল্ডের default-এ ফেরে */

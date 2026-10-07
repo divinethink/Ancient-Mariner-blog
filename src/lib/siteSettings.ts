@@ -8,6 +8,10 @@ export const SITE_TITLE_MAX = 80;
 export const TAGLINE_MAX = 160;
 export const POSTS_PER_PAGE_RANGE = { min: 5, max: 30 } as const;
 export const DEFAULT_POSTS_PER_PAGE = 10;
+/** লেখক-পরিচিতি: plain-text, সর্বোচ্চ ২০০ অক্ষর (Arch §৬) */
+export const AUTHOR_BIO_MAX = 200;
+export const FEED_ITEMS_RANGE = { min: 5, max: 50 } as const;
+export const DEFAULT_FEED_ITEMS = 10;
 
 /** Settings-এ দেখানো থিম-default (বাকি ৩ থিম P7b-তে picker-এ আসে; enum-এ আগে থেকেই আছে) */
 export const SELECTABLE_THEMES: readonly Theme[] = ["auto", "light", "dark"];

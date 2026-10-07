@@ -53,3 +53,27 @@ describe("SiteSettingsInputSchema (সেভ-যাচাই)", () => {
     expect(SiteSettingsInputSchema.safeParse({ ...valid, ...over }).success).toBe(false);
   });
 });
+
+describe("P4b-২ ফিল্ড: authorBio, feedItems, feedMode", () => {
+  it("default: bio খালি, ১০টি, full — পুরনো doc-এ ফিল্ড না থাকলেও", () => {
+    const r = parseSiteSettings({ siteTitle: "ব্লগ" });
+    expect(r.authorBio).toBe("");
+    expect(r.feedItems).toBe(10);
+    expect(r.feedMode).toBe("full");
+  });
+  it("অবৈধ মান শুধু সেই ফিল্ডে default-এ ফেরে", () => {
+    const r = parseSiteSettings({ ...valid, authorBio: "ক".repeat(201), feedItems: 4, feedMode: "html" });
+    expect(r.authorBio).toBe("");
+    expect(r.feedItems).toBe(10);
+    expect(r.feedMode).toBe("full");
+    expect(r.postsPerPage).toBe(12);
+  });
+  it("কঠোর input: সীমার বাইরে প্রত্যাখ্যান; সীমায় গ্রহণ ও bio trim", () => {
+    expect(SiteSettingsInputSchema.safeParse({ ...valid, feedItems: 51 }).success).toBe(false);
+    expect(SiteSettingsInputSchema.safeParse({ ...valid, feedItems: 5.5 }).success).toBe(false);
+    expect(SiteSettingsInputSchema.safeParse({ ...valid, feedMode: "x" }).success).toBe(false);
+    expect(SiteSettingsInputSchema.safeParse({ ...valid, authorBio: "ক".repeat(201) }).success).toBe(false);
+    const ok = SiteSettingsInputSchema.parse({ ...valid, authorBio: "  আমি  ", feedItems: 50, feedMode: "excerpt" });
+    expect(ok.authorBio).toBe("আমি");
+  });
+});

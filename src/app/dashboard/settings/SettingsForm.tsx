@@ -7,6 +7,8 @@ import { getSiteSettingsRepo } from "@/data/siteSettingsRepo.wire";
 import { bn } from "@/i18n/bn";
 import { tzLabel } from "@/lib/datetime";
 import {
+  AUTHOR_BIO_MAX,
+  FEED_ITEMS_RANGE,
   POSTS_PER_PAGE_RANGE,
   SELECTABLE_THEMES,
   SITE_TITLE_MAX,
@@ -28,6 +30,8 @@ function validate(v: SiteSettings): Errs {
     siteTitle: bn.settings.errTitle,
     tagline: bn.settings.errTagline,
     postsPerPage: bn.settings.errPosts,
+    authorBio: bn.settings.errAuthorBio,
+    feedItems: bn.settings.errFeedItems,
     timezone: bn.settings.errTimezone,
   };
   const errs: Errs = {};
@@ -153,6 +157,19 @@ export function SettingsForm() {
           />
           {err("tagline")}
         </label>
+        <label className="block">
+          {bn.settings.authorBio}
+          <textarea
+            className={`${input} py-2`}
+            rows={3}
+            value={draft.authorBio}
+            maxLength={AUTHOR_BIO_MAX}
+            onChange={(e) => set("authorBio", e.target.value)}
+            {...aria("authorBio")}
+          />
+          <span className="mt-1 block text-sm text-muted">{bn.settings.authorBioHint}</span>
+          {err("authorBio")}
+        </label>
         <div role="radiogroup" aria-label={bn.settings.theme}>
           <p>{bn.settings.theme}</p>
           <p className="text-sm text-muted">{bn.settings.themeHint}</p>
@@ -209,6 +226,39 @@ export function SettingsForm() {
           <span className="mt-1 block text-sm text-muted">{bn.settings.postsPerPageHint}</span>
           {err("postsPerPage")}
         </label>
+      </fieldset>
+
+      <fieldset className="space-y-4">
+        <legend className="mb-2 font-serif text-lg font-bold">{bn.settings.feed}</legend>
+        <label className="block">
+          {bn.settings.feedItems}
+          <input
+            className={input}
+            type="number"
+            inputMode="numeric"
+            min={FEED_ITEMS_RANGE.min}
+            max={FEED_ITEMS_RANGE.max}
+            value={Number.isNaN(draft.feedItems) ? "" : draft.feedItems}
+            onChange={(e) => set("feedItems", e.target.value === "" ? NaN : Number(e.target.value))}
+            {...aria("feedItems")}
+          />
+          <span className="mt-1 block text-sm text-muted">{bn.settings.feedItemsHint}</span>
+          {err("feedItems")}
+        </label>
+        <div role="radiogroup" aria-label={bn.settings.feedMode}>
+          <p>{bn.settings.feedMode}</p>
+          <div className="mt-1 flex flex-wrap gap-2">
+            {(["full", "excerpt"] as const).map((m) => (
+              <label
+                key={m}
+                className="flex min-h-11 cursor-pointer items-center gap-2 rounded-full border border-line px-4 has-[:checked]:border-accent has-[:checked]:bg-surface"
+              >
+                <input type="radio" name="feedMode" checked={draft.feedMode === m} onChange={() => set("feedMode", m)} />
+                {m === "full" ? bn.settings.feedFull : bn.settings.feedExcerpt}
+              </label>
+            ))}
+          </div>
+        </div>
       </fieldset>
 
       <fieldset className="space-y-3">

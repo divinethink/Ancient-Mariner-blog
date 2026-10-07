@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- P4b-২ (কোড): `/rss.xml` (`lib/rss.ts`, `lib/docHtml.ts`; build-সময়ে `build-seo.ts`-এ; `feedItems`/`feedMode`), পোস্টের শেষে লেখক-পরিচিতি (`AuthorBox`, `authorBio`), footer-এ RSS লিংক, Settings-এ তিনটি নতুন ফিল্ড (পুরনো doc-এ default; rules/index/dependency বদল নেই)। CI ও owner-যাচাই বাকি।
 - P0a: static পরিবেশন, `_headers`, Firestore REST-পড়া যাচাই সম্পন্ন; হ্যালো-পেজ সরানো, Firestore rule deny-all।
 - P0b: Tailwind v4, ESLint 9 (architecture guardrails), Prettier, Vitest, README/CHANGELOG, CI-তে lint+test।
 - P0c: data/lib/theme/i18n/error-boundary/PWA-manifest/CSP/rules-scaffold (`enums`, `datetime`, `logger`, `localStore`, `postRepo` interface, ৬ থিম token, `deploy:rules`)।

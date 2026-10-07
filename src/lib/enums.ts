@@ -42,6 +42,10 @@ export const IdeaType = z.enum(IDEA_TYPE);
 export const NoteKind = z.enum(NOTE_KIND);
 export const TaxonomyKind = z.enum(TAXONOMY_KIND);
 export const Theme = z.enum(THEME);
+
+/** RSS: পূর্ণ লেখা না সারাংশ (P4b-২) — শুধু siteSettings-এ; Firestore rules-এ নেই */
+export const FEED_MODE = ["full", "excerpt"] as const;
+export const FeedMode = z.enum(FEED_MODE);
 export const RevisionTargetType = z.enum(REVISION_TARGET_TYPE);
 export const RevisionTrigger = z.enum(REVISION_TRIGGER);
 export const BackupType = z.enum(BACKUP_TYPE);
@@ -55,6 +59,7 @@ export type IdeaType = z.infer<typeof IdeaType>;
 export type NoteKind = z.infer<typeof NoteKind>;
 export type TaxonomyKind = z.infer<typeof TaxonomyKind>;
 export type Theme = z.infer<typeof Theme>;
+export type FeedMode = z.infer<typeof FeedMode>;
 export type RevisionTargetType = z.infer<typeof RevisionTargetType>;
 export type RevisionTrigger = z.infer<typeof RevisionTrigger>;
 export type BackupType = z.infer<typeof BackupType>;
