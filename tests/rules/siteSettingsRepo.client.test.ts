@@ -64,7 +64,7 @@ describe("siteSettingsRepo.client (Emulator)", () => {
     const d = await raw();
     expect(d?.siteTitle).toBe("আমার ব্লগ");
     expect(d?.menu).toEqual([{ label: "ব্লগ", type: "link", ref: "https://x.test" }]);
-    expect(d?.layout).toEqual({ sidebar: [{ id: "search", enabled: true }], home: [] });
+    expect(d?.layout).toEqual({ sidebar: [], home: [] }); // P4b-৩: layout এখন schema-ভুক্ত — সেভে input-এর মান লেখা হয়
   });
 
   it("createdAt শুধু প্রথম সেভে; দ্বিতীয় সেভ idempotent", async () => {
