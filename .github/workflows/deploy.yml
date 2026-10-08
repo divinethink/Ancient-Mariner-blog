@@ -4,6 +4,8 @@ on:
     branches: [main]
     paths-ignore: ['*.zip']
   workflow_dispatch:
+  schedule:
+    - cron: '7 */3 * * *'
 concurrency:
   group: deploy
   cancel-in-progress: false
