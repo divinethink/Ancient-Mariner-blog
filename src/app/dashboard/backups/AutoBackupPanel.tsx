@@ -2,6 +2,7 @@
 
 // Drive auto-backup-এর অবস্থা (P5b-২): সর্বশেষ সফল সময়, ৩ দিনের বেশি পুরনো হলে লাল সতর্কতা, [এখনই ব্যাকআপ নিন] (GitHub workflow চালু করে)।
 import { useEffect, useState } from "react";
+import { readFailure } from "@/data/rebuildClient";
 import { getBackupStatusRepo } from "@/data/backupStatusRepo.wire";
 import { bn } from "@/i18n/bn";
 import { isBackupStale } from "@/lib/backupPolicy";
@@ -13,6 +14,7 @@ type Trigger = "idle" | "starting" | "started" | "failed";
 export function AutoBackupPanel() {
   const [s, setS] = useState<State>({ kind: "loading" });
   const [t, setT] = useState<Trigger>("idle");
+  const [code, setCode] = useState("");
   const t_ = bn.backup.auto;
 
   useEffect(() => {
@@ -31,8 +33,10 @@ export function AutoBackupPanel() {
     setT("starting");
     try {
       const res = await fetch("/api/owner/backup", { method: "POST" });
+      if (!res.ok) setCode(await readFailure(res));
       setT(res.ok ? "started" : "failed");
     } catch {
+      setCode("network");
       setT("failed");
     }
   }
@@ -72,7 +76,7 @@ export function AutoBackupPanel() {
       {t === "started" && <p role="status">{t_.started}</p>}
       {t === "failed" && (
         <p role="alert" className="text-accent-text">
-          {t_.startFailed}
+          {t_.startFailed} {code && <span dir="ltr" className="break-words">({code})</span>}
         </p>
       )}
     </section>

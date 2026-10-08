@@ -2,7 +2,7 @@
 
 // পাবলিক সাইটের সর্বশেষ build ও হালনাগাদ-অবস্থা + [আবার build করুন] (Arch §১২; Settings ও Publish panel-এ)
 import { useEffect, useState } from "react";
-import { readRebuildMark, triggerSiteRebuild } from "@/data/rebuildClient";
+import { lastRebuildFailure, readRebuildMark, triggerSiteRebuild } from "@/data/rebuildClient";
 import { bn } from "@/i18n/bn";
 import { buildState } from "@/lib/buildStatus";
 import { formatDateTime } from "@/lib/datetime";
@@ -49,7 +49,7 @@ export function BuildStatus() {
     setBusy(true);
     setMsg(null);
     const ok = await triggerSiteRebuild();
-    setMsg(ok ? bn.build.requested : bn.build.failed);
+    setMsg(ok ? bn.build.requested : `${bn.build.failed} (${lastRebuildFailure()})`);
     setSnap(await readSnap());
     setBusy(false);
   }
