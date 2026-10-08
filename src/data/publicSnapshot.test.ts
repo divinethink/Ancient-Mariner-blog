@@ -107,3 +107,21 @@ describe("publicSnapshot — terms (P4a-১)", () => {
     expect((await readSnapshot(old))?.terms).toEqual({ categories: [], tags: [], series: [] });
   });
 });
+
+describe("publicSnapshot — pages (P4b-১)", () => {
+  const pg = (slug: string, status: string) => ({
+    slug, title: "এই আমি", body: "{}", status, system: false, ownerUid: "u",
+    createdAt: new Date("2026-10-01T00:00:00Z"), updatedAt: new Date("2026-10-01T00:00:00Z"), schemaVersion: 1,
+  });
+  it("pages লেখা-পড়ায় অক্ষত; draft বাদ; পুরনো snapshot (pages নেই) = খালি", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "snap-pages-"));
+    const path = join(dir, "posts.json");
+    await writeSnapshot([post("a")], new Date(), path, DEFAULT_SETTINGS, undefined, [pg("about", "published"), pg("wip", "draft")] as never);
+    const s = await readSnapshot(path);
+    expect(s?.pages.map((p) => p.slug)).toEqual(["about"]);
+    expect(s?.pages[0].createdAt).toBeInstanceOf(Date);
+    const old = join(dir, "old.json");
+    await writeFile(old, JSON.stringify({ fetchedAt: new Date().toISOString(), posts: [] }), "utf8");
+    expect((await readSnapshot(old))?.pages).toEqual([]);
+  });
+});

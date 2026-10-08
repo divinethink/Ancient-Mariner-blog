@@ -1,7 +1,8 @@
+import Link from "next/link";
 import { bn } from "@/i18n/bn";
 
-/** পোস্টের শেষে লেখক-পরিচিতি (Arch §১৭ P4b): `authorBio` খালি হলে লুকানো; layout-নিরপেক্ষ। 'এই আমি'-লিংক P4b-১ (Pages)-এর পর যোগ হবে। */
-export function AuthorBox({ name, bio, compact = false }: { name: string; bio: string; compact?: boolean }) {
+/** পোস্টের শেষে লেখক-পরিচিতি (Arch §১৭ P4b): `authorBio` খালি হলে লুকানো; layout-নিরপেক্ষ। `aboutHref` (published 'about' পেজ থাকলে) 'এই আমি →' লিংক। */
+export function AuthorBox({ name, bio, compact = false, aboutHref }: { name: string; bio: string; compact?: boolean; aboutHref?: string }) {
   const text = bio.trim();
   if (text === "") return null;
   const initial = Array.from(name.trim())[0] ?? "";
@@ -16,6 +17,11 @@ export function AuthorBox({ name, bio, compact = false }: { name: string; bio: s
       <div>
         <p className="font-serif font-bold">{name}</p>
         <p className="mt-1 whitespace-pre-line text-muted">{text}</p>
+        {aboutHref && (
+          <Link href={aboutHref} prefetch={false} className="mt-1 inline-flex min-h-11 items-center text-accent-text underline">
+            {bn.public.aboutLink} →
+          </Link>
+        )}
       </div>
     </aside>
   );

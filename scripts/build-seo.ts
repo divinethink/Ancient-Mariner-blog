@@ -3,6 +3,7 @@ import { writeFile } from "node:fs/promises";
 import { readSnapshot } from "../src/data/publicSnapshot";
 import { getSiteUrl } from "../src/config/env";
 import { renderRss } from "../src/lib/rss";
+import { pagePath } from "../src/lib/pages";
 import { renderRobots, renderSitemap } from "../src/lib/seo";
 import { writeCardChunks } from "./cardChunks";
 
@@ -19,9 +20,9 @@ async function main() {
   await writeFile(`${DIR}/rss.xml`, renderRss({ siteUrl, title: siteTitle, description: tagline, posts: snap.posts, items: feedItems, mode: feedMode }), "utf8");
   await writeFile(`${DIR}/robots.txt`, renderRobots({ siteUrl, allowIndexing, blockAiCrawlers }), "utf8");
   if (allowIndexing) {
-    await writeFile(`${DIR}/sitemap.xml`, renderSitemap(siteUrl, snap.posts, scopes.map((x) => x.path)), "utf8");
+    await writeFile(`${DIR}/sitemap.xml`, renderSitemap(siteUrl, snap.posts, [...scopes.map((x) => x.path), ...snap.pages.map((pg) => pagePath(pg.slug))]), "utf8");
   }
-  console.log(`✅ rss.xml (${Math.min(feedItems, snap.posts.length)} লেখা, ${feedMode}) + robots.txt (ইনডেক্স ${allowIndexing ? "চালু" : "বন্ধ"}, AI-ব্লক ${blockAiCrawlers ? "চালু" : "বন্ধ"})${allowIndexing ? ` + sitemap.xml (${snap.posts.length + 1} URL)` : "; sitemap নেই"}`);
+  console.log(`✅ rss.xml (${Math.min(feedItems, snap.posts.length)} লেখা, ${feedMode}) + robots.txt (ইনডেক্স ${allowIndexing ? "চালু" : "বন্ধ"}, AI-ব্লক ${blockAiCrawlers ? "চালু" : "বন্ধ"})${allowIndexing ? ` + sitemap.xml (${snap.posts.length + snap.pages.length + 1} URL)` : "; sitemap নেই"}`);
 }
 
 main().catch((e) => {

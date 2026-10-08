@@ -1,10 +1,15 @@
 rules_version = '2';
-// P1b: posts / slugs / siteSettings · P2a: drafts · P3a: categories / tags / series · P3b: ideas / notes · P5a: revisions · P5b: backups (Arch §৯)। বাকি collection phase-অনুযায়ী যোগ হয়; বাকি সব deny-all।
+// P1b: posts / slugs / siteSettings · P2a: drafts · P3a: categories / tags / series · P3b: ideas / notes · P4b: pages · P5a: revisions · P5b: backups (Arch §৯)। বাকি collection phase-অনুযায়ী যোগ হয়; বাকি সব deny-all।
 // placeholder scripts/render-rules.ts বসায়; rendered firestore.rules git-এ commit হয় না।
 service cloud.firestore {
   match /databases/{database}/documents {
     function isOwner() {
       return request.auth != null && request.auth.uid == '__OWNER_UID__';
+    }
+    function validPage() {
+      return request.resource.data.title is string
+          && request.resource.data.ownerUid == '__OWNER_UID__'
+          && request.resource.data.status in __PAGE_STATUS__;
     }
     function validPost() {
       return request.resource.data.title is string
@@ -54,6 +59,14 @@ service cloud.firestore {
     }
     match /notes/{id} {
       allow read, write: if isOwner();
+    }
+
+    // পেজ (P4b-১): published পাবলিক-read (query-তে explicit status filter), draft শুধু owner; system পেজ মোছা নিষিদ্ধ (Arch §৯ P4b)
+    match /pages/{slug} {
+      allow read: if resource.data.status == 'published';
+      allow read: if isOwner();
+      allow create, update: if isOwner() && validPage();
+      allow delete: if isOwner() && resource.data.get('system', false) != true;
     }
 
     // লেখার ইতিহাস-snapshot: owner read/create; update/delete নিষিদ্ধ — prune শুধু Cron (privileged, P5a-৩) (Arch §৯ P5a)

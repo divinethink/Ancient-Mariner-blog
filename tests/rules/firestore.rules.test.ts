@@ -18,7 +18,7 @@ import {
   where,
   type Firestore,
 } from "firebase/firestore";
-import { afterAll, beforeAll, beforeEach, describe, it } from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { renderRules } from "../../src/lib/renderRules";
 
 const OWNER = "testOwnerUid1234567890"; // scripts/render-rules.ts-এর TEST_UID-এর সাথে মিল
@@ -200,5 +200,42 @@ describe("অন্য collection", () => {
   it("অনির্ধারিত collection-এ owner-ও read/write পারে না (deny-all)", async () => {
     await assertFails(setDoc(doc(owner(), "unknown", "a"), { x: 1 }));
     await assertFails(getDoc(doc(owner(), "unknown", "a")));
+  });
+});
+
+// P4b-১: pages — published পাবলিক-read (explicit filter), draft শুধু owner; system পেজ delete নিষিদ্ধ (Arch §৯)
+describe("pages", () => {
+  const pg = (status: string, extra: Record<string, unknown> = {}) => ({ title: "এই আমি", body: "{}", status, ownerUid: OWNER, ...extra });
+  it("published পাবলিক পড়া যায়; draft anonymous/non-owner পড়তে পারে না; owner পারে", async () => {
+    await seed("pages", "about", pg("published"));
+    await seed("pages", "wip", pg("draft"));
+    await assertSucceeds(getDoc(doc(anon(), "pages", "about")));
+    await assertFails(getDoc(doc(anon(), "pages", "wip")));
+    await assertFails(getDoc(doc(other(), "pages", "wip")));
+    await assertSucceeds(getDoc(doc(owner(), "pages", "wip")));
+  });
+  it("পাবলিক query শুধু status==published filter-সহ সফল; filter ছাড়া ব্যর্থ", async () => {
+    await seed("pages", "about", pg("published"));
+    await seed("pages", "wip", pg("draft"));
+    const col = collection(anon(), "pages");
+    const snap = await assertSucceeds(getDocs(query(col, where("status", "==", "published"))));
+    expect(snap.docs.map((d) => d.id)).toEqual(["about"]);
+    await assertFails(getDocs(col));
+  });
+  it("write: শুধু owner; অবৈধ status ও ভুল ownerUid ব্যর্থ", async () => {
+    await assertSucceeds(setDoc(doc(owner(), "pages", "a"), pg("draft")));
+    await assertFails(setDoc(doc(other(), "pages", "b"), pg("draft")));
+    await assertFails(setDoc(doc(anon(), "pages", "b"), pg("draft")));
+    await assertFails(setDoc(doc(owner(), "pages", "c"), pg("trashed")));
+    await assertFails(setDoc(doc(owner(), "pages", "d"), pg("draft", { ownerUid: "someoneElse" })));
+    await assertSucceeds(updateDoc(doc(owner(), "pages", "a"), { status: "published" }));
+    await assertFails(updateDoc(doc(owner(), "pages", "a"), { status: "nope" }));
+  });
+  it("delete: সাধারণ পেজ owner পারে; system==true পেজ owner-ও পারে না; non-owner পারে না", async () => {
+    await seed("pages", "x", pg("draft"));
+    await seed("pages", "about", pg("draft", { system: true }));
+    await assertFails(deleteDoc(doc(other(), "pages", "x")));
+    await assertSucceeds(deleteDoc(doc(owner(), "pages", "x")));
+    await assertFails(deleteDoc(doc(owner(), "pages", "about")));
   });
 });

@@ -3,8 +3,9 @@ import Link from "next/link";
 import { Analytics } from "@/components/public/Analytics";
 import { sidebarContent } from "@/components/public/Sidebar";
 import { getPublicScopes } from "@/data/publicLists";
-import { getPublicSettings } from "@/data/publicSnapshot";
+import { getPublicPages, getPublicSettings } from "@/data/publicSnapshot";
 import { bn } from "@/i18n/bn";
+import { pagePath } from "@/lib/pages";
 import { BLOG_INDEX_PATH } from "@/lib/publicSite";
 import { FEED_PATH } from "@/lib/rss";
 
@@ -12,7 +13,10 @@ const nav = "inline-flex min-h-11 items-center";
 
 /** পাবলিক পেজের header/footer (Arch §১৭ P4a; default মেনু — সম্পাদনা UI P9a)। শুধু বিদ্যমান পেজের লিংক। */
 export async function PublicShell({ children, sidebar = false }: { children: ReactNode; sidebar?: boolean }) {
-  const [settings, scopes] = await Promise.all([getPublicSettings(), getPublicScopes()]);
+  const [settings, scopes, pages] = await Promise.all([getPublicSettings(), getPublicScopes(), getPublicPages()]);
+  // default মেনু/footer (সম্পাদনা UI P9a): শুধু published system পেজের লিংক
+  const about = pages.find((p) => p.slug === "about");
+  const privacy = pages.find((p) => p.slug === "privacy");
   const side = sidebar ? sidebarContent(settings, scopes) : null;
   const cats = scopes.filter((s) => s.kind === "category" && s.term);
   const top = cats.filter((s) => !s.term?.parentCategoryId);
@@ -58,6 +62,11 @@ export async function PublicShell({ children, sidebar = false }: { children: Rea
               </ul>
             </details>
           )}
+          {about && (
+            <Link href={pagePath(about.slug)} prefetch={false} className={nav}>
+              {about.title}
+            </Link>
+          )}
         </nav>
       </header>
       {side ? (
@@ -70,6 +79,11 @@ export async function PublicShell({ children, sidebar = false }: { children: Rea
       )}
       <footer className="mt-10 flex flex-wrap items-center justify-between gap-x-4 border-t border-line pt-4 text-sm text-muted">
         <span>© {settings.siteTitle}</span>
+        {privacy && (
+          <Link href={pagePath(privacy.slug)} prefetch={false} className="inline-flex min-h-11 items-center text-accent-text underline">
+            {privacy.title}
+          </Link>
+        )}
         {/* static ফাইল — Next <Link> নয়, সরাসরি <a> (build-seo `rss.xml` লেখে) */}
         <a href={FEED_PATH} className="inline-flex min-h-11 items-center text-accent-text underline">
           {bn.public.rss}

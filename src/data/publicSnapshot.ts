@@ -4,13 +4,14 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { createLogger } from "../lib/logger";
+import { parsePage, type PageWithId } from "./pageRepo";
 import { parsePost, type PostWithId } from "./postRepo";
 import { EMPTY_TERMS, parseTerm, type PublicTerms } from "./taxonomyRepo";
 import { DEFAULT_SETTINGS, parseSiteSettings, type SiteSettings } from "./siteSettingsRepo";
 
 export const SNAPSHOT_PATH = join(".build-data", "posts.json");
 
-export type Snapshot = { fetchedAt: Date; posts: PostWithId[]; settings: SiteSettings; terms: PublicTerms };
+export type Snapshot = { fetchedAt: Date; posts: PostWithId[]; settings: SiteSettings; terms: PublicTerms; pages: PageWithId[] };
 
 export async function writeSnapshot(
   posts: readonly PostWithId[],
@@ -18,9 +19,10 @@ export async function writeSnapshot(
   path = SNAPSHOT_PATH,
   settings: SiteSettings = DEFAULT_SETTINGS,
   terms: PublicTerms = EMPTY_TERMS,
+  pages: readonly PageWithId[] = [],
 ): Promise<void> {
   await mkdir(dirname(path), { recursive: true });
-  await writeFile(path, JSON.stringify({ fetchedAt: fetchedAt.toISOString(), posts, settings, terms }), "utf8");
+  await writeFile(path, JSON.stringify({ fetchedAt: fetchedAt.toISOString(), posts, settings, terms, pages }), "utf8");
 }
 
 /** ফাইল না থাকলে null; থাকা-কিন্তু-বিকৃত হলে throw (নীরবে খালি সাইট নয়) */
@@ -32,7 +34,7 @@ export async function readSnapshot(path = SNAPSHOT_PATH): Promise<Snapshot | nul
     if ((e as { code?: string }).code === "ENOENT") return null;
     throw e;
   }
-  const json = JSON.parse(raw) as { fetchedAt?: unknown; posts?: unknown; settings?: unknown; terms?: unknown };
+  const json = JSON.parse(raw) as { fetchedAt?: unknown; posts?: unknown; settings?: unknown; terms?: unknown; pages?: unknown };
   if (typeof json.fetchedAt !== "string" || !Array.isArray(json.posts)) {
     throw new Error("build snapshot বিকৃত");
   }
@@ -50,7 +52,16 @@ export async function readSnapshot(path = SNAPSHOT_PATH): Promise<Snapshot | nul
       }
     });
   const terms: PublicTerms = { categories: readTerms("categories"), tags: readTerms("tags"), series: readTerms("series") };
-  return { fetchedAt: new Date(json.fetchedAt), posts, settings: parseSiteSettings(json.settings), terms };
+  // P4b-১: পুরনো snapshot-এ pages না থাকলে খালি; বিকৃত/অ-published বাদ (defense-in-depth)
+  const pages = (Array.isArray(json.pages) ? (json.pages as Record<string, unknown>[]) : []).flatMap((r) => {
+    try {
+      const pg = parsePage(String(r.slug), r);
+      return pg.status === "published" ? [pg] : [];
+    } catch {
+      return [];
+    }
+  });
+  return { fetchedAt: new Date(json.fetchedAt), posts, settings: parseSiteSettings(json.settings), terms, pages };
 }
 
 let memo: Promise<PostWithId[]> | undefined;
@@ -81,4 +92,12 @@ let termsMemo: Promise<PublicTerms> | undefined;
 export function getPublicTerms(): Promise<PublicTerms> {
   termsMemo ??= readSnapshot().then((s) => s?.terms ?? EMPTY_TERMS);
   return termsMemo;
+}
+
+let pagesMemo: Promise<PageWithId[]> | undefined;
+
+/** Next build-এর পাবলিক পেজগুলোর জন্য published pages (snapshot থেকে); snapshot না থাকলে খালি */
+export function getPublicPages(): Promise<PageWithId[]> {
+  pagesMemo ??= readSnapshot().then((s) => s?.pages ?? []);
+  return pagesMemo;
 }

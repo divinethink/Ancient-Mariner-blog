@@ -7,9 +7,10 @@ import { PublicShell } from "@/components/public/PublicShell";
 import { getPublicScopes } from "@/data/publicLists";
 import { getSiteUrl } from "@/config/env";
 import { hasDefaultOgImage } from "@/data/publicAssets";
-import { getPublicSettings, listPublicPosts } from "@/data/publicSnapshot";
+import { getPublicPages, getPublicSettings, listPublicPosts } from "@/data/publicSnapshot";
 import { bn } from "@/i18n/bn";
 import { formatDate } from "@/lib/datetime";
+import { pagePath } from "@/lib/pages";
 import { blogPath, planSlugMoves, postExcerpt } from "@/lib/publicSite";
 import { readingMinutes } from "@/lib/readingTime";
 import { buildSeo } from "@/lib/seo";
@@ -82,7 +83,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function BlogPost({ params }: Props) {
-  const [r, { timezone: tz, siteTitle, authorBio }] = await Promise.all([resolve((await params).slug), getPublicSettings()]);
+  const [r, { timezone: tz, siteTitle, authorBio }, pages] = await Promise.all([resolve((await params).slug), getPublicSettings(), getPublicPages()]);
   if (!r) notFound();
 
   if (r.kind === "moved") {
@@ -118,7 +119,7 @@ export default async function BlogPost({ params }: Props) {
         ← {bn.public.home}
       </Link>
       <PostArticle title={post.title} meta={meta} links={card ? [...(card.category ? [card.category] : []), ...card.tags.map((t) => ({ ...t, name: `#${t.name}` }))] : []} body={post.body} />
-      <AuthorBox name={siteTitle} bio={authorBio} />
+      <AuthorBox name={siteTitle} bio={authorBio} aboutHref={pages.some((p) => p.slug === "about") ? pagePath("about") : undefined} />
     </PublicShell>
   );
 }

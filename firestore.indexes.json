@@ -91,6 +91,11 @@
       "indexes": []
     },
     {
+      "collectionGroup": "pages",
+      "fieldPath": "body",
+      "indexes": []
+    },
+    {
       "collectionGroup": "revisions",
       "fieldPath": "snapshot",
       "indexes": []

@@ -49,3 +49,13 @@ export function publishedPostsQuery() {
 export const collectionQuery = (collectionId: string) => ({
   structuredQuery: { from: [{ collectionId }] },
 });
+
+/** build-এর পাবলিক pages query: শুধু published (rules-সম্মত; single-field filter — নতুন index লাগে না) */
+export function publishedPagesQuery() {
+  return {
+    structuredQuery: {
+      from: [{ collectionId: "pages" }],
+      where: { fieldFilter: { field: { fieldPath: "status" }, op: "EQUAL", value: { stringValue: "published" } } },
+    },
+  };
+}

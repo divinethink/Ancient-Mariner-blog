@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- P4b-১ (কোড): `pages` collection (doc-ID = slug; rules `validPage()` — published পাবলিক-read, draft owner-only, `system` পেজ delete নিষিদ্ধ; `body` index exemption), `pageRepo` (Zod boundary + `.client` + `.server` REST + `ensureSystemPages` seed `about`/`privacy` Draft), `lib/pages.ts` (reserved-slug, system পেজ), পাবলিক `/[slug]`, snapshot-এ `pages`, sitemap-এ পেজ, header-এ 'এই আমি'/footer-এ privacy লিংক, AuthorBox-এ 'এই আমি →', `/dashboard/pages` (+`edit`), মেনুতে 'পেজ'; `pages` backup/restore তালিকায়। **Rules deploy লাগবে** (`deploy-rules.yml`)। নতুন dependency/composite index নেই।
 - P4b-৩ (কোড): পাবলিক sidebar (`Sidebar.tsx`: facebook, ক্যাটাগরি+সংখ্যা, লিংক, নতুন-লেখা-পেতে, recent, লেখক; `layout.sidebar` ক্রম/চালু-বন্ধ), Home-সেকশন (hero/featured/recent; `layout.home`), `posts.featured` + Publish panel-এ 'Home-এ featured' টগল; settings-এ `socialLinks.facebook`, `links[]`, `layout` (default ফাঁকা — সম্পাদনা UI P9a; তাই ফেসবুক/লিংক widget P9a-র আগে লুকানো)। rules/index/dependency বদল নেই।
 - P4b-২ (কোড): `/rss.xml` (`lib/rss.ts`, `lib/docHtml.ts`; build-সময়ে `build-seo.ts`-এ; `feedItems`/`feedMode`), পোস্টের শেষে লেখক-পরিচিতি (`AuthorBox`, `authorBio`), footer-এ RSS লিংক, Settings-এ তিনটি নতুন ফিল্ড (পুরনো doc-এ default; rules/index/dependency বদল নেই)। CI ও owner-যাচাই বাকি।
 - P0a: static পরিবেশন, `_headers`, Firestore REST-পড়া যাচাই সম্পন্ন; হ্যালো-পেজ সরানো, Firestore rule deny-all।
