@@ -49,19 +49,22 @@ describe("siteSettingsRepo.client (Emulator)", () => {
     expect(d?.updatedAt).toBeDefined();
   });
 
-  it("merge: পরের phase-এর ফিল্ড (menu/layout) অক্ষত থাকে", async () => {
+  it("merge: পরের phase-এর ফিল্ড (menu) অক্ষত; layout schema-ভুক্ত, save→get-এ অক্ষত", async () => {
     await env.withSecurityRulesDisabled(async (ctx) => {
       await setDoc(doc(fs(ctx.firestore()), "siteSettings", "main"), {
         siteTitle: "পুরনো",
         menu: [{ label: "ব্লগ", type: "link", ref: "https://x.test" }],
-        layout: { sidebar: [{ id: "search", enabled: true }] },
+        layout: { sidebar: [{ id: "search", enabled: true }], home: [] },
       });
     });
-    await repo().save(valid);
+    // layout এখন schema-ভুক্ত: ফর্ম get() থেকে নেওয়া মান ফেরত সেভ করে, তাই আগের layout অক্ষত থাকে
+    const loaded = await repo().get();
+    expect(loaded.layout).toEqual({ sidebar: [{ id: "search", enabled: true }], home: [] });
+    await repo().save({ ...loaded, siteTitle: "আমার ব্লগ" });
     const d = await raw();
     expect(d?.siteTitle).toBe("আমার ব্লগ");
     expect(d?.menu).toEqual([{ label: "ব্লগ", type: "link", ref: "https://x.test" }]);
-    expect(d?.layout).toEqual({ sidebar: [{ id: "search", enabled: true }] });
+    expect(d?.layout).toEqual({ sidebar: [{ id: "search", enabled: true }], home: [] });
   });
 
   it("createdAt শুধু প্রথম সেভে; দ্বিতীয় সেভ idempotent", async () => {
