@@ -47,11 +47,6 @@
       ]
     },
     {
-      "collectionGroup": "templates",
-      "fieldPath": "body",
-      "indexes": []
-    },
-    {
       "collectionGroup": "revisions",
       "queryScope": "COLLECTION",
       "fields": [
@@ -111,6 +106,11 @@
     },
     {
       "collectionGroup": "pages",
+      "fieldPath": "body",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "templates",
       "fieldPath": "body",
       "indexes": []
     },
