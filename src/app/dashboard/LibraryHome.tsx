@@ -20,7 +20,9 @@ import { trashDaysLeft } from "@/lib/trash";
 import { BulkBar } from "./BulkBar";
 import { HomeCards } from "./HomeCards";
 import { useSiteTimezone } from "./SiteSettingsProvider";
+import { setPaletteTitles } from "./paletteSource";
 import { useLongPress } from "./useLongPress";
+import { useMinWidth } from "./useMinWidth";
 import { TrashList, type TrashItem } from "./TrashList";
 
 type Item = {
@@ -45,6 +47,16 @@ const toItem = (p: PostWithId): Item => ({
   contentType: p.contentType,
   categoryName: p.categoryName,
 });
+type View = "list" | "split" | "table";
+const VIEWS: View[] = ["list", "split", "table"];
+const statusLabel = (it: Item) =>
+  it.localOnly
+    ? bn.library.localOnly
+    : it.rawStatus === "published"
+      ? bn.library.published
+      : it.rawStatus === "archived"
+        ? bn.library.archived
+        : bn.library.draft;
 type Found = { key: string; items: Item[] | null }; // items=null ⇒ ব্যর্থ
 type Filter = "all" | "draft" | "published" | "archived" | "trash";
 type Loaded = { items: Item[]; trashed: TrashItem[]; remoteFailed: boolean };
@@ -93,7 +105,15 @@ async function loadItems(): Promise<Loaded> {
   return { items, trashed, remoteFailed: remote === null };
 }
 
-function PostMenu({ id, onTrash, disabled }: { id: string; onTrash: () => void; disabled: boolean }) {
+function PostMenu({
+  id,
+  onTrash,
+  disabled,
+}: {
+  id: string;
+  onTrash: () => void;
+  disabled: boolean;
+}) {
   const [open, setOpen] = useState(false);
   return (
     <div className="relative shrink-0">
@@ -153,6 +173,11 @@ export function LibraryHome() {
   const [cats, setCats] = useState<TermWithId[]>([]);
   const [found, setFound] = useState<Found | null>(null);
   const [findTick, setFindTick] = useState(0);
+  // Desktop (≥1024px) দৃশ্য: তালিকা | পাশাপাশি | টেবিল — মোবাইলে সবসময় তালিকা
+  const desktop = useMinWidth(1024);
+  const [view, setView] = useState<View>("list");
+  const [previewId, setPreviewId] = useState<string | null>(null);
+  const mode: View = desktop ? view : "list";
   const active = dq.trim() !== "" || typeF !== "" || catF !== "";
   const findKey = JSON.stringify([dq.trim(), typeF, catF, findTick]);
 
@@ -180,7 +205,12 @@ export function LibraryHome() {
     let dead = false;
     getPostRepo()
       .then((r) =>
-        r.find({ titlePrefix: dq, contentType: typeF || undefined, categoryId: catF || undefined, limit: FIND_LIMIT }),
+        r.find({
+          titlePrefix: dq,
+          contentType: typeF || undefined,
+          categoryId: catF || undefined,
+          limit: FIND_LIMIT,
+        }),
       )
       .then((ps) => {
         if (!dead) setFound({ key: findKey, items: ps.map(toItem) });
@@ -199,7 +229,12 @@ export function LibraryHome() {
       if (dead) return;
       setState({ kind: "ready", ...r });
       // editor ছেড়ে আসার পর বাকি থাকা সংরক্ষণহীন ড্রাফট নীরবে Firestore-এ (প্রতি মাউন্টে একবার)
-      if (bgSynced.current || r.remoteFailed || !(await draftStore.hasUnsynced().catch(() => false))) return;
+      if (
+        bgSynced.current ||
+        r.remoteFailed ||
+        !(await draftStore.hasUnsynced().catch(() => false))
+      )
+        return;
       bgSynced.current = true;
       const repo = await getPostRepo().catch(() => null);
       if (repo && (await syncAllDirty(repo, draftStore)) > 0 && !dead) {
@@ -212,13 +247,21 @@ export function LibraryHome() {
     };
   }, [attempt]);
 
+  // Command palette-কে লোড-হওয়া শিরোনাম দেয় (শুধু memory; অতিরিক্ত read নেই)
+  useEffect(() => {
+    if (state.kind === "ready")
+      setPaletteTitles(state.items.map((i) => ({ id: i.id, title: i.title })));
+  }, [state]);
+
   function retry() {
     setState({ kind: "loading" });
     setAttempt((a) => a + 1);
   }
 
   /** একটা ক্রিয়া চালায়; double-tap-এ দ্বিতীয়টা বাদ (busy), শেষে তালিকা নতুন করে পড়ে */
-  async function act(fn: (repo: Awaited<ReturnType<typeof getPostRepo>>) => Promise<string | void>) {
+  async function act(
+    fn: (repo: Awaited<ReturnType<typeof getPostRepo>>) => Promise<string | void>,
+  ) {
     if (busy) return;
     setBusy(true);
     setNotice(null);
@@ -238,11 +281,13 @@ export function LibraryHome() {
       // সংরক্ষণহীন লোকাল লেখা আগে সার্ভারে — নইলে ট্র্যাশের সাথে লোকাল মোছায় হারাত
       await syncAllDirty(repo, draftStore);
       if ((await draftStore.loadDraft(id))?.dirty) return bn.library.trashUnsynced;
-      const wasPublished = state.kind === "ready" && state.items.find((i) => i.id === id)?.status === "published";
+      const wasPublished =
+        state.kind === "ready" && state.items.find((i) => i.id === id)?.status === "published";
       await repo.trash(id);
       await draftStore.deleteDraft(id);
       // প্রকাশিত লেখা ট্র্যাশে গেলে পাবলিক সাইট থেকে সরাতে rebuild (Arch §১২)
-      if (wasPublished) return (await triggerSiteRebuild()) ? bn.build.liveIn : bn.build.triggerFailed;
+      if (wasPublished)
+        return (await triggerSiteRebuild()) ? bn.build.liveIn : bn.build.triggerFailed;
     });
   const restorePost = (id: string) => act((repo) => repo.restore(id));
   const deletePost = (id: string) =>
@@ -289,7 +334,8 @@ export function LibraryHome() {
       if (sum.missing) parts.push(bn.bulk.missing(sum.missing));
       if (sum.failedIds.length) parts.push(bn.bulk.failed(sum.failedIds.length));
       let msg = parts.join(" · ");
-      if (sum.affectsPublic > 0) msg += ` · ${(await triggerSiteRebuild()) ? bn.build.liveIn : bn.build.triggerFailed}`;
+      if (sum.affectsPublic > 0)
+        msg += ` · ${(await triggerSiteRebuild()) ? bn.build.liveIn : bn.build.triggerFailed}`;
       setNotice(msg);
       setLastReq(sum.failedIds.length > 0 ? req : null); // retry = একই request (idempotent)
       setSelected(new Set(sum.failedIds));
@@ -329,27 +375,28 @@ export function LibraryHome() {
     ...(found?.items ?? []).map((i) => [i.id, i.rawStatus] as const),
     ...trashed.map((t) => [t.id, "trashed" as PostStatus] as const),
   ]);
-  const selectableIds = filter === "trash" ? trashed.map((t) => t.id) : shown.filter((i) => !i.localOnly).map((i) => i.id);
+  const selectableIds =
+    filter === "trash"
+      ? trashed.map((t) => t.id)
+      : shown.filter((i) => !i.localOnly).map((i) => i.id);
   const selStatuses = [...selected].map((id) => known.get(id)).filter((x): x is PostStatus => !!x);
   const allSelected = selectableIds.length > 0 && selectableIds.every((id) => selected.has(id));
   const rowBody = (it: Item) => (
     <>
       <span className="min-w-0 flex-1">
-        <span className="block truncate font-serif text-lg font-bold">{it.title || bn.library.untitled}</span>
+        <span className="block truncate font-serif text-lg font-bold">
+          {it.title || bn.library.untitled}
+        </span>
         <span className="text-sm text-muted">
           {formatDate(new Date(it.updatedAt), tz)} · {it.wordCount} {bn.library.words}
-          {it.contentType && it.contentType !== "post" && ` · ${bn.org.types[it.contentType] ?? it.contentType}`}
+          {it.contentType &&
+            it.contentType !== "post" &&
+            ` · ${bn.org.types[it.contentType] ?? it.contentType}`}
           {it.categoryName && ` · ${it.categoryName}`}
         </span>
       </span>
       <span className="shrink-0 rounded-full bg-line px-2 py-0.5 text-xs text-muted">
-        {it.localOnly
-          ? bn.library.localOnly
-          : it.rawStatus === "published"
-            ? bn.library.published
-            : it.rawStatus === "archived"
-              ? bn.library.archived
-              : bn.library.draft}
+        {statusLabel(it)}
       </span>
     </>
   );
@@ -360,8 +407,49 @@ export function LibraryHome() {
     ["archived", bn.library.filterArchived],
     ["trash", `${bn.library.filterTrash}${trashed.length ? ` (${trashed.length})` : ""}`],
   ];
+  const showList = filter !== "trash" && (searching ? shown.length > 0 : items.length > 0);
+  const previewItem = shown.find((i) => i.id === previewId) ?? null;
+  const listUl = (
+    <ul className="space-y-3">
+      {shown.map((it) => (
+        <li key={it.id} className="flex items-start gap-1">
+          {selecting ? (
+            <label
+              className={`flex min-w-0 flex-1 items-start gap-3 rounded-2xl border bg-surface p-4 ${
+                selected.has(it.id) ? "border-accent" : "border-line"
+              } ${it.localOnly ? "opacity-60" : "cursor-pointer"}`}
+            >
+              <input
+                type="checkbox"
+                aria-label={bn.bulk.pick(it.title || bn.library.untitled)}
+                checked={selected.has(it.id)}
+                disabled={it.localOnly || busy}
+                onChange={() => toggleSel(it.id)}
+                className="mt-1 size-6 shrink-0 accent-[var(--accent)]"
+              />
+              {rowBody(it)}
+            </label>
+          ) : (
+            <>
+              <Link
+                href={`/dashboard/posts/${it.id}/edit`}
+                {...(it.localOnly ? {} : longPress(it.id))}
+                className="flex min-w-0 flex-1 select-none items-start gap-3 rounded-2xl border border-line bg-surface p-4 [-webkit-touch-callout:none]"
+              >
+                {rowBody(it)}
+              </Link>
+              <PostMenu id={it.id} disabled={busy} onTrash={() => void trashPost(it.id)} />
+            </>
+          )}
+          {selecting && it.localOnly && <span className="sr-only">{bn.bulk.localOnlyNote}</span>}
+        </li>
+      ))}
+    </ul>
+  );
   return (
-    <div className={selecting ? "pb-64" : undefined}>
+    <div
+      className={`${selecting ? "pb-64" : ""} ${mode === "list" || filter === "trash" ? "mx-auto max-w-3xl" : ""}`}
+    >
       {remoteFailed && (
         <p role="alert" className="mb-4 rounded-xl border border-line bg-surface p-3 text-muted">
           {bn.library.loadFailed}{" "}
@@ -376,7 +464,11 @@ export function LibraryHome() {
           {lastReq && !busy && (
             <>
               {" "}
-              <button type="button" onClick={() => void runBulkReq(lastReq)} className="min-h-11 text-accent-text underline">
+              <button
+                type="button"
+                onClick={() => void runBulkReq(lastReq)}
+                className="min-h-11 text-accent-text underline"
+              >
                 {bn.bulk.retry(selected.size)}
               </button>
             </>
@@ -430,6 +522,23 @@ export function LibraryHome() {
           {selecting ? bn.bulk.toggleOff : bn.bulk.toggle}
         </button>
       </div>
+      {desktop && filter !== "trash" && (
+        <div role="group" aria-label={bn.library.view.label} className="mb-4 flex gap-2">
+          {VIEWS.map((v) => (
+            <button
+              key={v}
+              type="button"
+              aria-pressed={view === v}
+              onClick={() => setView(v)}
+              className={`min-h-11 rounded-full border px-4 text-sm ${
+                view === v ? "border-transparent bg-btn-bg text-btn-tx" : "border-line"
+              }`}
+            >
+              {bn.library.view[v]}
+            </button>
+          ))}
+        </div>
+      )}
       {filter !== "trash" && (
         <div className="mb-4">
           <button
@@ -497,7 +606,11 @@ export function LibraryHome() {
       {findFailed && (
         <p role="alert" className="mb-3 text-accent-text">
           {bn.org.find.failed}{" "}
-          <button type="button" onClick={() => setFindTick((n) => n + 1)} className="min-h-11 underline">
+          <button
+            type="button"
+            onClick={() => setFindTick((n) => n + 1)}
+            className="min-h-11 underline"
+          >
             {bn.library.retry}
           </button>
         </p>
@@ -520,44 +633,153 @@ export function LibraryHome() {
       ) : items.length === 0 ? (
         <p className="text-muted">{bn.library.empty}</p>
       ) : null}
-      {filter !== "trash" && (searching ? shown.length > 0 : items.length > 0) && (
-        <ul className="space-y-3">
-          {shown.map((it) => (
-            <li key={it.id} className="flex items-start gap-1">
-              {selecting ? (
-                <label
-                  className={`flex min-w-0 flex-1 items-start gap-3 rounded-2xl border bg-surface p-4 ${
-                    selected.has(it.id) ? "border-accent" : "border-line"
-                  } ${it.localOnly ? "opacity-60" : "cursor-pointer"}`}
+      {showList && mode === "table" && (
+        <div className="overflow-x-auto rounded-2xl border border-line bg-surface">
+          <table className="w-full min-w-[40rem] text-left text-sm">
+            <thead className="text-muted">
+              <tr className="border-b border-line">
+                {selecting && (
+                  <th scope="col" className="w-12 p-3">
+                    <span className="sr-only">{bn.library.col.select}</span>
+                  </th>
+                )}
+                {(["title", "type", "category", "status", "date", "words"] as const).map((c) => (
+                  <th key={c} scope="col" className="p-3 font-semibold">
+                    {bn.library.col[c]}
+                  </th>
+                ))}
+                {!selecting && (
+                  <th scope="col" className="w-12 p-3">
+                    <span className="sr-only">{bn.library.menuOpen}</span>
+                  </th>
+                )}
+              </tr>
+            </thead>
+            <tbody>
+              {shown.map((it) => (
+                <tr
+                  key={it.id}
+                  className={`border-b border-line last:border-b-0 ${selected.has(it.id) ? "bg-line" : ""}`}
                 >
-                  <input
-                    type="checkbox"
-                    aria-label={bn.bulk.pick(it.title || bn.library.untitled)}
-                    checked={selected.has(it.id)}
-                    disabled={it.localOnly || busy}
-                    onChange={() => toggleSel(it.id)}
-                    className="mt-1 size-6 shrink-0 accent-[var(--accent)]"
-                  />
-                  {rowBody(it)}
-                </label>
-              ) : (
-                <>
-                  <Link
-                    href={`/dashboard/posts/${it.id}/edit`}
-                    {...(it.localOnly ? {} : longPress(it.id))}
-                    className="flex min-w-0 flex-1 select-none items-start gap-3 rounded-2xl border border-line bg-surface p-4 [-webkit-touch-callout:none]"
+                  {selecting && (
+                    <td className="p-3">
+                      <input
+                        type="checkbox"
+                        aria-label={bn.bulk.pick(it.title || bn.library.untitled)}
+                        checked={selected.has(it.id)}
+                        disabled={it.localOnly || busy}
+                        onChange={() => toggleSel(it.id)}
+                        className="size-6 accent-[var(--accent)]"
+                      />
+                    </td>
+                  )}
+                  <td className="max-w-[22rem] p-3">
+                    {selecting ? (
+                      <span className="block truncate font-serif text-base font-bold">
+                        {it.title || bn.library.untitled}
+                      </span>
+                    ) : (
+                      <Link
+                        href={`/dashboard/posts/${it.id}/edit`}
+                        className="block min-h-11 truncate py-2.5 font-serif text-base font-bold"
+                      >
+                        {it.title || bn.library.untitled}
+                      </Link>
+                    )}
+                  </td>
+                  <td className="p-3 text-muted">
+                    {bn.org.types[it.contentType ?? "post"] ?? it.contentType ?? "—"}
+                  </td>
+                  <td className="p-3 text-muted">{it.categoryName ?? "—"}</td>
+                  <td className="p-3">
+                    <span className="rounded-full bg-line px-2 py-0.5 text-xs text-muted">
+                      {statusLabel(it)}
+                    </span>
+                  </td>
+                  <td className="whitespace-nowrap p-3 text-muted">
+                    {formatDate(new Date(it.updatedAt), tz)}
+                  </td>
+                  <td className="p-3 text-muted">{it.wordCount}</td>
+                  {!selecting && (
+                    <td className="p-1">
+                      <PostMenu id={it.id} disabled={busy} onTrash={() => void trashPost(it.id)} />
+                    </td>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      {showList && mode === "split" && (
+        <div className="grid grid-cols-[360px_minmax(0,1fr)] items-start gap-6">
+          {selecting ? (
+            listUl
+          ) : (
+            <ul className="space-y-3">
+              {shown.map((it) => (
+                <li key={it.id}>
+                  <button
+                    type="button"
+                    aria-pressed={previewItem?.id === it.id}
+                    onClick={() => setPreviewId(it.id)}
+                    className={`flex w-full items-start gap-3 rounded-2xl border bg-surface p-4 text-left ${
+                      previewItem?.id === it.id ? "border-accent" : "border-line"
+                    }`}
                   >
                     {rowBody(it)}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+          <aside
+            aria-live="polite"
+            className="sticky top-6 rounded-2xl border border-line bg-surface p-6"
+          >
+            {previewItem ? (
+              <div className="space-y-3">
+                <h2 className="font-serif text-2xl font-bold">
+                  {previewItem.title || bn.library.untitled}
+                </h2>
+                <p className="text-sm text-muted">
+                  {statusLabel(previewItem)} · {formatDate(new Date(previewItem.updatedAt), tz)} ·{" "}
+                  {previewItem.wordCount} {bn.library.words}
+                  {previewItem.contentType &&
+                    previewItem.contentType !== "post" &&
+                    ` · ${bn.org.types[previewItem.contentType] ?? previewItem.contentType}`}
+                  {previewItem.categoryName && ` · ${previewItem.categoryName}`}
+                </p>
+                {previewItem.localOnly && (
+                  <p className="text-sm text-muted">{bn.library.split.localOnly}</p>
+                )}
+                <div className="flex flex-wrap gap-2">
+                  <Link
+                    href={`/dashboard/posts/${previewItem.id}/edit`}
+                    className="flex min-h-11 items-center rounded-full bg-btn-bg px-5 text-sm text-btn-tx"
+                  >
+                    {bn.library.split.edit}
                   </Link>
-                  <PostMenu id={it.id} disabled={busy} onTrash={() => void trashPost(it.id)} />
-                </>
-              )}
-              {selecting && it.localOnly && <span className="sr-only">{bn.bulk.localOnlyNote}</span>}
-            </li>
-          ))}
-        </ul>
+                  {!previewItem.localOnly && (
+                    <Link
+                      href={`/dashboard/posts/${previewItem.id}/history`}
+                      className="flex min-h-11 items-center rounded-full border border-line px-5 text-sm"
+                    >
+                      {bn.library.history}
+                    </Link>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <p className="text-muted">{bn.library.split.pick}</p>
+            )}
+          </aside>
+        </div>
       )}
-      {searching && base.length >= FIND_LIMIT && <p className="mt-3 text-sm text-muted">{bn.org.find.limited(FIND_LIMIT)}</p>}
+      {showList && mode === "list" && listUl}
+      {searching && base.length >= FIND_LIMIT && (
+        <p className="mt-3 text-sm text-muted">{bn.org.find.limited(FIND_LIMIT)}</p>
+      )}
       {selecting && (
         <BulkBar
           statuses={selStatuses}
