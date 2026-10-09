@@ -1,9 +1,18 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_COMFORT, comfortVars, parseComfort, resolveTheme } from "./comfort";
+import {
+  DEFAULT_COMFORT,
+  THEME_BG,
+  THEME_PREFS,
+  comfortVars,
+  parseComfort,
+  resolveTheme,
+  typewriterDelta,
+} from "./comfort";
 
 describe("parseComfort", () => {
   it("খালি/ভাঙা/অ-object → default", () => {
-    for (const r of [undefined, null, "", "{", "[]", "5", 7]) expect(parseComfort(r)).toEqual(DEFAULT_COMFORT);
+    for (const r of [undefined, null, "", "{", "[]", "5", 7])
+      expect(parseComfort(r)).toEqual(DEFAULT_COMFORT);
   });
   it("বৈধ মান থাকে", () => {
     const c = { font: "sans", size: 22, line: 21, width: 860 };
@@ -28,6 +37,28 @@ describe("comfortVars", () => {
       "--lh": "2.4",
       "--mw": "560px",
     });
+  });
+});
+
+describe("THEME_PREFS", () => {
+  it("auto ছাড়া প্রতিটির bg আছে ও resolveTheme নিজেই ফেরে", () => {
+    for (const p of THEME_PREFS.filter((x) => x !== "auto")) {
+      expect(THEME_BG[p]).toMatch(/^#[0-9a-f]{6}$/i);
+      expect(resolveTheme(p, false)).toBe(p);
+    }
+    expect(THEME_PREFS).toEqual(["auto", "light", "sepia", "warm", "dark", "amoled"]);
+  });
+});
+
+describe("typewriterDelta", () => {
+  it("লক্ষ্যের নিচে থাকলে ধনাত্মক (নিচে scroll), উপরে থাকলে ঋণাত্মক", () => {
+    expect(typewriterDelta(600, 1000)).toBe(200);
+    expect(typewriterDelta(100, 1000)).toBe(-300);
+  });
+  it("সহনসীমার ভেতরে বা অবৈধ মানে ০", () => {
+    expect(typewriterDelta(410, 1000)).toBe(0);
+    expect(typewriterDelta(NaN, 1000)).toBe(0);
+    expect(typewriterDelta(300, 0)).toBe(0);
   });
 });
 

@@ -62,6 +62,22 @@ main:has(.dash-shell) {
   line-height: var(--lh, 1.9);
   caret-color: var(--accent);
 }
+/* লেখার সহায়ক (P7b-১): <html data-tw/data-pf> — comfortStore.applyEditorAids বসায় */
+.pm > * {
+  transition: opacity 0.2s;
+}
+[data-pf="1"] .pm > :not(.pf-cur) {
+  opacity: 0.35;
+}
+[data-tw="1"] .pm {
+  padding-bottom: 45vh; /* শেষ লাইনও লক্ষ্য-উচ্চতায় উঠতে পারে */
+}
+@media (prefers-reduced-motion: reduce) {
+  .pm > * {
+    transition: none;
+  }
+}
+
 .pm p {
   margin: 0 0 1em;
 }

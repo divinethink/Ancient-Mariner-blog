@@ -32,6 +32,23 @@ const FOCUS_KEY = "focusMode";
 export const readFocus = (): boolean => prefs.get(FOCUS_KEY) === "1";
 export const saveFocus = (on: boolean): void => prefs.set(FOCUS_KEY, on ? "1" : "0");
 
+// লেখার সহায়ক (P7b-১): Typewriter scroll ও প্যারা-ফোকাস — প্রতি-ডিভাইস, default বন্ধ। <html data-tw/data-pf>-এ প্রয়োগ (CSS ও editor পড়ে)
+export const readTypewriter = (): boolean => prefs.get("typewriter") === "1";
+export const readParaFocus = (): boolean => prefs.get("paraFocus") === "1";
+export function applyEditorAids(): void {
+  const ds = document.documentElement.dataset;
+  ds.tw = readTypewriter() ? "1" : "0";
+  ds.pf = readParaFocus() ? "1" : "0";
+}
+export function saveTypewriter(on: boolean): void {
+  prefs.set("typewriter", on ? "1" : "0");
+  applyEditorAids();
+}
+export function saveParaFocus(on: boolean): void {
+  prefs.set("paraFocus", on ? "1" : "0");
+  applyEditorAids();
+}
+
 const NAV_KEY = "navCollapsed";
 export const readNavCollapsed = (): boolean => prefs.get(NAV_KEY) === "1";
 export const saveNavCollapsed = (on: boolean): void => prefs.set(NAV_KEY, on ? "1" : "0");

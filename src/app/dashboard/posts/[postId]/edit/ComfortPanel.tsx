@@ -2,7 +2,16 @@
 
 // আরাম-প্যানেল (Aa): থিম/ফন্ট/আকার/লাইনের ফাঁক/চওড়া — প্রতি-ডিভাইস, তাৎক্ষণিক প্রয়োগ (Arch §১১)
 import { useEffect, useRef, useState } from "react";
-import { readComfort, readThemePref, saveComfort, saveThemePref } from "@/data/comfortStore";
+import {
+  readComfort,
+  readParaFocus,
+  readThemePref,
+  readTypewriter,
+  saveComfort,
+  saveParaFocus,
+  saveThemePref,
+  saveTypewriter,
+} from "@/data/comfortStore";
 import { bn } from "@/i18n/bn";
 import { type Comfort, LINE_RANGE, SIZE_RANGE, type ThemePref, WIDTHS } from "@/lib/comfort";
 
@@ -13,6 +22,8 @@ const chip = (on: boolean) =>
 export function ComfortPanel({ onClose }: { onClose: () => void }) {
   const [c, setC] = useState<Comfort>(readComfort);
   const [theme, setTheme] = useState(readThemePref);
+  const [tw, setTw] = useState(readTypewriter);
+  const [pf, setPf] = useState(readParaFocus);
   const firstRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
@@ -48,7 +59,10 @@ export function ComfortPanel({ onClose }: { onClose: () => void }) {
             [
               ["auto", t.themeAuto],
               ["light", t.themeLight],
+              ["sepia", t.themeSepia],
+              ["warm", t.themeWarm],
               ["dark", t.themeDark],
+              ["amoled", t.themeAmoled],
             ] as const
           ).map(([k, label], i) => (
             <button
@@ -62,6 +76,32 @@ export function ComfortPanel({ onClose }: { onClose: () => void }) {
               {label}
             </button>
           ))}
+        </div>
+
+        <h2 className={h}>{t.aids}</h2>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            aria-pressed={tw}
+            onClick={() => {
+              setTw(!tw);
+              saveTypewriter(!tw);
+            }}
+            className={chip(tw)}
+          >
+            {t.typewriter}
+          </button>
+          <button
+            type="button"
+            aria-pressed={pf}
+            onClick={() => {
+              setPf(!pf);
+              saveParaFocus(!pf);
+            }}
+            className={chip(pf)}
+          >
+            {t.paraFocus}
+          </button>
         </div>
 
         <h2 className={h}>{t.font}</h2>

@@ -7,8 +7,10 @@ import StarterKit from "@tiptap/starter-kit";
 import { useEffect, useRef } from "react";
 import { bn } from "@/i18n/bn";
 import type { EditorPos } from "@/data/draftStore";
+import { typewriterDelta } from "@/lib/comfort";
 import { HEADING_LEVELS, isSafeHref } from "@/lib/editor-nodes";
 import type { DocNode } from "@/lib/editorDoc";
+import { ParaFocus } from "./paraFocus";
 import { useKeyboardInset } from "./useKeyboardInset";
 
 type Props = {
@@ -39,10 +41,24 @@ export default function TiptapEditor({
         codeBlock: false,
         link: { openOnClick: false, autolink: false, isAllowedUri: (url: string) => isSafeHref(url) },
       }),
+      ParaFocus,
     ],
     content: initialDoc,
     editorProps: { attributes: { class: "pm", lang: "bn" } },
-    onUpdate: () => onContentChange(),
+    onUpdate: ({ editor: ed }) => {
+      onContentChange();
+      // Typewriter scroll (P7b-১): টাইপের পর caret-কে স্থির উচ্চতায় রাখে; শুধু টাইপে, ট্যাপে নয়
+      if (document.documentElement.dataset.tw !== "1") return;
+      requestAnimationFrame(() => {
+        try {
+          const top = ed.view.coordsAtPos(ed.state.selection.head).top;
+          const d = typewriterDelta(top, window.visualViewport?.height ?? window.innerHeight);
+          if (d !== 0) window.scrollBy(0, d);
+        } catch {
+          // editor আর নেই — উপেক্ষা
+        }
+      });
+    },
     onSelectionUpdate: () => onCaretMove(),
     onBlur: () => onBlur(),
   });

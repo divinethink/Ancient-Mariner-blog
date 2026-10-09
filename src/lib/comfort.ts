@@ -42,7 +42,7 @@ export function comfortVars(c: Comfort): Record<string, string> {
   };
 }
 
-export const THEME_PREFS = ["auto", "light", "dark"] as const; // Sepia/Warm/AMOLED P7b
+export const THEME_PREFS = ["auto", "light", "sepia", "warm", "dark", "amoled"] as const;
 export type ThemePref = (typeof THEME_PREFS)[number];
 
 // public/theme-init.js ও tokens.css-এর --bg-র সাথে মিলিয়ে রাখতে হবে (theme-color meta)
@@ -53,6 +53,20 @@ export const THEME_BG: Record<string, string> = {
   dark: "#1c1b19",
   amoled: "#000000",
 };
+
+/** Typewriter scroll: caret যেখানে থাকতে চায় (viewport-উচ্চতার অনুপাত) */
+export const TYPEWRITER_RATIO = 0.4;
+/** caret-এর উপরের প্রান্ত (viewport-এর সাপেক্ষে) → কত px scroll করলে লক্ষ্যে পৌঁছায়; সহনসীমার ভেতরে বা অবৈধ মানে ০ (jitter এড়াতে) */
+export function typewriterDelta(
+  caretTop: number,
+  viewportH: number,
+  ratio = TYPEWRITER_RATIO,
+  tol = 24,
+): number {
+  if (!Number.isFinite(caretTop) || !Number.isFinite(viewportH) || viewportH <= 0) return 0;
+  const d = caretTop - viewportH * ratio;
+  return Math.abs(d) <= tol ? 0 : Math.round(d);
+}
 
 /** পছন্দ (auto সহ) → বাস্তব থিম; অচেনা মান light */
 export function resolveTheme(pref: string | null | undefined, systemDark: boolean): string {
