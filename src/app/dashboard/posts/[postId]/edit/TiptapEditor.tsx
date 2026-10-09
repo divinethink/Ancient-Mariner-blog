@@ -44,7 +44,8 @@ export default function TiptapEditor({
       ParaFocus,
     ],
     content: initialDoc,
-    editorProps: { attributes: { class: "pm", lang: "bn" } },
+    // spellcheck বন্ধ: বাংলা শব্দে ভুল লাল-দাগ ও "Add to dictionary" মেনু এড়াতে
+    editorProps: { attributes: { class: "pm", lang: "bn", spellcheck: "false" } },
     onUpdate: ({ editor: ed }) => {
       onContentChange();
       // Typewriter scroll (P7b-১): টাইপের পর caret-কে স্থির উচ্চতায় রাখে; শুধু টাইপে, ট্যাপে নয়
