@@ -189,6 +189,48 @@ describe("backups", () => {
   });
 });
 
+// P6: media — visibility=='public' পাবলিক-read (explicit filter); private শুধু owner; write owner + validMedia (Arch §৯)
+describe("media", () => {
+  const m = (visibility: string, extra: Record<string, unknown> = {}) => ({
+    type: "image",
+    deliveryType: visibility === "public" ? "upload" : "authenticated",
+    visibility,
+    cloudinaryPublicId: "blog/x",
+    ownerUid: OWNER,
+    ...extra,
+  });
+  it("public পাবলিক পড়া যায়; private anonymous/non-owner পড়তে পারে না; owner পারে", async () => {
+    await seed("media", "pub", m("public"));
+    await seed("media", "priv", m("private"));
+    await assertSucceeds(getDoc(doc(anon(), "media", "pub")));
+    await assertFails(getDoc(doc(anon(), "media", "priv")));
+    await assertFails(getDoc(doc(other(), "media", "priv")));
+    await assertSucceeds(getDoc(doc(owner(), "media", "priv")));
+  });
+  it("পাবলিক query শুধু visibility==public filter-সহ সফল; filter ছাড়া ব্যর্থ", async () => {
+    await seed("media", "pub", m("public"));
+    await seed("media", "priv", m("private"));
+    const col = collection(anon(), "media");
+    const snap = await assertSucceeds(getDocs(query(col, where("visibility", "==", "public"))));
+    expect(snap.docs.map((d) => d.id)).toEqual(["pub"]);
+    await assertFails(getDocs(col));
+  });
+  it("write: শুধু owner; অবৈধ enum ও ভুল ownerUid ব্যর্থ; ownerUid বদলানো ব্যর্থ", async () => {
+    await assertSucceeds(setDoc(doc(owner(), "media", "a"), m("public")));
+    await assertSucceeds(setDoc(doc(owner(), "media", "b"), m("private")));
+    await assertFails(setDoc(doc(other(), "media", "c"), m("public")));
+    await assertFails(setDoc(doc(anon(), "media", "c"), m("public")));
+    await assertFails(setDoc(doc(owner(), "media", "d"), m("secret")));
+    await assertFails(setDoc(doc(owner(), "media", "e"), m("public", { type: "video" })));
+    await assertFails(setDoc(doc(owner(), "media", "f"), m("public", { deliveryType: "signed" })));
+    await assertFails(setDoc(doc(owner(), "media", "g"), m("public", { ownerUid: "someoneElse" })));
+    await assertFails(updateDoc(doc(owner(), "media", "a"), { ownerUid: "someoneElse123456" }));
+    await assertSucceeds(updateDoc(doc(owner(), "media", "a"), { altText: "সৈকত" }));
+    await assertFails(deleteDoc(doc(other(), "media", "a")));
+    await assertSucceeds(deleteDoc(doc(owner(), "media", "a")));
+  });
+});
+
 describe("posts: P3a enum", () => {
   it("archived status ও আগের মান চলে; অবৈধ মান আটকায়", async () => {
     await assertSucceeds(setDoc(doc(owner(), "posts", "x"), post({ status: "archived" })));

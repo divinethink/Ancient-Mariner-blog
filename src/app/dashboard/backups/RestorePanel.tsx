@@ -20,7 +20,7 @@ import { ConfirmButton } from "../ConfirmButton";
 
 type Phase = "idle" | "checking" | "ready" | "running" | "done" | "error";
 const btn = "min-h-11 rounded-full bg-btn-bg px-5 text-btn-tx disabled:opacity-50";
-const SITE_AFFECTING = ["posts", "siteSettings", "categories", "tags", "series", "pages"] as const;
+const SITE_AFFECTING = ["posts", "siteSettings", "categories", "tags", "series", "pages", "media"] as const;
 
 export function RestorePanel() {
   const t = bn.backup.restore;

@@ -86,6 +86,8 @@ export const bn = {
       categories: "ক্যাটাগরি",
       tags: "ট্যাগ",
       series: "সিরিজ",
+      pages: "পেজ",
+      media: "মিডিয়া-তথ্য",
     } as Record<string, string>,
     estimate: (n: number, pct: number, limit: number) =>
       `~${n}টি read লাগবে — দিনের ${limit.toLocaleString("en-US")} read-সীমার ${pct}%।`,

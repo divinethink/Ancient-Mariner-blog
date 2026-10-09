@@ -13,6 +13,11 @@ describe("renderRules", () => {
       `u=${UID} s in ['draft', 'published', 'trashed', 'archived'] v in ['private', 'public'] p in ['draft', 'published']`,
     );
   });
+  it("media enum-তালিকা বসায়", () => {
+    expect(renderRules("__MEDIA_TYPE__ __MEDIA_DELIVERY__ __MEDIA_VISIBILITY__", UID)).toBe(
+      "['image', 'file'] ['upload', 'authenticated'] ['public', 'private']",
+    );
+  });
   it("অবৈধ uid-এ ব্যর্থ", () => {
     expect(() => renderRules("x", "")).toThrow();
     expect(() => renderRules("x", "a'b")).toThrow();

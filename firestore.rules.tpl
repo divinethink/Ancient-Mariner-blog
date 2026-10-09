@@ -1,5 +1,5 @@
 rules_version = '2';
-// P1b: posts / slugs / siteSettings · P2a: drafts · P3a: categories / tags / series · P3b: ideas / notes · P4b: pages · P5a: revisions · P5b: backups (Arch §৯)। বাকি collection phase-অনুযায়ী যোগ হয়; বাকি সব deny-all।
+// P1b: posts / slugs / siteSettings · P2a: drafts · P3a: categories / tags / series · P3b: ideas / notes · P4b: pages · P5a: revisions · P5b: backups · P6: media (Arch §৯)। বাকি collection phase-অনুযায়ী যোগ হয়; বাকি সব deny-all।
 // placeholder scripts/render-rules.ts বসায়; rendered firestore.rules git-এ commit হয় না।
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -16,6 +16,13 @@ service cloud.firestore {
           && request.resource.data.ownerUid == '__OWNER_UID__'
           && request.resource.data.status in __POST_STATUS__
           && request.resource.data.visibility in __POST_VISIBILITY__;
+    }
+
+    function validMedia() {
+      return request.resource.data.ownerUid == request.auth.uid // isOwner() আগেই যাচাই ⇒ সমতুল্য; Console-paste-এ uid লাগে না
+          && request.resource.data.type in __MEDIA_TYPE__
+          && request.resource.data.deliveryType in __MEDIA_DELIVERY__
+          && request.resource.data.visibility in __MEDIA_VISIBILITY__;
     }
 
     match /posts/{postId} {
@@ -79,6 +86,16 @@ service cloud.firestore {
     match /backups/{backupId} {
       allow read: if isOwner();
       allow write: if false;
+    }
+
+    // মিডিয়া-মেটা (P6): visibility=='public' পাবলিক-read (build-সময়ে cover/logo; doc-id ধরে get, query-তে explicit filter); private শুধু owner।
+    // public doc-এ location/capturedAt না রাখা (UI-তে public ছবিতে এই দুই ফিল্ড নেই)। write শুধু owner + validMedia।
+    match /media/{mediaId} {
+      allow read: if resource.data.visibility == 'public';
+      allow read, delete: if isOwner();
+      allow create: if isOwner() && validMedia();
+      allow update: if isOwner() && validMedia()
+                    && request.resource.data.ownerUid == resource.data.ownerUid;
     }
 
     match /siteSettings/{docId} {
