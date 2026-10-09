@@ -4,6 +4,7 @@
 // Quick Idea: id আগে বানানো (create idempotent — double-tap/retry-তে duplicate নয়); সংরক্ষণ ব্যর্থ হলে লেখা থেকে যায়;
 // sheet বন্ধ করলেও অসংরক্ষিত লেখা provider-এ থাকে (আবার খুললে ফেরে)।
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   createContext,
   useCallback,
@@ -19,8 +20,9 @@ import { getIdeaRepo } from "@/data/ideaRepo.wire";
 import { bn } from "@/i18n/bn";
 import { newId } from "@/lib/id";
 import { IDEA_TEXT_MAX } from "@/lib/idea";
+import { TemplatePicker } from "./TemplatePicker";
 
-type Mode = "closed" | "menu" | "idea";
+type Mode = "closed" | "menu" | "idea" | "templates";
 type Status = "idle" | "saving" | "failed" | "invalid";
 type AddCtx = {
   openMenu: () => void;
@@ -42,6 +44,7 @@ const row =
   "flex min-h-14 w-full items-center gap-3 rounded-2xl border border-line px-4 text-left text-base hover:bg-line";
 
 export function AddProvider({ children }: { children: ReactNode }) {
+  const router = useRouter();
   const [mode, setMode] = useState<Mode>("closed");
   const [text, setText] = useState("");
   const [status, setStatus] = useState<Status>("idle");
@@ -71,7 +74,7 @@ export function AddProvider({ children }: { children: ReactNode }) {
   // খোলার পর ফোকাস: আইডিয়া-ফর্মে textarea, নইলে প্রথম বোতাম
   useEffect(() => {
     if (mode === "idea") areaRef.current?.focus();
-    else if (mode === "menu") dialogRef.current?.querySelector<HTMLElement>(FOCUSABLE)?.focus();
+    else if (mode === "menu" || mode === "templates") dialogRef.current?.querySelector<HTMLElement>(FOCUSABLE)?.focus();
   }, [mode]);
 
   useEffect(() => {
@@ -181,7 +184,7 @@ export function AddProvider({ children }: { children: ReactNode }) {
           >
             <div className="mb-3 flex items-center justify-between">
               <h2 id="add-sheet-title" className="font-serif text-xl font-bold">
-                {mode === "idea" ? t.quickTitle : t.sheetTitle}
+                {mode === "idea" ? t.quickTitle : mode === "templates" ? t.templatesTitle : t.sheetTitle}
               </h2>
               <button
                 type="button"
@@ -199,11 +202,23 @@ export function AddProvider({ children }: { children: ReactNode }) {
                   <span aria-hidden>✏️</span>
                   {t.newPost}
                 </Link>
+                <button type="button" onClick={() => setMode("templates")} className={row}>
+                  <span aria-hidden>📄</span>
+                  {t.fromTemplate}
+                </button>
                 <button type="button" onClick={() => setMode("idea")} className={row}>
                   <span aria-hidden>💡</span>
                   {t.quickTitle}
                 </button>
               </div>
+            ) : mode === "templates" ? (
+              <TemplatePicker
+                onBack={() => setMode("menu")}
+                onPick={(ref) => {
+                  setMode("closed");
+                  router.push(`/dashboard/posts/${newId()}/edit?new=1&tpl=${encodeURIComponent(ref)}`);
+                }}
+              />
             ) : (
               <form
                 onSubmit={(e) => {

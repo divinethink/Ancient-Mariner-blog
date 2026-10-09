@@ -4,12 +4,16 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 import type { Editor } from "@tiptap/react";
-import { applyComfort, readComfort, readFocus, saveFocus } from "@/data/comfortStore";
+import { applyComfort, applyEditorAids, readComfort, readFocus, saveFocus } from "@/data/comfortStore";
 import { draftStore, type EditorPos } from "@/data/draftStore";
 import { goalStore } from "@/data/goalStore";
+import { getTemplateRepo } from "@/data/templateRepo.wire";
 import { bn } from "@/i18n/bn";
 import { dayKey } from "@/lib/datetime";
 import { countWords, docToText, makeExcerpt, sanitizeDoc, type DocNode } from "@/lib/editorDoc";
+import { serializePost } from "@/lib/export/serialize";
+import { newId } from "@/lib/id";
+import { cleanTemplateName } from "@/lib/templates";
 import { useSiteTimezone } from "../../../SiteSettingsProvider";
 import { useMinWidth } from "../../../useMinWidth";
 import { ComfortPanel } from "./ComfortPanel";
@@ -64,6 +68,43 @@ export function EditorSurface({ postId, data }: { postId: string; data: Loaded }
   const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const excerptRef = useRef({ value: data.excerpt, manual: data.excerptManual });
   const blockedRef = useRef(false); // বাতিল/সার্ভারের-লেখা-আনার পর reload-এর আগে লোকাল ড্রাফট আর লেখা নয়
+
+  // ⋯ মেনু: ছাঁচ হিসেবে সেভ / কপি (P7b-২); ফলাফল ক্ষণস্থায়ী বার্তায়
+  const [note, setNote] = useState("");
+  const tplBusy = useRef(false);
+  useEffect(() => {
+    if (!note) return;
+    const id = setTimeout(() => setNote(""), 2500);
+    return () => clearTimeout(id);
+  }, [note]);
+  async function saveAsTemplate() {
+    setMoreOpen(false);
+    const ed = editorRef.current;
+    if (!ed || tplBusy.current) return;
+    const name = cleanTemplateName(window.prompt(bn.editor.tpl.namePrompt, titleRef.current.trim().slice(0, 60)));
+    if (!name) return setNote(bn.editor.tpl.nameInvalid);
+    tplBusy.current = true; // double-tap-এ দ্বিতীয়টা বাদ; id আগে বানানো ⇒ retry-তেও duplicate নয়
+    try {
+      const repo = await getTemplateRepo();
+      await repo.create({ id: newId(), name, body: JSON.stringify(sanitizeDoc(ed.getJSON())) });
+      setNote(bn.editor.tpl.saved);
+    } catch {
+      setNote(bn.editor.tpl.saveFailed);
+    } finally {
+      tplBusy.current = false;
+    }
+  }
+  async function copyAs(mode: "plain" | "md") {
+    setMoreOpen(false);
+    const ed = editorRef.current;
+    if (!ed) return;
+    try {
+      await navigator.clipboard.writeText(serializePost(titleRef.current, sanitizeDoc(ed.getJSON()), mode));
+      setNote(bn.editor.tpl.copied);
+    } catch {
+      setNote(bn.editor.tpl.copyFailed);
+    }
+  }
 
   const onEditor = useCallback((e: Editor | null) => {
     editorRef.current = e;
@@ -178,6 +219,7 @@ export function EditorSurface({ postId, data }: { postId: string; data: Loaded }
 
   // সংরক্ষিত আরাম-সেটিং (ফন্ট/আকার/ফাঁক/চওড়া) প্রয়োগ
   useEffect(() => applyComfort(readComfort()), []);
+  useEffect(() => applyEditorAids(), []);
 
   // ট্যাব লুকালে/পেজ ছাড়লে/unmount-এ সাথে সাথে লোকাল সেভ
   useEffect(() => {
@@ -243,7 +285,12 @@ export function EditorSurface({ postId, data }: { postId: string; data: Loaded }
         <span role="status" aria-live="polite" className="flex-1 text-sm text-muted">
           {statusText}
           {saveState === "failed" && <span className="text-accent-text"> {bn.editor.saveFailed}</span>}
-          {status === "failed" && (
+          {note && (
+        <p role="status" className="fixed inset-x-0 bottom-24 z-50 mx-auto w-fit rounded-full bg-btn-bg px-4 py-2 text-sm text-btn-tx shadow-lg">
+          {note}
+        </p>
+      )}
+      {status === "failed" && (
             <button
               type="button"
               onClick={() => void engine?.syncNow().catch(() => undefined)}
@@ -320,6 +367,15 @@ export function EditorSurface({ postId, data }: { postId: string; data: Loaded }
               >
                 {bn.editor.history}
               </Link>
+              <button type="button" onClick={() => void saveAsTemplate()} className="min-h-11 whitespace-nowrap px-4 text-left">
+                {bn.editor.tpl.save}
+              </button>
+              <button type="button" onClick={() => void copyAs("plain")} className="min-h-11 whitespace-nowrap px-4 text-left">
+                {bn.editor.tpl.copyPlain}
+              </button>
+              <button type="button" onClick={() => void copyAs("md")} className="min-h-11 whitespace-nowrap px-4 text-left">
+                {bn.editor.tpl.copyMd}
+              </button>
             </div>
           )}
         </div>

@@ -1,5 +1,5 @@
 rules_version = '2';
-// P1b: posts / slugs / siteSettings · P2a: drafts · P3a: categories / tags / series · P3b: ideas / notes · P4b: pages · P5a: revisions · P5b: backups · P6: media (Arch §৯)। বাকি collection phase-অনুযায়ী যোগ হয়; বাকি সব deny-all।
+// P1b: posts / slugs / siteSettings · P2a: drafts · P3a: categories / tags / series · P3b: ideas / notes · P4b: pages · P5a: revisions · P5b: backups · P6: media · P7b: templates (Arch §৯)। বাকি collection phase-অনুযায়ী যোগ হয়; বাকি সব deny-all।
 // placeholder scripts/render-rules.ts বসায়; rendered firestore.rules git-এ commit হয় না।
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -65,6 +65,11 @@ service cloud.firestore {
       allow read, write: if isOwner();
     }
     match /notes/{id} {
+      allow read, write: if isOwner();
+    }
+
+    // নিজের লেখার ছাঁচ (P7b-২) — শুধু owner; পাবলিক read নেই
+    match /templates/{id} {
       allow read, write: if isOwner();
     }
 

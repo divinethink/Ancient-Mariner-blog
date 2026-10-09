@@ -47,6 +47,11 @@
       ]
     },
     {
+      "collectionGroup": "templates",
+      "fieldPath": "body",
+      "indexes": []
+    },
+    {
       "collectionGroup": "revisions",
       "queryScope": "COLLECTION",
       "fields": [

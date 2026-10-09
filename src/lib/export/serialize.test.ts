@@ -1,0 +1,70 @@
+import { describe, expect, it } from "vitest";
+import type { DocNode } from "../editorDoc";
+import { serializeDoc, serializePost } from "./serialize";
+
+const t = (text: string, marks?: DocNode["marks"]): DocNode => ({
+  type: "text",
+  text,
+  ...(marks ? { marks } : {}),
+});
+const p = (...c: DocNode[]): DocNode => ({ type: "paragraph", content: c });
+const doc = (...c: DocNode[]): DocNode => ({ type: "doc", content: c });
+
+describe("serializeDoc — Markdown", () => {
+  it("heading, mark, link", () => {
+    const d = doc(
+      { type: "heading", attrs: { level: 2 }, content: [t("শুরু")] },
+      p(
+        t("কড়া", [{ type: "bold" }]),
+        t(" ও "),
+        t("হেলানো", [{ type: "italic" }]),
+        t(" ও "),
+        t("লিংক", [{ type: "link", attrs: { href: "https://a.bc/x" } }]),
+      ),
+    );
+    expect(serializeDoc(d, "md")).toBe("## শুরু\n\n**কড়া** ও *হেলানো* ও [লিংক](https://a.bc/x)\n");
+  });
+  it("বিশেষ অক্ষর escape; underline = <u>", () => {
+    expect(serializeDoc(doc(p(t("a*b_[c]"))), "md")).toBe("a\\*b\\_\\[c\\]\n");
+    expect(serializeDoc(doc(p(t("নিচে", [{ type: "underline" }]))), "md")).toBe("<u>নিচে</u>\n");
+  });
+  it("তালিকা, ক্রমিক (start), quote, hr", () => {
+    const li = (s: string): DocNode => ({ type: "listItem", content: [p(t(s))] });
+    const d = doc(
+      { type: "bulletList", content: [li("এক"), li("দুই")] },
+      { type: "orderedList", attrs: { start: 3 }, content: [li("তিন"), li("চার")] },
+      { type: "blockquote", content: [p(t("উক্তি"))] },
+      { type: "horizontalRule" },
+    );
+    expect(serializeDoc(d, "md")).toBe("- এক\n- দুই\n\n3. তিন\n4. চার\n\n> উক্তি\n\n---\n");
+  });
+  it("hardBreak", () => {
+    expect(serializeDoc(doc(p(t("এক"), { type: "hardBreak" }, t("দুই"))), "md")).toBe(
+      "এক  \nদুই\n",
+    );
+  });
+});
+
+describe("serializeDoc — সাধারণ", () => {
+  it("marker/escape ছাড়া; তালিকায় •; heading শুধু টেক্সট", () => {
+    const d = doc(
+      { type: "heading", attrs: { level: 3 }, content: [t("শিরো")] },
+      p(t("a*b", [{ type: "bold" }])),
+      { type: "bulletList", content: [{ type: "listItem", content: [p(t("এক"))] }] },
+    );
+    expect(serializeDoc(d, "plain")).toBe("শিরো\n\na*b\n\n• এক\n");
+  });
+  it("খালি doc → খালি string", () => {
+    expect(serializeDoc(doc(p()), "plain")).toBe("");
+    expect(serializeDoc({ type: "doc" }, "md")).toBe("");
+  });
+});
+
+describe("serializePost", () => {
+  it("শিরোনাম থাকলে; না থাকলে শুধু বডি", () => {
+    expect(serializePost("নাম", doc(p(t("লেখা"))), "md")).toBe("# নাম\n\nলেখা\n");
+    expect(serializePost("নাম", doc(p(t("লেখা"))), "plain")).toBe("নাম\n\nলেখা\n");
+    expect(serializePost("  ", doc(p(t("লেখা"))), "plain")).toBe("লেখা\n");
+    expect(serializePost("নাম", doc(p()), "md")).toBe("# নাম\n");
+  });
+});
