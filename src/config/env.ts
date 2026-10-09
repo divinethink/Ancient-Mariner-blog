@@ -33,6 +33,14 @@ const rebuildSchema = z.object({
   GITHUB_REPO: z.string().regex(/^[\w.-]+\/[\w.-]+$/),
 });
 
+// Cloudinary privileged routes (`/api/owner/media/*`, P6-২): CLOUD_NAME/API_KEY = `wrangler.jsonc` vars; API_SECRET = শুধু Worker secret
+const cloudinarySchema = z.object({
+  SITE_URL: z.url(),
+  CLOUDINARY_CLOUD_NAME: z.string().regex(/^[a-z0-9][a-z0-9_-]{1,59}$/i),
+  CLOUDINARY_API_KEY: z.string().regex(/^\d{6,20}$/),
+  CLOUDINARY_API_SECRET: z.string().min(10),
+});
+
 // Cron (`scheduled`, P5a-৩): FIREBASE_SERVICE_ACCOUNT = Worker secret (service-account JSON, Firestore access; শুধু Cron-এ)
 const cronSchema = z.object({
   FIREBASE_PROJECT_ID: z.string().min(1),
@@ -45,6 +53,7 @@ export const getEnv = () => parse(schema);
 export const getAuthEnv = () => parse(authSchema);
 export const getSiteUrl = () => parse(siteSchema).SITE_URL;
 export const getRebuildEnv = () => parse(rebuildSchema);
+export const getCloudinaryEnv = () => parse(cloudinarySchema);
 /** `scheduled` handler-এর নিজস্ব `env` দিয়ে (process.env-এর ওপর নির্ভর না করে); মিসিং হলে fail-closed */
 export const getCronEnv = (source: unknown) => parse(cronSchema, source);
 

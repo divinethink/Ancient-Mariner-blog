@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { cldOgUrl, cldSrcSet, cldUrl, isValidCloudName, isValidPublicId, snapWidth } from "./cloudinary";
+import { cldOgUrl, cloudFromUrl, cldSrcSet, cldUrl, isValidCloudName, isValidPublicId, snapWidth } from "./cloudinary";
 
 describe("cloudinary URL", () => {
   it("প্রস্থ উপরের ধাপে snap হয়; সর্বোচ্চে আটকায়", () => {
@@ -36,5 +36,10 @@ describe("cloudinary URL", () => {
     expect(cldOgUrl("demo", "blog/abc")).toContain("c_fill,g_auto,w_1200,h_630");
     expect(cldOgUrl("x", "blog/abc")).toBeNull(); // cloud name ≥২ অক্ষর
     expect(cldOgUrl("demo", "bad id")).toBeNull();
+  });
+  it("cloudFromUrl", () => {
+    expect(cloudFromUrl("https://res.cloudinary.com/demo/image/upload/v1/blog/a.jpg")).toBe("demo");
+    expect(cloudFromUrl("https://evil.test/res.cloudinary.com/demo/x")).toBeNull();
+    expect(cloudFromUrl(undefined)).toBeNull();
   });
 });

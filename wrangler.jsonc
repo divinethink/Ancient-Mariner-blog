@@ -17,7 +17,10 @@
   "vars": {
     "FIREBASE_PROJECT_ID": "ancientmarinerblog",
     "SITE_URL": "https://blog.ancientmariner.workers.dev",
-    "GITHUB_REPO": "divinethink/Ancient-Mariner-blog"
+    "GITHUB_REPO": "divinethink/Ancient-Mariner-blog",
+    // Cloudinary (P6-২): নাম ও API key গোপন নয়; CLOUDINARY_API_SECRET শুধু Worker secret
+    "CLOUDINARY_CLOUD_NAME": "vou6klwt",
+    "CLOUDINARY_API_KEY": "255854631651555"
   },
   // Cron (UTC): প্রতি ৬ ঘণ্টায় — revision prune ও ৭ দিনের trash purge (P5a-৩)। FIREBASE_SERVICE_ACCOUNT Worker secret লাগে
   "triggers": { "crons": ["17 */6 * * *"] },

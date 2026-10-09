@@ -21,6 +21,14 @@ export default function MenuPage() {
           </Link>
         </li>
         <li>
+          <Link href="/dashboard/media" className="flex min-h-12 items-center justify-between px-4">
+            <span>🖼️ {bn.dashboard.media}</span>
+            <span aria-hidden className="text-muted">
+              ›
+            </span>
+          </Link>
+        </li>
+        <li>
           <Link href="/dashboard/import" className="flex min-h-12 items-center justify-between px-4">
             <span>📥 {bn.dashboard.importWp}</span>
             <span aria-hidden className="text-muted">

@@ -9,7 +9,7 @@ export function buildAppCsp(nonce: string, projectId: string): string {
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: https://res.cloudinary.com",
     "font-src 'self'",
-    `connect-src 'self' https://*.googleapis.com ${authDomain}`,
+    `connect-src 'self' https://*.googleapis.com ${authDomain} https://api.cloudinary.com`,
     `frame-src ${authDomain} https://accounts.google.com https://content.googleapis.com`,
     "object-src 'none'",
     "base-uri 'self'",

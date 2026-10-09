@@ -39,3 +39,9 @@ export function cldOgUrl(cloud: string, publicId: string): string | null {
   if (!isValidCloudName(cloud) || !isValidPublicId(publicId)) return null;
   return `https://res.cloudinary.com/${cloud}/image/upload/f_auto,q_auto,c_fill,g_auto,w_${OG_SIZE.w},h_${OG_SIZE.h}/${publicId}`;
 }
+
+/** সংরক্ষিত `cloudinaryUrl` থেকে cloud name (UI-তে thumbnail বানাতে; অন্য host হলে null) */
+export function cloudFromUrl(url: string | undefined): string | null {
+  const m = /^https:\/\/res\.cloudinary\.com\/([^/]+)\//.exec(url ?? "");
+  return m && isValidCloudName(m[1]) ? m[1] : null;
+}
