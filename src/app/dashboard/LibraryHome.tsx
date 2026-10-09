@@ -18,6 +18,7 @@ import { FIND_LIMIT } from "@/lib/postFind";
 import { buildCategoryTree } from "@/lib/taxonomy";
 import { trashDaysLeft } from "@/lib/trash";
 import { BulkBar } from "./BulkBar";
+import { HomeCards } from "./HomeCards";
 import { useSiteTimezone } from "./SiteSettingsProvider";
 import { useLongPress } from "./useLongPress";
 import { TrashList, type TrashItem } from "./TrashList";
@@ -392,6 +393,12 @@ export function LibraryHome() {
             {latest.title || bn.library.untitled}
           </span>
         </Link>
+      )}
+      {filter !== "trash" && !selecting && (
+        <HomeCards
+          published={items.filter((i) => i.rawStatus === "published").length}
+          drafts={items.filter((i) => i.rawStatus === "draft").length}
+        />
       )}
       <div role="group" aria-label={bn.library.filters} className="mb-4 flex flex-wrap gap-2">
         {chips.map(([key, label]) => (

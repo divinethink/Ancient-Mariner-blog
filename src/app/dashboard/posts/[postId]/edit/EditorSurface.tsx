@@ -6,8 +6,11 @@ import { useCallback, useEffect, useRef, useState, type CSSProperties } from "re
 import type { Editor } from "@tiptap/react";
 import { applyComfort, readComfort, readFocus, saveFocus } from "@/data/comfortStore";
 import { draftStore, type EditorPos } from "@/data/draftStore";
+import { goalStore } from "@/data/goalStore";
 import { bn } from "@/i18n/bn";
+import { dayKey } from "@/lib/datetime";
 import { countWords, docToText, makeExcerpt, sanitizeDoc, type DocNode } from "@/lib/editorDoc";
+import { useSiteTimezone } from "../../../SiteSettingsProvider";
 import { useMinWidth } from "../../../useMinWidth";
 import { ComfortPanel } from "./ComfortPanel";
 import { PublishPanel } from "./PublishPanel";
@@ -38,6 +41,10 @@ export function EditorSurface({ postId, data }: { postId: string; data: Loaded }
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [words, setWords] = useState(() => countWords(docToText(data.doc)));
   const [excerpt, setExcerpt] = useState(data.excerpt);
+  const tz = useSiteTimezone();
+  const tzRef = useRef(tz);
+  tzRef.current = tz;
+  const initialWordsRef = useRef(words); // দৈনিক-লক্ষ্যের baseline: খোলার সময়ের সংখ্যা (P7a)
   const [panelOpen, setPanelOpen] = useState(false);
   const [comfortOpen, setComfortOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
@@ -85,6 +92,7 @@ export function EditorSurface({ postId, data }: { postId: string; data: Loaded }
           updatedAt: Date.now(),
           dirty: true,
         });
+        void goalStore.record(dayKey(Date.now(), tzRef.current), postId, wc, initialWordsRef.current).catch(() => undefined);
         setWords(wc);
         setSaveState("saved");
         edited(); // লোকাল সেভের পর Firestore sync-এর সময়সূচি

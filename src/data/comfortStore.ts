@@ -35,3 +35,9 @@ export const saveFocus = (on: boolean): void => prefs.set(FOCUS_KEY, on ? "1" : 
 const NAV_KEY = "navCollapsed";
 export const readNavCollapsed = (): boolean => prefs.get(NAV_KEY) === "1";
 export const saveNavCollapsed = (on: boolean): void => prefs.set(NAV_KEY, on ? "1" : "0");
+
+// লাইব্রেরি হোমের কার্ড (দৈনিক-লক্ষ্য / At a Glance / আইডিয়া-বাছাই) — প্রতি-ডিভাইস, default চালু (P7a)
+export type HomeCard = "goal" | "glance" | "pick";
+const HOME_KEY = (c: HomeCard) => `homeCard:${c}`;
+export const readHomeCard = (c: HomeCard): boolean => prefs.get(HOME_KEY(c)) !== "0";
+export const saveHomeCard = (c: HomeCard, on: boolean): void => prefs.set(HOME_KEY(c), on ? "1" : "0");
