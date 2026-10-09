@@ -40,4 +40,8 @@ export const saveNavCollapsed = (on: boolean): void => prefs.set(NAV_KEY, on ? "
 export type HomeCard = "goal" | "glance" | "pick";
 const HOME_KEY = (c: HomeCard) => `homeCard:${c}`;
 export const readHomeCard = (c: HomeCard): boolean => prefs.get(HOME_KEY(c)) !== "0";
-export const saveHomeCard = (c: HomeCard, on: boolean): void => prefs.set(HOME_KEY(c), on ? "1" : "0");
+export const HOME_CARDS_EVENT = "homecards-change";
+export const saveHomeCard = (c: HomeCard, on: boolean): void => {
+  prefs.set(HOME_KEY(c), on ? "1" : "0");
+  if (typeof window !== "undefined") window.dispatchEvent(new Event(HOME_CARDS_EVENT)); // একই ট্যাবের কার্ড/Settings সতেজ রাখে
+};

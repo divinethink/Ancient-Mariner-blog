@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { readHomeCard, saveHomeCard, type HomeCard } from "@/data/comfortStore";
+import { saveHomeCard, type HomeCard } from "@/data/comfortStore";
 import { bn } from "@/i18n/bn";
+import { useHomeCards } from "../useHomeCards";
 
 const ROWS: [HomeCard, string][] = [
   ["goal", bn.home.prefGoal],
@@ -12,10 +12,7 @@ const ROWS: [HomeCard, string][] = [
 
 /** লাইব্রেরি হোমের কার্ড বন্ধ/চালু — প্রতি-ডিভাইস (localStorage) */
 export function HomeCardPrefs() {
-  const [on, setOn] = useState<Record<HomeCard, boolean> | null>(null);
-  useEffect(() => {
-    setOn({ goal: readHomeCard("goal"), glance: readHomeCard("glance"), pick: readHomeCard("pick") });
-  }, []);
+  const on = useHomeCards();
   if (!on) return null;
   return (
     <fieldset className="mt-10 rounded-2xl border border-line bg-surface p-4">
@@ -25,10 +22,7 @@ export function HomeCardPrefs() {
           <input
             type="checkbox"
             checked={on[k]}
-            onChange={(e) => {
-              saveHomeCard(k, e.target.checked);
-              setOn({ ...on, [k]: e.target.checked });
-            }}
+            onChange={(e) => saveHomeCard(k, e.target.checked)}
             className="size-6 accent-[var(--accent)]"
           />
           {label}

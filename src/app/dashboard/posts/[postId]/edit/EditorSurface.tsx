@@ -43,7 +43,9 @@ export function EditorSurface({ postId, data }: { postId: string; data: Loaded }
   const [excerpt, setExcerpt] = useState(data.excerpt);
   const tz = useSiteTimezone();
   const tzRef = useRef(tz);
-  tzRef.current = tz;
+  useEffect(() => {
+    tzRef.current = tz;
+  }, [tz]);
   const initialWordsRef = useRef(words); // দৈনিক-লক্ষ্যের baseline: খোলার সময়ের সংখ্যা (P7a)
   const [panelOpen, setPanelOpen] = useState(false);
   const [comfortOpen, setComfortOpen] = useState(false);

@@ -2,7 +2,6 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { readHomeCard } from "@/data/comfortStore";
 import { convertIdeaToPost } from "@/data/ideaConvert";
 import type { IdeaWithId } from "@/data/ideaRepo";
 import { getIdeaRepo } from "@/data/ideaRepo.wire";
@@ -12,18 +11,15 @@ import { bn } from "@/i18n/bn";
 import { dayKey } from "@/lib/datetime";
 import { DEFAULT_GOAL, goalPercent, pickRandom } from "@/lib/goal";
 import { useSiteTimezone } from "./SiteSettingsProvider";
+import { useHomeCards } from "./useHomeCards";
 
 const bnNum = (n: number) => n.toLocaleString("bn-BD", { useGrouping: false });
 
 /** লাইব্রেরি হোমের তিনটি শান্ত কার্ড (Mockup §৭.৬, P7a)। প্রতিটা Settings-এ বন্ধ করা যায় (প্রতি-ডিভাইস) */
 export function HomeCards({ published, drafts }: { published: number; drafts: number }) {
   const tz = useSiteTimezone();
-  // SSR/hydration মিল: পছন্দ mount-এর পর পড়ি
-  const [prefs, setPrefs] = useState<{ goal: boolean; glance: boolean; pick: boolean } | null>(null);
+  const prefs = useHomeCards(); // SSR/hydration মিল: mount-এর পর পছন্দ আসে
   const [words, setWords] = useState(0);
-  useEffect(() => {
-    setPrefs({ goal: readHomeCard("goal"), glance: readHomeCard("glance"), pick: readHomeCard("pick") });
-  }, []);
   useEffect(() => {
     let dead = false;
     goalStore
