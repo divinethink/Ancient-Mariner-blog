@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import type { Metadata, Viewport } from "next";
 import { bn } from "@/i18n/bn";
 import { verificationToken } from "@/lib/seo";
+import { SwRegister } from "./SwRegister";
 import "./globals.css";
 
 const gsc = verificationToken(process.env.GOOGLE_SITE_VERIFICATION);
@@ -26,6 +27,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <script src="/theme-init.js" />
       </head>
       <body>
+        <SwRegister />
         <a className="skip-link" href="#main">
           {bn.skipToContent}
         </a>

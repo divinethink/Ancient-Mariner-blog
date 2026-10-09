@@ -6,3 +6,9 @@
 
 /build.json
   Cache-Control: no-store
+
+/sw.js
+  Cache-Control: no-cache
+
+/sw-policy.js
+  Cache-Control: no-cache
