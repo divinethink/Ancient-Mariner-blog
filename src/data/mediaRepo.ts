@@ -76,6 +76,31 @@ export type CreateMediaInput = z.input<typeof CreateMediaSchema>;
 export const MediaMetaPatchSchema = z.object({ altText: text.optional(), caption: text.optional() });
 export type MediaMetaPatch = z.infer<typeof MediaMetaPatchSchema>;
 
+/** পাবলিক build-snapshot-এ যা যায় (শুধু public ছবি; location/capturedAt/fileName কখনো না — Arch §৬, rules-এর public-read) */
+export const PublicMediaSchema = z.object({
+  id: z.string().min(1),
+  cloudinaryPublicId: z.string().refine(isValidPublicId, "অবৈধ public_id"),
+  cloudinaryUrl: httpsUrl,
+  width: z.number().int().positive().optional().catch(undefined),
+  height: z.number().int().positive().optional().catch(undefined),
+  altText: z.string().max(MEDIA_TEXT_MAX).optional().catch(undefined),
+});
+export type PublicMedia = z.infer<typeof PublicMediaSchema>;
+
+/** public ছবি না হলে (বা URL ছাড়া) null */
+export function toPublicMedia(m: MediaWithId): PublicMedia | null {
+  if (m.visibility !== "public" || m.type !== "image" || !m.cloudinaryUrl) return null;
+  const r = PublicMediaSchema.safeParse({
+    id: m.id,
+    cloudinaryPublicId: m.cloudinaryPublicId,
+    cloudinaryUrl: m.cloudinaryUrl,
+    width: m.width,
+    height: m.height,
+    altText: m.altText || undefined,
+  });
+  return r.success ? r.data : null;
+}
+
 export class MediaNotFoundError extends Error {
   constructor(public readonly id: string) {
     super(`মিডিয়া পাওয়া যায়নি: ${id}`);

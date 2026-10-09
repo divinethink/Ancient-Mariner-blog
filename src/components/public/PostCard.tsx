@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Cover } from "@/components/public/Cover";
 import { bn } from "@/i18n/bn";
 import type { CardLink, CardView } from "@/lib/cards";
 
@@ -22,7 +23,18 @@ function Chip({ l, prefix = "" }: { l: CardLink; prefix?: string }) {
 export function PostCard({ c }: { c: CardView }) {
   return (
     <article className="flex gap-3 rounded-2xl border border-line bg-surface p-4">
-      {c.day && (
+      {c.cover && (
+        <div className="relative h-28 w-28 shrink-0 overflow-hidden rounded-xl bg-line sm:h-36 sm:w-52">
+          <Cover cover={c.cover} sizes="(min-width: 640px) 208px, 112px" />
+          {c.day && (
+            <span aria-hidden="true" className="absolute left-2 top-2 flex flex-col items-center rounded-lg bg-surface px-2 py-1 text-center text-xs leading-tight shadow">
+              <b className="font-serif text-base text-accent-text">{c.day}</b>
+              {c.month}
+            </span>
+          )}
+        </div>
+      )}
+      {!c.cover && c.day && (
         <div aria-hidden="true" className="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-xl bg-bg text-center leading-tight">
           <span className="font-serif text-xl font-bold">{c.day}</span>
           <span className="text-xs text-muted">{c.month}</span>

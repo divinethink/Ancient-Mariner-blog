@@ -5,6 +5,7 @@ import { SNAPSHOT_PATH, writeSnapshot } from "../src/data/publicSnapshot";
 import { getPublicPageSource } from "../src/data/pageRepo.server";
 import { getPublicTaxonomySource } from "../src/data/taxonomyRepo.server";
 import { getPublicSettingsSource } from "../src/data/siteSettingsRepo.server";
+import { getPublicMediaSource } from "../src/data/mediaRepo.server";
 
 async function main() {
   const startedAt = new Date();
@@ -12,8 +13,11 @@ async function main() {
   const settings = await getPublicSettingsSource().read();
   const terms = await getPublicTaxonomySource().listAll();
   const pages = await getPublicPageSource().listPublished();
-  await writeSnapshot(posts, startedAt, SNAPSHOT_PATH, settings, terms, pages);
-  console.log(`✅ ${posts.length}টি published+public লেখা + সাইট-সেটিং (ইনডেক্স: ${settings.allowIndexing ? "চালু" : "বন্ধ"}) + ${terms.categories.length} ক্যাটাগরি/${terms.tags.length} ট্যাগ/${terms.series.length} সিরিজ + ${pages.length}টি পেজ → ${SNAPSHOT_PATH}`);
+  // P6-৩ক: শুধু published লেখার cover-id (প্রতি id-তে ১ read; না-পাওয়া/private বাদ, আসল নেট-ত্রুটিতে build থামে)
+  const coverIds = [...new Set(posts.map((p) => p.coverMediaId).filter((x): x is string => !!x))];
+  const media = await getPublicMediaSource().getMany(coverIds);
+  await writeSnapshot(posts, startedAt, SNAPSHOT_PATH, settings, terms, pages, media);
+  console.log(`✅ ${posts.length}টি published+public লেখা + সাইট-সেটিং (ইনডেক্স: ${settings.allowIndexing ? "চালু" : "বন্ধ"}) + ${terms.categories.length} ক্যাটাগরি/${terms.tags.length} ট্যাগ/${terms.series.length} সিরিজ + ${pages.length}টি পেজ + ${media.length}/${coverIds.length}টি cover → ${SNAPSHOT_PATH}`);
 }
 
 main().catch((e) => {

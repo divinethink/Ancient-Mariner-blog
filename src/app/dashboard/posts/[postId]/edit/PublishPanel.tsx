@@ -17,6 +17,7 @@ import { useSiteTimezone } from "../../../SiteSettingsProvider";
 import { isValidSlug, slugify } from "@/lib/slug";
 import type { SyncStatus } from "@/data/syncEngine";
 import { BuildStatus } from "@/app/dashboard/BuildStatus";
+import { CoverPicker } from "./CoverPicker";
 import { OrgSection, type OrgOptions } from "./OrgSection";
 import type { PubInfo, SyncEngine } from "./useRemoteSync";
 
@@ -59,6 +60,7 @@ export function PublishPanel(p: Props) {
   const [vis, setVis] = useState<"private" | "public">("public");
   const [dateIn, setDateIn] = useState("");
   const [feat, setFeat] = useState(false);
+  const [coverIn, setCoverIn] = useState<string | null>(null);
   /** প্রকাশের তারিখের `max` — render-এ Date.now() নয়, meta লোডের সময় বসে */
   const [maxIn, setMaxIn] = useState("");
   const [org, setOrg] = useState<OrgState | null>(null);
@@ -79,6 +81,7 @@ export function PublishPanel(p: Props) {
       setVis(post.publishedAt ? post.visibility : "public");
       setDateIn(post.publishedAt ? toZonedInput(post.publishedAt, tz) : "");
       setFeat(post.featured === true);
+      setCoverIn(post.coverMediaId ?? null);
       setMaxIn(toZonedInput(new Date(), tz));
       setOrg(orgFromPost(post));
       setOrderIn(post.seriesId && post.seriesOrder !== undefined ? String(post.seriesOrder) : "");
@@ -171,6 +174,7 @@ export function PublishPanel(p: Props) {
       ...orgChange,
       ...(vis !== cur.visibility ? { visibility: vis } : {}),
       ...(feat !== (cur.featured === true) ? { featured: feat } : {}),
+      ...(coverIn !== (cur.coverMediaId ?? null) ? { coverMediaId: coverIn } : {}),
       ...(dateChanged ? { publishedAt: date.date } : {}),
       ...extra,
     };
@@ -389,6 +393,8 @@ export function PublishPanel(p: Props) {
                 <span className="block text-xs text-muted">{bn.publishPanel.featuredHint}</span>
               </span>
             </label>
+
+            <CoverPicker value={coverIn} onChange={setCoverIn} disabled={busy} />
 
             {org && (
               <OrgSection

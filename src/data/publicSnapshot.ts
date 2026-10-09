@@ -5,13 +5,22 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { createLogger } from "../lib/logger";
 import { parsePage, type PageWithId } from "./pageRepo";
+import { PublicMediaSchema, type PublicMedia } from "./mediaRepo";
 import { parsePost, type PostWithId } from "./postRepo";
 import { EMPTY_TERMS, parseTerm, type PublicTerms } from "./taxonomyRepo";
 import { DEFAULT_SETTINGS, parseSiteSettings, type SiteSettings } from "./siteSettingsRepo";
 
 export const SNAPSHOT_PATH = join(".build-data", "posts.json");
 
-export type Snapshot = { fetchedAt: Date; posts: PostWithId[]; settings: SiteSettings; terms: PublicTerms; pages: PageWithId[] };
+export type Snapshot = {
+  fetchedAt: Date;
+  posts: PostWithId[];
+  settings: SiteSettings;
+  terms: PublicTerms;
+  pages: PageWithId[];
+  /** P6-৩ক: cover-এর public ছবি-মেটা (শুধু যেগুলো কোনো published লেখা ব্যবহার করে) */
+  media: PublicMedia[];
+};
 
 export async function writeSnapshot(
   posts: readonly PostWithId[],
@@ -20,9 +29,10 @@ export async function writeSnapshot(
   settings: SiteSettings = DEFAULT_SETTINGS,
   terms: PublicTerms = EMPTY_TERMS,
   pages: readonly PageWithId[] = [],
+  media: readonly PublicMedia[] = [],
 ): Promise<void> {
   await mkdir(dirname(path), { recursive: true });
-  await writeFile(path, JSON.stringify({ fetchedAt: fetchedAt.toISOString(), posts, settings, terms, pages }), "utf8");
+  await writeFile(path, JSON.stringify({ fetchedAt: fetchedAt.toISOString(), posts, settings, terms, pages, media }), "utf8");
 }
 
 /** ফাইল না থাকলে null; থাকা-কিন্তু-বিকৃত হলে throw (নীরবে খালি সাইট নয়) */
@@ -34,7 +44,7 @@ export async function readSnapshot(path = SNAPSHOT_PATH): Promise<Snapshot | nul
     if ((e as { code?: string }).code === "ENOENT") return null;
     throw e;
   }
-  const json = JSON.parse(raw) as { fetchedAt?: unknown; posts?: unknown; settings?: unknown; terms?: unknown; pages?: unknown };
+  const json = JSON.parse(raw) as { fetchedAt?: unknown; posts?: unknown; settings?: unknown; terms?: unknown; pages?: unknown; media?: unknown };
   if (typeof json.fetchedAt !== "string" || !Array.isArray(json.posts)) {
     throw new Error("build snapshot বিকৃত");
   }
@@ -61,7 +71,12 @@ export async function readSnapshot(path = SNAPSHOT_PATH): Promise<Snapshot | nul
       return [];
     }
   });
-  return { fetchedAt: new Date(json.fetchedAt), posts, settings: parseSiteSettings(json.settings), terms, pages };
+  // P6-৩ক: পুরনো snapshot-এ media না থাকলে খালি; বিকৃত এন্ট্রি বাদ (cover শুধু gradient-fallback-এ যায়, build থামে না)
+  const media = (Array.isArray(json.media) ? json.media : []).flatMap((r) => {
+    const x = PublicMediaSchema.safeParse(r);
+    return x.success ? [x.data] : [];
+  });
+  return { fetchedAt: new Date(json.fetchedAt), posts, settings: parseSiteSettings(json.settings), terms, pages, media };
 }
 
 let memo: Promise<PostWithId[]> | undefined;
@@ -100,4 +115,12 @@ let pagesMemo: Promise<PageWithId[]> | undefined;
 export function getPublicPages(): Promise<PageWithId[]> {
   pagesMemo ??= readSnapshot().then((s) => s?.pages ?? []);
   return pagesMemo;
+}
+
+let mediaMemo: Promise<Map<string, PublicMedia>> | undefined;
+
+/** Next build-এর পাবলিক পেজগুলোর জন্য cover-ছবি (id → মেটা; snapshot থেকে); snapshot না থাকলে খালি */
+export function getPublicMedia(): Promise<Map<string, PublicMedia>> {
+  mediaMemo ??= readSnapshot().then((s) => new Map((s?.media ?? []).map((m) => [m.id, m] as const)));
+  return mediaMemo;
 }

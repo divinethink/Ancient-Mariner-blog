@@ -46,6 +46,7 @@ export const PostSchema = z.object({
   seriesOrder: z.number().int().nonnegative().optional(),
   importSource: ImportSourceSchema.optional(), // P3c-খ; বিকৃত হলে `parsePost` বাদ দেয়
   featured: z.boolean().optional(), // P4b-৩: Home-এ featured (পুরনো doc-এ নেই = false)
+  coverMediaId: z.string().min(1).max(40).optional(), // P6-৩ক: cover = `media/{id}` (পাবলিক ছবি); পুরনো doc-এ নেই = cover নেই
   publishedAt: z.date().optional(),
   trashedAt: z.date().optional(),
   ownerUid: z.string().min(1),
@@ -77,6 +78,7 @@ export const PostPatchSchema = z
     seriesId: z.string().min(1).nullable().optional(),
     seriesOrder: z.number().int().nonnegative().nullable().optional(),
     featured: z.boolean().optional(),
+    coverMediaId: z.string().min(1).max(40).nullable().optional(), // null = cover সরানো
   })
   .refine((p) => (p.tagIds === undefined) === (p.tagNames === undefined), "tagIds ও tagNames একসাথে দিতে হবে")
   .refine((p) => p.tagIds === undefined || p.tagIds.length === p.tagNames?.length, "tagIds/tagNames দৈর্ঘ্য অমিল")

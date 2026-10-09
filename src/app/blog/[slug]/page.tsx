@@ -7,8 +7,10 @@ import { PublicShell } from "@/components/public/PublicShell";
 import { getPublicScopes } from "@/data/publicLists";
 import { getSiteUrl } from "@/config/env";
 import { hasDefaultOgImage } from "@/data/publicAssets";
-import { getPublicPages, getPublicSettings, listPublicPosts } from "@/data/publicSnapshot";
+import { getPublicMedia, getPublicPages, getPublicSettings, listPublicPosts } from "@/data/publicSnapshot";
 import { bn } from "@/i18n/bn";
+import { resolveCover } from "@/lib/cards";
+import { cldOgUrl } from "@/lib/cloudinary";
 import { formatDate } from "@/lib/datetime";
 import { pagePath } from "@/lib/pages";
 import { blogPath, planSlugMoves, postExcerpt } from "@/lib/publicSite";
@@ -53,9 +55,10 @@ export async function generateStaticParams() {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const [r, { siteTitle, allowIndexing }] = await Promise.all([resolve((await params).slug), getPublicSettings()]);
+  const [r, { siteTitle, allowIndexing }, media] = await Promise.all([resolve((await params).slug), getPublicSettings(), getPublicMedia()]);
   if (!r) return {};
   if (r.kind === "post") {
+    const cv = resolveCover(r.post.coverMediaId, media);
     return buildSeo({
       siteUrl: safeSiteUrl(),
       siteName: siteTitle,
@@ -67,6 +70,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       publishedTime: r.post.publishedAt,
       modifiedTime: r.post.updatedAt,
       hasOgImage: hasDefaultOgImage(),
+      ogImage: cv ? (cldOgUrl(cv.cloud, cv.publicId) ?? undefined) : undefined,
     }) as Metadata;
   }
   let canonical: string | undefined;
@@ -118,7 +122,7 @@ export default async function BlogPost({ params }: Props) {
       <Link href="/" prefetch={false} className="mb-3 inline-flex min-h-11 items-center text-accent-text">
         ← {bn.public.home}
       </Link>
-      <PostArticle title={post.title} meta={meta} links={card ? [...(card.category ? [card.category] : []), ...card.tags.map((t) => ({ ...t, name: `#${t.name}` }))] : []} body={post.body} />
+      <PostArticle title={post.title} meta={meta} links={card ? [...(card.category ? [card.category] : []), ...card.tags.map((t) => ({ ...t, name: `#${t.name}` }))] : []} body={post.body} cover={card?.cover} />
       <AuthorBox name={siteTitle} bio={authorBio} aboutHref={pages.some((p) => p.slug === "about") ? pagePath("about") : undefined} />
     </PublicShell>
   );

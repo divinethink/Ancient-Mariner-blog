@@ -1,6 +1,6 @@
 // পাবলিক তালিকা-scope: /blog, category, tag, series (Arch §১৭ P4a)। build-ডেটা (published+public, publishedAt desc) থেকে
 // মেমরিতে গ্রুপ — আলাদা query/index নেই। pure, SDK/UI-মুক্ত। যে term-এ লেখা নেই তার পেজ হয় না।
-import { toCardView, type CardPost, type CardTerm, type CardView, type CardCtx } from "./cards";
+import { toCardView, type CardMedia, type CardPost, type CardTerm, type CardView, type CardCtx } from "./cards";
 import { byCategory, bySeries, byTag, type GroupPost } from "./postGroups";
 import { BLOG_INDEX_PATH, categoryPath, seriesPath, tagPath } from "./publicSite";
 
@@ -26,10 +26,11 @@ export function buildScopes(input: {
   posts: readonly ListPost[];
   terms: ListTerms;
   timeZone: string;
+  media?: ReadonlyMap<string, CardMedia>;
 }): Scope[] {
-  const { posts, terms, timeZone } = input;
+  const { posts, terms, timeZone, media } = input;
   const idMap = (ts: readonly ScopeTerm[]) => new Map(ts.map((t) => [t.id, t] as const));
-  const ctx: CardCtx = { timeZone, categories: idMap(terms.categories), tags: idMap(terms.tags) };
+  const ctx: CardCtx = { timeZone, categories: idMap(terms.categories), tags: idMap(terms.tags), media };
   const view = (ps: readonly ListPost[]) => ps.map((p) => toCardView(p, ctx));
 
   const scopes: Scope[] = [{ key: "blog", kind: "blog", path: BLOG_INDEX_PATH, cards: view(posts) }];

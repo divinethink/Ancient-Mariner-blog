@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { AI_CRAWLERS, MAX_SITEMAP_URLS, buildSeo, renderRobots, renderSitemap } from "./seo";
+import { AI_CRAWLERS, MAX_SITEMAP_URLS, buildSeo, renderRobots, renderSitemap, verificationToken } from "./seo";
 
 const base = {
   siteUrl: "https://ex.dev/",
@@ -76,5 +76,26 @@ describe("renderRobots", () => {
     const r = renderRobots({ ...o, blockAiCrawlers: true });
     for (const a of AI_CRAWLERS) expect(r).toContain(`User-agent: ${a}\n`);
     expect(r.indexOf("Disallow: /\n")).toBeLessThan(r.indexOf("User-agent: *"));
+  });
+});
+
+describe("P6-৩ক: ogImage ও verification", () => {
+  const og = "https://res.cloudinary.com/demo/image/upload/f_auto,q_auto,c_fill,g_auto,w_1200,h_630/blog/abc";
+  it("cover-এর ogImage ডিফল্টের আগে; ১২০০×৬৩০; twitter large", () => {
+    const m = buildSeo({ ...base, ogImage: og });
+    expect(m.openGraph.images).toEqual([{ url: og, width: 1200, height: 630 }]);
+    expect((m.twitter as { card: string; images: string[] }).card).toBe("summary_large_image");
+    expect((m.twitter as { images: string[] }).images).toEqual([og]);
+  });
+  it("অ-https ogImage উপেক্ষিত ⇒ ডিফল্ট; কিছুই না থাকলে images নেই", () => {
+    expect(buildSeo({ ...base, ogImage: "http://x.test/a.jpg" }).openGraph.images).toEqual([{ url: "https://ex.dev/og-default.png" }]);
+    expect(buildSeo({ ...base, ogImage: "javascript:alert(1)", hasOgImage: false }).openGraph.images).toBeUndefined();
+  });
+  it("verificationToken: বৈধ token থাকে, খালি/অবৈধ/ছোট বাদ", () => {
+    const t = "abcDEF123_-abcDEF123_-xyz";
+    expect(verificationToken(`  ${t} `)).toBe(t);
+    expect(verificationToken(undefined)).toBeUndefined();
+    expect(verificationToken("short")).toBeUndefined();
+    expect(verificationToken('"><script>alert(1)</script>aaaaaaaaaaaaaaaa')).toBeUndefined();
   });
 });

@@ -1,8 +1,9 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
+import { Cover } from "@/components/public/Cover";
 import { PostBody } from "@/components/public/PostBody";
 import { bn } from "@/i18n/bn";
-import type { CardLink } from "@/lib/cards";
+import type { CardLink, CoverView } from "@/lib/cards";
 
 const chip = "inline-flex min-h-11 items-center rounded-full border border-line px-3 text-sm";
 
@@ -12,11 +13,14 @@ export function PostArticle({
   meta,
   links = [],
   body,
+  cover,
 }: {
   title: string;
   meta: ReactNode;
   links?: readonly CardLink[];
   body: string;
+  /** পাবলিক পেজে লেখার cover (প্রিভিউ-তে নেই) */
+  cover?: CoverView;
 }) {
   return (
     <article>
@@ -36,6 +40,11 @@ export function PostArticle({
             ),
           )}
         </div>
+      )}
+      {cover && (
+        <figure className="mt-4 overflow-hidden rounded-2xl bg-line">
+          <Cover cover={cover} mode="natural" priority sizes="(min-width: 768px) 720px, 100vw" />
+        </figure>
       )}
       <div className="reading mt-6">
         <PostBody body={body} />

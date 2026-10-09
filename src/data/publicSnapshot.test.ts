@@ -125,3 +125,25 @@ describe("publicSnapshot — pages (P4b-১)", () => {
     expect((await readSnapshot(old))?.pages).toEqual([]);
   });
 });
+
+describe("publicSnapshot — media (P6-৩ক)", () => {
+  const good = { id: "m1", cloudinaryPublicId: "blog/m1", cloudinaryUrl: "https://res.cloudinary.com/demo/image/upload/v1/blog/m1.jpg", width: 100, height: 50 };
+  it("coverMediaId ও media অক্ষত; বিকৃত media এন্ট্রি বাদ", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "snap-media-"));
+    const path = join(dir, "posts.json");
+    await writeSnapshot([post("a", { coverMediaId: "m1" })], new Date(), path, undefined, undefined, [], [good, { id: "bad", cloudinaryPublicId: "../x", cloudinaryUrl: "http://x" } as never]);
+    const s = await readSnapshot(path);
+    expect(s?.posts[0].coverMediaId).toBe("m1");
+    expect(s?.media).toEqual([good]);
+  });
+  it("পুরনো snapshot-এ media না থাকলে খালি (defensive read)", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "snap-old-"));
+    const path = join(dir, "posts.json");
+    await writeSnapshot([post("a")], new Date(), path);
+    const { readFile, writeFile } = await import("node:fs/promises");
+    const j = JSON.parse(await readFile(path, "utf8"));
+    delete j.media;
+    await writeFile(path, JSON.stringify(j));
+    expect((await readSnapshot(path))?.media).toEqual([]);
+  });
+});

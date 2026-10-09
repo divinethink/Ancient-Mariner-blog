@@ -44,6 +44,8 @@ export type SeoInput = {
   modifiedTime?: Date;
   /** og:image দেওয়া হবে কিনা (ফাইল-আছে-কিনা কলার জানে) */
   hasOgImage: boolean;
+  /** P6-৩ক: লেখার cover থেকে absolute https OG-ছবি (১২০০×৬৩০); না থাকলে ডিফল্ট `og-default.png` */
+  ogImage?: string;
 };
 
 export type SeoMetadata = {
@@ -68,7 +70,11 @@ export function buildSeo(i: SeoInput): SeoMetadata {
   const base = i.siteUrl ? trimSlash(i.siteUrl) : undefined;
   const url = base ? `${base}${i.path === "/" ? "/" : i.path}` : undefined;
   const description = clean(i.description);
-  const images = i.hasOgImage && base ? [{ url: `${base}${OG_DEFAULT_PATH}` }] : undefined;
+  const images = i.ogImage && /^https:\/\//.test(i.ogImage)
+    ? [{ url: i.ogImage, width: 1200, height: 630 }]
+    : i.hasOgImage && base
+      ? [{ url: `${base}${OG_DEFAULT_PATH}` }]
+      : undefined;
   const openGraph: Record<string, unknown> = {
     type: i.type,
     siteName: i.siteName,
@@ -134,4 +140,10 @@ export function renderRobots(opts: { siteUrl: string; allowIndexing: boolean; bl
   groups.push(["User-agent: *", "Allow: /", ...PRIVATE_PATHS.map((p) => `Disallow: ${p}`)].join("\n") + "\n");
   groups.push(`Sitemap: ${trimSlash(opts.siteUrl)}/sitemap.xml\n`);
   return groups.join("\n");
+}
+
+/** Search Console HTML-tag token (env `GOOGLE_SITE_VERIFICATION`); অবৈধ/খালি হলে undefined — meta বসে না */
+export function verificationToken(raw: string | undefined): string | undefined {
+  const t = (raw ?? "").trim();
+  return /^[A-Za-z0-9_-]{20,100}$/.test(t) ? t : undefined;
 }
