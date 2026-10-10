@@ -10,6 +10,7 @@ import { cldUrl } from "@/lib/cloudinary";
 import { resolveFooter, resolveMenu, type ResolvedLink } from "@/lib/menu";
 import { pagePath } from "@/lib/pages";
 import { BLOG_INDEX_PATH } from "@/lib/publicSite";
+import { SEARCH_PATH } from "@/lib/publicSearch";
 import { FEED_PATH } from "@/lib/rss";
 
 const nav = "inline-flex min-h-11 items-center";
@@ -109,6 +110,13 @@ export async function PublicShell({ children, sidebar = false }: { children: Rea
               )}
             </>
           )}
+          {/* JS ছাড়াই চলা GET ফর্ম → /search?q= (P10a-২) */}
+          <form role="search" action={SEARCH_PATH} method="get" className="ms-auto flex items-center gap-1">
+            <input type="search" name="q" aria-label={bn.publicSearch.headerLabel} placeholder={bn.publicSearch.headerLabel} autoComplete="off" className="min-h-11 w-32 rounded-lg border border-line bg-surface px-3 text-base min-[760px]:w-56" />
+            <button type="submit" aria-label={bn.publicSearch.button} className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-line bg-surface">
+              🔍
+            </button>
+          </form>
         </nav>
       </header>
       {side ? (

@@ -64,3 +64,13 @@ describe("isCacheableResponse", () => {
     expect(P.isCacheableResponse(null)).toBe(false);
   });
 });
+
+describe("P10a-২: পাবলিক খোঁজ", () => {
+  it("/search-index.json fetch SW-cache হয় না (বাসি index এড়াতে সবসময় নেটওয়ার্ক)", () => {
+    expect(get("/search-index.json", "cors")).toBe("none");
+    expect(get("/search-index.json", "no-cors")).toBe("none");
+  });
+  it("/search পেজ নিজে সাধারণ পাবলিক navigation (NetworkFirst)", () => {
+    expect(get("/search?q=%E0%A6%AD%E0%A7%8B%E0%A6%B0")).toBe("page");
+  });
+});

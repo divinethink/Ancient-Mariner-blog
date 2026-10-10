@@ -10,6 +10,9 @@ export default function NotFound() {
       <Link href="/" prefetch={false} className="mt-4 inline-flex min-h-11 items-center text-accent-text underline">
         {bn.notFound.home}
       </Link>
+      <Link href="/search" prefetch={false} className="mt-4 ms-4 inline-flex min-h-11 items-center text-accent-text underline">
+        {bn.notFound.search}
+      </Link>
     </>
   );
 }

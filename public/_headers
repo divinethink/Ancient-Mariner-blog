@@ -7,6 +7,9 @@
 /build.json
   Cache-Control: no-store
 
+/search-index.json
+  Cache-Control: no-cache
+
 /sw.js
   Cache-Control: no-cache
 

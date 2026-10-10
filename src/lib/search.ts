@@ -3,10 +3,12 @@
 // ফল-হাইলাইট মূল (NFC) লেখার অবস্থানে ফেরত যায়, তাই যুক্তাক্ষর ভাঙে না।
 import { parseBody, type DocNode } from "./editorDoc";
 import { serializeDoc } from "./export/serialize";
+import { fold, foldOnly, tokenize, MAX_TOKENS } from "./fold";
+
+export { fold, tokenize, MAX_TOKENS };
 
 export const SEARCH_INDEX_VERSION = 1;
 export const SEARCH_LIMIT = 50;
-export const MAX_TOKENS = 8;
 /** একটা লেখার index-টেক্সট সীমা (অক্ষর) — ~৯০০KB body-র সাধারণ লেখা এর ভেতরে */
 export const MAX_ENTRY_TEXT = 400_000;
 /** delta-sync-এ শেষ-দেখা `updatedAt`-এর আগে এত ms পিছিয়ে পড়া (clock/commit-ক্রম নিরাপত্তা; upsert idempotent) */
@@ -33,36 +35,6 @@ export type SearchEntry = {
 };
 
 export const entryKey = (kind: SearchKind, id: string) => `${kind}:${id}`;
-
-// ── normalize ─────────────────────────────────────────────────────────────
-
-const IGNORABLE = new RegExp("[\\u00AD\\u200B-\\u200D\\u2060\\uFEFF]", "u");
-
-/** NFC → অদৃশ্য অক্ষর বাদ → lower-case। `map[i]` = folded i-তম code-unit-এর NFC-মূল অবস্থান। */
-export function fold(src: string): { f: string; map: number[]; nfc: string } {
-  const nfc = src.normalize("NFC");
-  let f = "";
-  const map: number[] = [];
-  for (let i = 0; i < nfc.length;) {
-    const ch = String.fromCodePoint(nfc.codePointAt(i) as number);
-    if (!IGNORABLE.test(ch)) {
-      const l = ch.toLowerCase();
-      for (let k = 0; k < l.length; k++) map.push(i);
-      f += l;
-    }
-    i += ch.length;
-  }
-  return { f, map, nfc };
-}
-
-const foldOnly = (s: string): string => fold(s).f;
-
-/** query → অনন্য folded শব্দ (সর্বোচ্চ MAX_TOKENS) */
-export function tokenize(query: string): string[] {
-  const out: string[] = [];
-  for (const t of foldOnly(query).split(/\s+/u)) if (t && !out.includes(t)) out.push(t);
-  return out.slice(0, MAX_TOKENS);
-}
 
 // ── entry বানানো ──────────────────────────────────────────────────────────
 
