@@ -13,7 +13,7 @@ import { ShareBar } from "@/components/public/ShareBar";
 import { getPublicScopes } from "@/data/publicLists";
 import { getSiteUrl } from "@/config/env";
 import { hasDefaultOgImage } from "@/data/publicAssets";
-import { getPublicMedia, getPublicPages, getPublicSettings, listPublicPosts } from "@/data/publicSnapshot";
+import { getPublicMedia, getPublicPages, getPublicSettings, listPublicPosts, listUnlistedPosts } from "@/data/publicSnapshot";
 import { bn } from "@/i18n/bn";
 import { resolveCover } from "@/lib/cards";
 import { resolveGallery } from "@/lib/gallery";
@@ -55,14 +55,17 @@ async function resolve(rawSlug: string) {
   const slug = decode(rawSlug);
   const posts = await listPublicPosts();
   const post = posts.find((p) => p.slug === slug);
-  if (post) return { kind: "post" as const, post };
+  if (post) return { kind: "post" as const, post, unlisted: false };
+  // P11c-১: unlisted = নিজের URL আছে, কোনো তালিকা/sitemap/search-এ নেই (এই পেজেও noindex ও pager/related/series নেই)
+  const hidden = (await listUnlistedPosts()).find((p) => p.slug === slug);
+  if (hidden) return { kind: "post" as const, post: hidden, unlisted: true };
   const move = planSlugMoves(posts).stubs.find((m) => m.from === slug);
   return move ? { kind: "moved" as const, move } : null;
 }
 
 export async function generateStaticParams() {
-  const posts = await listPublicPosts();
-  return [...posts.map((p) => ({ slug: p.slug })), ...planSlugMoves(posts).stubs.map((m) => ({ slug: m.from }))];
+  const [posts, hidden] = await Promise.all([listPublicPosts(), listUnlistedPosts()]);
+  return [...posts.map((p) => ({ slug: p.slug })), ...hidden.map((p) => ({ slug: p.slug })), ...planSlugMoves(posts).stubs.map((m) => ({ slug: m.from }))];
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -78,7 +81,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       description: o.description,
       path: blogPath(r.post.slug),
       allowIndexing,
-      noindex: o.noindex,
+      noindex: o.noindex || r.unlisted,
       type: "article",
       publishedTime: r.post.publishedAt,
       modifiedTime: r.post.updatedAt,
@@ -125,11 +128,11 @@ export default async function BlogPost({ params }: Props) {
   // P10a-৩: সম্পর্কিত ও আগের/পরের — একই build-ডেটা (`publishedAt desc`) থেকে, নতুন query নেই
   const posts = await listPublicPosts();
   const byId = new Map(blogCards.map((c) => [c.id, c] as const));
-  const adj = adjacentIds(posts, post.id);
-  const related = relatedIds(posts, post.id).flatMap((id) => byId.get(id) ?? []);
+  const adj = r.unlisted ? { older: undefined, newer: undefined } : adjacentIds(posts, post.id);
+  const related = (r.unlisted ? [] : relatedIds(posts, post.id)).flatMap((id) => byId.get(id) ?? []);
   // P10b-১: সূচি (heading ≥৩) ও "পর্ব X/Y" — সিরিজ-scope-এর card-তালিকা (seriesOrder-ক্রমে) থেকে
   const toc = buildToc(parseBody(post.body));
-  const seriesScope = post.seriesId ? (await getPublicScopes()).find((s) => s.kind === "series" && s.term?.id === post.seriesId) : undefined;
+  const seriesScope = post.seriesId && !r.unlisted ? (await getPublicScopes()).find((s) => s.kind === "series" && s.term?.id === post.seriesId) : undefined;
   const sp = seriesScope ? seriesPosition(seriesScope.cards, post.id) : null;
   const minutes = readingMinutes(post.wordCount);
   const ldCover = resolveCover(post.seo?.ogImageId ?? post.coverMediaId, media);

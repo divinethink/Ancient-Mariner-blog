@@ -28,7 +28,7 @@ service cloud.firestore {
     match /posts/{postId} {
       // পাবলিক query-তে explicit status/visibility filter বাধ্যতামূলক (Arch §২)
       allow read: if resource.data.status == 'published'
-                  && resource.data.visibility == 'public';
+                  && resource.data.visibility in ['public', 'unlisted'];
       allow read, delete: if isOwner();
       allow create: if isOwner() && validPost();
       allow update: if isOwner() && validPost()

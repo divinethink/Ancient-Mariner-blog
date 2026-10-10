@@ -45,7 +45,14 @@ export type AdminDb = {
   ): Promise<{ found: QueryDoc[]; missing: string[] }>;
   /** এক atomic commit-এ শুধু delete; precondition (updateTime) ব্যর্থ হলে "precondition" (retry নয়) */
   commitDeletes(ops: readonly DeleteOp[]): Promise<CommitResult>;
+  /**
+   * scheduled → published (শুধু এই ৪ field: status/publishedAt/updatedAt সেট, scheduledAt মোছা); updateTime precondition।
+   * ব্যর্থ হলে "precondition" (owner মাঝে বদলেছে — পরের চালনায় আবার দেখা হবে)
+   */
+  commitPublish(op: PublishOp): Promise<CommitResult>;
 };
+
+export type PublishOp = { id: string; ifUpdateTime: string; publishedAt: Date; nowMs: number };
 
 export function createAdminDb(opts: {
   projectId: string;
@@ -75,7 +82,38 @@ export function createAdminDb(opts: {
     return { id, data, updateTime: d.updateTime };
   };
 
+  /** commit-ব্যর্থতার ধরন: precondition = মান ফেরত (retry নয়), বাকি throw */
+  const commit = (writes: unknown[]) =>
+    withRetry(async (signal): Promise<CommitResult> => {
+      const res = await post(":commit", { writes }, signal);
+      if (res.ok) return "ok";
+      if (res.status === 400 || res.status === 409 || res.status === 404) {
+        const j = (await res.json().catch(() => null)) as { error?: { status?: string } } | null;
+        const st = j?.error?.status;
+        if (st === "FAILED_PRECONDITION" || st === "ABORTED" || st === "NOT_FOUND") return "precondition";
+      }
+      throw new Error(`Firestore commit ${res.status}`);
+    });
+
   return {
+    async commitPublish(op) {
+      return commit([
+        {
+          update: {
+            name: nameOf("posts", op.id),
+            fields: {
+              status: { stringValue: "published" },
+              publishedAt: { timestampValue: op.publishedAt.toISOString() },
+              updatedAt: { timestampValue: new Date(op.nowMs).toISOString() },
+            },
+          },
+          // mask-এ থাকা কিন্তু fields-এ না-থাকা `scheduledAt` মুছে যায়; বাকি field অক্ষত
+          updateMask: { fieldPaths: ["status", "publishedAt", "updatedAt", "scheduledAt"] },
+          currentDocument: { updateTime: op.ifUpdateTime },
+        },
+      ]);
+    },
+
     async runQuery(structuredQuery) {
       const items = await withRetry(async (signal) => {
         const res = await post(":runQuery", { structuredQuery }, signal);

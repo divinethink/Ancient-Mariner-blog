@@ -27,6 +27,9 @@ function fakeDb(s: Script) {
       commits.push([...ops]);
       return s.commit ? s.commit(ops) : "ok";
     },
+    async commitPublish() {
+      return "ok";
+    },
   };
   return { db, queries, commits };
 }

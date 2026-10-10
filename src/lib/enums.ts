@@ -2,10 +2,10 @@
 // মান বদলালে: rules re-deploy + rules-test আপডেট বাধ্যতামূলক
 import { z } from "zod";
 
-// P2a: draft/published/trashed · P3a: +archived (এখন) · P11c: +scheduled
-export const POST_STATUS = ["draft", "published", "trashed", "archived"] as const;
-// P2a: private/public · P11c: +unlisted
-export const POST_VISIBILITY = ["private", "public"] as const;
+// P2a: draft/published/trashed · P3a: +archived · P11c-১: +scheduled (সময় এলে Cron published করে)
+export const POST_STATUS = ["draft", "published", "trashed", "archived", "scheduled"] as const;
+// P2a: private/public · P11c-১: +unlisted (লিংকে খোলে; তালিকা/sitemap/search/popular-এ নেই, noindex)
+export const POST_VISIBILITY = ["private", "public", "unlisted"] as const;
 // P2a: `post` ফিক্সড · P3a: পূর্ণ enum (`novel`/`idea` নেই — Arch §৬)
 export const CONTENT_TYPE = [
   "post",

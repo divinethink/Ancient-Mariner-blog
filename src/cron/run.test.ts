@@ -2,7 +2,9 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { exportPKCS8, generateKeyPair } from "jose";
 import { runScheduled } from "./run";
 
-const NOW = 1_800_000_000_000;
+// ভারী-কাজের ৬-ঘণ্টা স্লটের শুরু (UTC ঘণ্টা %৬==০, মিনিট ০) — P11c-১: Cron ১৫ মিনিটে, ভারী ধাপ শুধু এই স্লটে
+const NOW = 1799992800000;
+const OFF_SLOT = NOW + 3_600_000;
 async function envWithKey() {
   const { privateKey } = await generateKeyPair("RS256", { extractable: true });
   return {
@@ -37,7 +39,7 @@ describe("runScheduled", () => {
     expect(fetch).not.toHaveBeenCalled();
   });
 
-  it("খালি trash ও revision হলে সফল; কোনো commit/delete নেই; শুধু token + ২টা query", async () => {
+  it("ভারী স্লটে খালি হলে সফল; কোনো commit/delete নেই; token + ৩টা query (publishDue, trash, revision)", async () => {
     const env = await envWithKey();
     const seen: string[] = [];
     stubFetch((url) => {
@@ -48,8 +50,48 @@ describe("runScheduled", () => {
     });
     await runScheduled(env, NOW);
     expect(seen.filter((u) => u.endsWith(":commit"))).toEqual([]);
-    expect(seen.filter((u) => u.endsWith(":runQuery"))).toHaveLength(2);
+    expect(seen.filter((u) => u.endsWith(":runQuery"))).toHaveLength(3);
     expect(seen.filter((u) => u.includes("oauth2"))).toHaveLength(1);
+  });
+
+  it("ভারী স্লটের বাইরে শুধু publishDue-র ১টা query", async () => {
+    const env = await envWithKey();
+    const seen: string[] = [];
+    stubFetch((url) => {
+      seen.push(url);
+      if (url.includes("oauth2.googleapis.com")) return new Response(JSON.stringify({ access_token: "T", expires_in: 3600 }));
+      return new Response(JSON.stringify([{ readTime: "x" }]));
+    });
+    await runScheduled(env, OFF_SLOT);
+    expect(seen.filter((u) => u.endsWith(":runQuery"))).toHaveLength(1);
+  });
+
+  it("সময়-হওয়া লেখা publish হলে rebuild dispatch; token না থাকলে dispatch নেই কিন্তু সফল", async () => {
+    const base = await envWithKey();
+    const mk = (withGh: boolean) => {
+      const urls: string[] = [];
+      stubFetch((url) => {
+        urls.push(url);
+        if (url.includes("oauth2.googleapis.com")) return new Response(JSON.stringify({ access_token: "T", expires_in: 3600 }));
+        if (url.endsWith(":runQuery"))
+          return new Response(
+            JSON.stringify([{ document: { name: "projects/proj/databases/(default)/documents/posts/p1", updateTime: "2026-01-01T00:00:00Z", fields: { status: { stringValue: "scheduled" }, scheduledAt: { timestampValue: new Date(OFF_SLOT - 60_000).toISOString() } } } }]),
+          );
+        if (url.endsWith(":commit")) return new Response("{}");
+        if (url.includes("api.github.com")) return new Response(null, { status: 204 });
+        return new Response("{}");
+      });
+      return { urls, env: withGh ? { ...base, GITHUB_TOKEN: "gh", GITHUB_REPO: "o/r" } : base };
+    };
+    const a = mk(true);
+    await runScheduled(a.env, OFF_SLOT);
+    expect(a.urls.filter((u) => u.endsWith(":commit"))).toHaveLength(1);
+    expect(a.urls.filter((u) => u.includes("api.github.com"))).toHaveLength(1);
+    vi.unstubAllGlobals();
+    const b = mk(false);
+    await runScheduled(b.env, OFF_SLOT);
+    expect(b.urls.filter((u) => u.endsWith(":commit"))).toHaveLength(1);
+    expect(b.urls.filter((u) => u.includes("api.github.com"))).toHaveLength(0);
   });
 
   it("এক কাজ ব্যর্থ হলেও অন্যটা চলে; শেষে throw", async () => {
@@ -65,7 +107,7 @@ describe("runScheduled", () => {
         ? new Response("boom", { status: 500 })
         : new Response("[]");
     });
-    await expect(runScheduled(env, NOW)).rejects.toThrow(/1টি কাজ ব্যর্থ/);
+    await expect(runScheduled(env, NOW)).rejects.toThrow(/2টি কাজ ব্যর্থ/);
     expect(seen).toContain("revisions"); // prune তবু চলেছে
   }, 20000);
 });

@@ -80,6 +80,17 @@ describe("posts", () => {
     await assertSucceeds(getDoc(doc(owner(), "posts", "d")));
   });
 
+  it("(৩খ) P11c-১: scheduled পাবলিক পায় না; unlisted শুধু get-এ (explicit published) পায়, public-filter query-তে আসে না; enum লেখা যায়", async () => {
+    await seed("posts", "sc", post({ status: "scheduled", visibility: "public" }));
+    await seed("posts", "un", post({ status: "published", visibility: "unlisted" }));
+    await assertFails(getDoc(doc(anon(), "posts", "sc")));
+    await assertSucceeds(getDoc(doc(anon(), "posts", "un")));
+    await assertSucceeds(getDocs(query(collection(anon(), "posts"), where("status", "==", "published"), where("visibility", "==", "unlisted"))));
+    await assertSucceeds(setDoc(doc(owner(), "posts", "n1"), post({ status: "scheduled", scheduledAt: new Date() })));
+    await assertSucceeds(setDoc(doc(owner(), "posts", "n2"), post({ visibility: "unlisted" })));
+    await assertFails(setDoc(doc(other(), "posts", "n3"), post({ status: "scheduled" })));
+  });
+
   it("(৩ক) build-এর query: explicit filter সহ সফল, filter ছাড়া ব্যর্থ", async () => {
     await seed("posts", "d", post());
     await seed("posts", "pub", post({ status: "published", visibility: "public" }));

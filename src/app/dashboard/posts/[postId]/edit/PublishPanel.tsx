@@ -14,6 +14,8 @@ import { toZonedInput } from "@/lib/datetime";
 import { sameIds } from "@/lib/gallery";
 import { orgFromPost, orgPatch, parseSeriesOrder, type OrgState } from "@/lib/postOrg";
 import { parsePublishDate } from "@/lib/publish";
+import { parseScheduleInput } from "@/lib/schedule";
+import type { PostVisibility } from "@/lib/enums";
 import { normalizeSeoInput, sameSeo } from "@/lib/seo";
 import { useSiteTimezone } from "../../../SiteSettingsProvider";
 import { isValidSlug, slugify } from "@/lib/slug";
@@ -60,7 +62,8 @@ export function PublishPanel(p: Props) {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<Msg>(null);
   const [slugIn, setSlugIn] = useState("");
-  const [vis, setVis] = useState<"private" | "public">("public");
+  const [vis, setVis] = useState<PostVisibility>("public");
+  const [schedIn, setSchedIn] = useState("");
   const [dateIn, setDateIn] = useState("");
   const [feat, setFeat] = useState(false);
   const [coverIn, setCoverIn] = useState<string | null>(null);
@@ -87,7 +90,8 @@ export function PublishPanel(p: Props) {
       setMeta({ post, hasDraft });
       setSlugIn(post.slug);
       // কখনো প্রকাশ না-হওয়া লেখায় প্রকাশের পথে Public শুরুর মান; নইলে বর্তমান
-      setVis(post.publishedAt ? post.visibility : "public");
+      setVis(post.publishedAt || post.status === "scheduled" ? post.visibility : "public");
+      setSchedIn(post.scheduledAt ? toZonedInput(post.scheduledAt, tz) : "");
       setDateIn(post.publishedAt ? toZonedInput(post.publishedAt, tz) : "");
       setFeat(post.featured === true);
       setCoverIn(post.coverMediaId ?? null);
@@ -172,7 +176,7 @@ export function PublishPanel(p: Props) {
   /** slug/visibility/publishedAt যা বদলেছে তা লেখা; ব্যর্থ হলে Error throw (বার্তা ফেরত) */
   async function writeMeta(
     repo: PostRepo,
-    extra: { status?: "published" | "draft" } = {},
+    extra: { status?: "published" | "draft" | "scheduled"; scheduledAt?: Date | null } = {},
     opts: { defaultCategory?: boolean } = {},
   ) {
     if (!meta) return;
@@ -253,6 +257,10 @@ export function PublishPanel(p: Props) {
               ? bn.publishPanel.slugInvalid
               : reason === "order"
                 ? bn.org.panel.orderInvalid
+                : reason === "past"
+                ? bn.publishPanel.schedulePast
+                : reason === "empty"
+                ? bn.publishPanel.scheduleEmpty
                 : reason === "invalid"
                 ? bn.publishPanel.dateInvalid
                 : reason === "future"
@@ -268,10 +276,24 @@ export function PublishPanel(p: Props) {
 
   const onPublish = () =>
     run(async (repo) => {
-      await writeMeta(repo, { status: "published" }, { defaultCategory: true });
+      await writeMeta(repo, { status: "published", ...(meta?.post.status === "scheduled" ? { scheduledAt: null } : {}) }, { defaultCategory: true });
       await snapshotOnPublish(postId).catch(() => undefined); // ইতিহাস best-effort — প্রকাশ আটকায় না
       return bn.publishPanel.publishedOk;
     }, true);
+  /** P11c-১: সময় নির্ধারণ — status=scheduled + scheduledAt (UTC); সময় হলে Cron publish করে। সাইটে এখনই প্রভাব নেই ⇒ rebuild নয় */
+  const onSchedule = () =>
+    run(async (repo) => {
+      const s = parseScheduleInput(schedIn, nowMs(), tz);
+      if (!s.ok) throw new Error(s.reason);
+      await writeMeta(repo, { status: "scheduled", scheduledAt: s.date }, { defaultCategory: true });
+      await snapshotOnPublish(postId).catch(() => undefined);
+      return bn.publishPanel.scheduledOk;
+    });
+  const onUnschedule = () =>
+    run(async (repo) => {
+      await writeMeta(repo, { status: "draft", scheduledAt: null });
+      return bn.publishPanel.savedOk;
+    });
   const onUpdate = () =>
     run(async (repo) => {
       await writeMeta(repo);
@@ -306,6 +328,7 @@ export function PublishPanel(p: Props) {
   };
 
   const published = meta?.post.status === "published";
+  const scheduled = meta?.post.status === "scheduled";
   return (
     <div className={p.docked ? "fixed inset-y-0 right-0 z-40 w-96" : "fixed inset-0 z-40"} role="presentation">
       {!p.docked && <div className="absolute inset-0 bg-black/40" onClick={onClose} aria-hidden />}
@@ -342,8 +365,11 @@ export function PublishPanel(p: Props) {
             <p className="text-sm">
               <span className="text-muted">{bn.publishPanel.state}: </span>
               <span className="rounded-full bg-line px-2 py-0.5">
-                {published ? bn.publishPanel.published : bn.publishPanel.draft}
+                {published ? bn.publishPanel.published : scheduled ? bn.publishPanel.scheduled : bn.publishPanel.draft}
               </span>
+              {scheduled && meta.post.scheduledAt && (
+                <span className="ml-2 text-muted">{bn.publishPanel.scheduledFor(toZonedInput(meta.post.scheduledAt, tz).replace("T", " "))}</span>
+              )}
               {published && meta.hasDraft && (
                 <span className="ml-2 text-accent-text">{bn.publishPanel.unpublished}</span>
               )}
@@ -387,7 +413,7 @@ export function PublishPanel(p: Props) {
             <fieldset>
               <legend className={field}>{bn.publishPanel.visibility}</legend>
               <div className="flex gap-2">
-                {(["private", "public"] as const).map((v) => (
+                {(["private", "public", "unlisted"] as const).map((v) => (
                   <label
                     key={v}
                     className={`flex min-h-11 flex-1 cursor-pointer items-center justify-center rounded-xl border px-3 ${vis === v ? "border-accent bg-line" : "border-line"}`}
@@ -399,10 +425,11 @@ export function PublishPanel(p: Props) {
                       onChange={() => setVis(v)}
                       className="sr-only"
                     />
-                    {v === "private" ? bn.publishPanel.private : bn.publishPanel.public}
+                    {v === "private" ? bn.publishPanel.private : v === "unlisted" ? bn.publishPanel.unlisted : bn.publishPanel.public}
                   </label>
                 ))}
               </div>
+              {vis === "unlisted" && <p className="mt-1 text-xs text-muted">{bn.publishPanel.unlistedHint}</p>}
             </fieldset>
 
             <label className="flex min-h-11 cursor-pointer items-start gap-3">
@@ -485,6 +512,26 @@ export function PublishPanel(p: Props) {
               />
               <p className="mt-1 text-xs text-muted">{bn.publishPanel.publishedAtHint}</p>
             </div>
+
+            {!published && (
+              <div>
+                <label htmlFor="pp-sched" className={field}>
+                  {bn.publishPanel.scheduleAt}
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  <input id="pp-sched" type="datetime-local" value={schedIn} min={maxIn || undefined} onChange={(e) => setSchedIn(e.target.value)} className={`${input} flex-1`} />
+                  <button type="button" onClick={onSchedule} disabled={busy || !schedIn} className={btnGhost}>
+                    {bn.publishPanel.scheduleBtn}
+                  </button>
+                </div>
+                <p className="mt-1 text-xs text-muted">{bn.publishPanel.scheduleHint}</p>
+                {scheduled && (
+                  <button type="button" onClick={onUnschedule} disabled={busy} className={`${btnGhost} mt-2`}>
+                    {bn.publishPanel.scheduleCancel}
+                  </button>
+                )}
+              </div>
+            )}
 
             {msg && (
               <p role={msg.kind === "err" ? "alert" : "status"} className={msg.kind === "err" ? "text-accent-text" : "text-muted"}>

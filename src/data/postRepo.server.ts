@@ -20,13 +20,12 @@ export function createPublicPostSource(opts: {
     opts.projectId,
   )}/databases/(default)/documents:runQuery?key=${encodeURIComponent(opts.apiKey)}`;
 
-  return {
-    async listPublished(): Promise<PostWithId[]> {
+  async function list(visibility: "public" | "unlisted"): Promise<PostWithId[]> {
       const items = await withRetry(async (signal) => {
         const res = await f(url, {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify(publishedPostsQuery()),
+          body: JSON.stringify(publishedPostsQuery(visibility)),
           signal,
         });
         if (!res.ok) throw new Error(`Firestore REST ${res.status}`);
@@ -46,8 +45,9 @@ export function createPublicPostSource(opts: {
         }
       }
       return posts;
-    },
-  };
+  }
+
+  return { listPublished: () => list("public"), listUnlisted: () => list("unlisted") };
 }
 
 /** build-script থেকে: env boot-check সহ */

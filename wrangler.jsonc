@@ -22,10 +22,10 @@
     "CLOUDINARY_CLOUD_NAME": "vou6klwt",
     "CLOUDINARY_API_KEY": "255854631651555"
   },
-  // Cron (UTC): প্রতি ৬ ঘণ্টায় — revision prune ও ৭ দিনের trash purge (P5a-৩)। FIREBASE_SERVICE_ACCOUNT Worker secret লাগে
+  // Cron (UTC): প্রতি ১৫ মিনিটে (P11c-১ scheduled-publish); trash purge/revision prune/D1 cleanup শুধু ~৬-ঘণ্টা স্লটে (lib/schedule isHeavySlot)। FIREBASE_SERVICE_ACCOUNT Worker secret লাগে; rebuild-এর জন্য GITHUB_TOKEN (বিদ্যমান) 
   // D1 (P11a-১): view-count/dedupe। database_id বাদ — `wrangler deploy` প্রথমবার নিজে তৈরি করে (auto-provision; API token-এ D1 Edit লাগে)।
   // টেবিল = migrations/d1/*.sql, `deploy.yml`-এ `wrangler d1 migrations apply DB --remote`। VIEW_HASH_SALT Worker secret।
   "d1_databases": [{ "binding": "DB", "database_name": "blog-counter", "migrations_dir": "migrations/d1" }],
-  "triggers": { "crons": ["17 */6 * * *"] },
+  "triggers": { "crons": ["*/15 * * * *"] },
   "observability": { "enabled": true }
 }

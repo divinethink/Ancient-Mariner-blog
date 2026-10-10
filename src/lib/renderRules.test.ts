@@ -10,7 +10,7 @@ describe("renderRules", () => {
       UID,
     );
     expect(out).toBe(
-      `u=${UID} s in ['draft', 'published', 'trashed', 'archived'] v in ['private', 'public'] p in ['draft', 'published']`,
+      `u=${UID} s in ['draft', 'published', 'trashed', 'archived', 'scheduled'] v in ['private', 'public', 'unlisted'] p in ['draft', 'published']`,
     );
   });
   it("media enum-তালিকা বসায়", () => {
@@ -28,7 +28,7 @@ describe("renderRules", () => {
   it("আসল firestore.rules.tpl সম্পূর্ণ render হয় ও deny-all ফলব্যাক রাখে", () => {
     const out = renderRules(readFileSync("firestore.rules.tpl", "utf8"), UID);
     expect(out).toContain(`request.auth.uid == '${UID}'`);
-    expect(out).toContain("['draft', 'published', 'trashed', 'archived']");
+    expect(out).toContain("['draft', 'published', 'trashed', 'archived', 'scheduled']");
     expect(out).toContain("match /{document=**}");
   });
 });

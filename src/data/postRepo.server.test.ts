@@ -89,3 +89,15 @@ describe("listPublished (REST)", () => {
     vi.useRealTimers();
   });
 });
+
+describe("listUnlisted (REST, P11c-১)", () => {
+  it("visibility==unlisted ফিল্টার পাঠায়; public query আগের মতোই public", async () => {
+    const f = vi.fn(() => resp([doc("u", { visibility: { stringValue: "unlisted" } })]));
+    const src = make(f as unknown as typeof fetch);
+    const posts = await src.listUnlisted();
+    expect(posts.map((p) => [p.id, p.visibility])).toEqual([["u", "unlisted"]]);
+    expect(String((f.mock.calls[0] as unknown as [string, RequestInit])[1].body)).toContain('"stringValue":"unlisted"');
+    await src.listPublished();
+    expect(String((f.mock.calls[1] as unknown as [string, RequestInit])[1].body)).toContain('"stringValue":"public"');
+  });
+});

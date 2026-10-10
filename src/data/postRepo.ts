@@ -71,6 +71,7 @@ export const PostSchema = z.object({
   gallery: Gallery.optional(), // P8a: media-id তালিকা (P8a-২-তে পাবলিক gallery)
   seo: SeoSchema.optional(), // P10a-১: per-post SEO; পুরনো doc-এ নেই; বিকৃত হলে `parsePost` বাদ দেয়
   publishedAt: z.date().optional(),
+  scheduledAt: z.date().optional(), // P11c-১: status=scheduled-এ প্রকাশের সময় (UTC); publish হলে সরে যায়
   trashedAt: z.date().optional(),
   ownerUid: z.string().min(1),
   createdAt: z.date(),
@@ -92,6 +93,7 @@ export const PostPatchSchema = z
     status: PostStatus.optional(),
     visibility: PostVisibility.optional(),
     publishedAt: z.date().optional(),
+    scheduledAt: z.date().nullable().optional(), // null = সময়সূচি সরানো
     contentType: ContentType.optional(),
     // `null` = ফিল্ড সরানো (client adapter deleteField করে); অনুপস্থিত = অপরিবর্তিত
     categoryId: z.string().min(1).nullable().optional(),
@@ -158,7 +160,7 @@ export const toPostCard = (p: PostWithId): PostCard => ({
   seriesOrder: p.seriesOrder,
 });
 
-const DATE_KEYS = new Set(["publishedAt", "trashedAt", "createdAt", "updatedAt"]);
+const DATE_KEYS = new Set(["publishedAt", "scheduledAt", "trashedAt", "createdAt", "updatedAt"]);
 
 /** Firestore Timestamp / REST ISO-string → Date; null বাদ — তারপর Zod (defensive read, Dev Rules §৩) */
 export function normalizeRaw(raw: Record<string, unknown>): Record<string, unknown> {
@@ -264,4 +266,6 @@ export interface PostRepo {
 /** পথ খ (build-সময়ে unauthenticated REST) — শুধু published+public, publishedAt desc */
 export interface PublicPostSource {
   listPublished(): Promise<PostWithId[]>;
+  /** P11c-১: published+unlisted (শুধু সরাসরি লিংকের পেজের জন্য; কোনো তালিকা/সূচিতে নয়) */
+  listUnlisted(): Promise<PostWithId[]>;
 }

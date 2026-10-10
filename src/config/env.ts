@@ -52,6 +52,9 @@ const viewSchema = z.object({
 const cronSchema = z.object({
   FIREBASE_PROJECT_ID: z.string().min(1),
   FIREBASE_SERVICE_ACCOUNT: z.string().min(1),
+  // P11c-১: scheduled-publish-এর পর rebuild trigger; না থাকলে ৩-ঘণ্টার `deploy.yml` schedule-ই তুলে নেয় (দেরি, ক্ষতি নয়)
+  GITHUB_TOKEN: z.string().min(1).optional(),
+  GITHUB_REPO: z.string().regex(/^[\w.-]+\/[\w.-]+$/).optional(),
 });
 
 // build-সময়ে ডাকা হয়; মিসিং থাকলে অস্পষ্ট error নয়, স্পষ্ট বার্তা

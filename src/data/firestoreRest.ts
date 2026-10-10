@@ -32,14 +32,14 @@ export function decodeDocument(doc: RestDocument): { id: string; data: Record<st
 }
 
 /** build-এর একমাত্র পাবলিক query: published+public, publishedAt desc (composite index — firestore.indexes.json) */
-export function publishedPostsQuery() {
+export function publishedPostsQuery(visibility: "public" | "unlisted" = "public") {
   const eq = (field: string, value: string) => ({
     fieldFilter: { field: { fieldPath: field }, op: "EQUAL", value: { stringValue: value } },
   });
   return {
     structuredQuery: {
       from: [{ collectionId: "posts" }],
-      where: { compositeFilter: { op: "AND", filters: [eq("status", "published"), eq("visibility", "public")] } },
+      where: { compositeFilter: { op: "AND", filters: [eq("status", "published"), eq("visibility", visibility)] } },
       orderBy: [{ field: { fieldPath: "publishedAt" }, direction: "DESCENDING" }],
     },
   };
