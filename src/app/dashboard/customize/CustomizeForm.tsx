@@ -1,7 +1,7 @@
 "use client";
 
-// সাইট সাজান (P9a-২): মেনু ও footer সম্পাদনা। সেভ = একটাই `siteSettings` write (সর্বশেষ মান আবার পড়ে শুধু menu/footer বদলায় —
-// Settings-ফর্মের অন্য ফিল্ড মুছে যায় না), তারপর rebuild। ক্রম-বদল ↑↓ বোতামে (অনুমোদিত সিদ্ধান্ত: @dnd-kit নয়)।
+// সাইট সাজান (P9a-২/৩): মেনু, footer, sidebar/Home (চালু-বন্ধ ও ক্রম), ফেসবুক URL, লিংক-তালিকা। সেভ = একটাই `siteSettings` write
+// (সর্বশেষ মান আবার পড়ে শুধু এই ফিল্ডগুলো বদলায় — Settings-ফর্মের অন্য ফিল্ড মুছে যায় না), তারপর rebuild। ক্রম-বদল ↑↓ বোতামে (অনুমোদিত সিদ্ধান্ত: @dnd-kit নয়)।
 import { useEffect, useMemo, useState } from "react";
 import type { PageWithId } from "@/data/pageRepo";
 import { getPageRepo } from "@/data/pageRepo.wire";
@@ -21,12 +21,16 @@ import {
   type MenuType,
 } from "@/lib/menu";
 import { footerLinkError, menuRowError, moveAt, removeAt, seedMenu, withType } from "@/lib/menuEdit";
+import { DEFAULT_HOME, DEFAULT_SIDEBAR, resolveLayout } from "@/lib/layout";
+import { LINK_LABEL_MAX, facebookError, siteLinkError, toggleAt, type SiteLink } from "@/lib/layoutEdit";
+import { LINKS_MAX, URL_MAX } from "@/lib/siteSettings";
 import { useSiteSettings } from "../SiteSettingsProvider";
 import { ConfirmButton } from "../ConfirmButton";
 
 type Load = { kind: "loading" } | { kind: "error" } | { kind: "ready"; saved: SiteSettings };
 type Row<T> = T & { k: number }; // স্থির key — ক্রম বদলালে input-ফোকাস/মান গুলিয়ে না যাওয়ার জন্য
-type Tab = "menu" | "footer";
+type Tab = "menu" | "footer" | "sidebar" | "home";
+type LayoutRow = { id: string; enabled: boolean };
 
 const t = bn.customize;
 const input = "mt-1 min-h-11 w-full rounded-lg border border-line bg-surface px-3";
@@ -36,7 +40,17 @@ const TYPE_LABEL: Record<MenuType, string> = { page: t.typePage, category: t.typ
 
 let keySeq = 0;
 const withKey = <T extends object>(x: T): Row<T> => ({ ...x, k: ++keySeq });
-const rowsOf = (s: SiteSettings) => ({ menu: s.menu.map((m) => withKey(m)), text: s.footer.text, links: s.footer.links.map((l) => withKey(l)) });
+const sidebarOf = (s: SiteSettings): LayoutRow[] => resolveLayout(s.layout.sidebar, DEFAULT_SIDEBAR);
+const homeOf = (s: SiteSettings): LayoutRow[] => resolveLayout(s.layout.home, DEFAULT_HOME);
+const rowsOf = (s: SiteSettings) => ({
+  menu: s.menu.map((m) => withKey(m)),
+  text: s.footer.text,
+  links: s.footer.links.map((l) => withKey(l)),
+  sidebar: sidebarOf(s),
+  home: homeOf(s),
+  fb: s.socialLinks.facebook,
+  siteLinks: s.links.map((l) => withKey(l)),
+});
 
 export function CustomizeForm() {
   const { setSettings } = useSiteSettings();
@@ -47,6 +61,10 @@ export function CustomizeForm() {
   const [menu, setMenu] = useState<Row<MenuItem>[]>([]);
   const [footText, setFootText] = useState("");
   const [footLinks, setFootLinks] = useState<Row<FooterLink>[]>([]);
+  const [sidebar, setSidebar] = useState<LayoutRow[]>([]);
+  const [home, setHome] = useState<LayoutRow[]>([]);
+  const [fb, setFb] = useState("");
+  const [siteLinks, setSiteLinks] = useState<Row<SiteLink>[]>([]);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [tick, setTick] = useState(0);
@@ -56,6 +74,10 @@ export function CustomizeForm() {
     setMenu(r.menu);
     setFootText(r.text);
     setFootLinks(r.links);
+    setSidebar(r.sidebar);
+    setHome(r.home);
+    setFb(r.fb);
+    setSiteLinks(r.siteLinks);
   };
 
   // সেটিং লোড ব্যর্থ হলে ফর্ম দেখানো হয় না (ডিফল্ট দিয়ে আসল মেনু ভুলে মুছে না যাওয়ার জন্য); পেজ/ক্যাটাগরি ব্যর্থ হলে শুধু 'লিংক' ধরন চলে
@@ -76,6 +98,10 @@ export function CustomizeForm() {
         setMenu(r.menu);
         setFootText(r.text);
         setFootLinks(r.links);
+        setSidebar(r.sidebar);
+        setHome(r.home);
+        setFb(r.fb);
+        setSiteLinks(r.siteLinks);
       } catch {
         if (!dead) setLoad({ kind: "error" });
       }
@@ -90,6 +116,8 @@ export function CustomizeForm() {
     () => ({ text: footText.trim(), links: footLinks.map(({ label, url }) => ({ label: label.trim(), url: url.trim() })) }),
     [footText, footLinks],
   );
+
+  const linksOut = useMemo<SiteLink[]>(() => siteLinks.map(({ label, url }) => ({ label: label.trim(), url: url.trim() })), [siteLinks]);
 
   if (load.kind === "loading") {
     return (
@@ -117,8 +145,21 @@ export function CustomizeForm() {
   }
 
   const saved = load.saved;
-  const dirty = JSON.stringify({ m: saved.menu, f: saved.footer }) !== JSON.stringify({ m: menuOut, f: footOut });
-  const hasErr = menu.some((m) => menuRowError(m)) || footLinks.some((l) => footerLinkError(l));
+  const fbOut = fb.trim();
+  const dirty =
+    JSON.stringify({ m: saved.menu, f: saved.footer, s: sidebarOf(saved), h: homeOf(saved), b: saved.socialLinks.facebook, l: saved.links }) !==
+    JSON.stringify({ m: menuOut, f: footOut, s: sidebar, h: home, b: fbOut, l: linksOut });
+  const hasErr =
+    menu.some((m) => menuRowError(m)) ||
+    footLinks.some((l) => footerLinkError(l)) ||
+    facebookError(fb) ||
+    siteLinks.some((l) => siteLinkError(l));
+  const isDefaultAll =
+    menu.length === 0 &&
+    footText === "" &&
+    footLinks.length === 0 &&
+    JSON.stringify(sidebar) === JSON.stringify(resolveLayout([], DEFAULT_SIDEBAR)) &&
+    JSON.stringify(home) === JSON.stringify(resolveLayout([], DEFAULT_HOME));
   const edit = () => setMsg(null);
 
   async function save() {
@@ -128,7 +169,14 @@ export function CustomizeForm() {
     try {
       const repo = await getSiteSettingsRepo();
       const latest = await repo.get(); // Settings-ফর্মে ইতিমধ্যে বদলানো অন্য ফিল্ড যেন না মুছে
-      const next = await repo.save({ ...latest, menu: menuOut, footer: footOut });
+      const next = await repo.save({
+        ...latest,
+        menu: menuOut,
+        footer: footOut,
+        layout: { sidebar, home },
+        socialLinks: { ...latest.socialLinks, facebook: fbOut },
+        links: linksOut,
+      });
       setSettings(next);
       apply(next);
       const ok = await triggerSiteRebuild();
@@ -191,10 +239,64 @@ export function CustomizeForm() {
     </div>
   );
 
+  const layoutList = (
+    rows: LayoutRow[],
+    set: (r: LayoutRow[]) => void,
+    names: Record<string, string>,
+    label: string,
+  ) => (
+    <ol className="space-y-3" aria-label={label}>
+      {rows.map((r, i) => (
+        <li key={r.id} className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-line p-4">
+          <label className="flex min-h-11 items-center gap-3">
+            <input
+              type="checkbox"
+              className="size-5"
+              checked={r.enabled}
+              onChange={() => {
+                edit();
+                set(toggleAt(rows, i));
+              }}
+            />
+            <span className={r.enabled ? "font-semibold" : "text-muted"}>
+              {names[r.id] ?? r.id} {!r.enabled && <span className="text-sm">({t.off})</span>}
+            </span>
+          </label>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              className={iconBtn}
+              aria-label={`${names[r.id] ?? r.id}: ${t.moveUp}`}
+              disabled={i === 0}
+              onClick={() => {
+                edit();
+                set(moveAt(rows, i, -1));
+              }}
+            >
+              ↑
+            </button>
+            <button
+              type="button"
+              className={iconBtn}
+              aria-label={`${names[r.id] ?? r.id}: ${t.moveDown}`}
+              disabled={i === rows.length - 1}
+              onClick={() => {
+                edit();
+                set(moveAt(rows, i, 1));
+              }}
+            >
+              ↓
+            </button>
+          </div>
+        </li>
+      ))}
+    </ol>
+  );
+
   return (
     <div className="space-y-6">
-      <div role="tablist" aria-label={t.tabsLabel} className="flex gap-2">
-        {(["menu", "footer"] as const).map((k) => (
+      <div role="tablist" aria-label={t.tabsLabel} className="flex flex-wrap gap-2">
+        {(["menu", "footer", "sidebar", "home"] as const).map((k) => (
           <button
             key={k}
             type="button"
@@ -203,7 +305,7 @@ export function CustomizeForm() {
             className={`min-h-11 rounded-full border px-4 ${tab === k ? "border-accent bg-surface font-semibold" : "border-line"}`}
             onClick={() => setTab(k)}
           >
-            {k === "menu" ? t.tabMenu : t.tabFooter}
+            {{ menu: t.tabMenu, footer: t.tabFooter, sidebar: t.tabSidebar, home: t.tabHome }[k]}
           </button>
         ))}
       </div>
@@ -387,6 +489,105 @@ export function CustomizeForm() {
         </section>
       )}
 
+      {tab === "sidebar" && (
+        <section className="space-y-4" aria-label={t.tabSidebar}>
+          <p className="text-sm text-muted">{t.sidebarHint}</p>
+          {layoutList(sidebar, setSidebar, t.widgets, t.tabSidebar)}
+          <label className="block">
+            {t.fbLabel}
+            <input
+              className={input}
+              value={fb}
+              maxLength={URL_MAX}
+              inputMode="url"
+              autoCapitalize="none"
+              onChange={(e) => {
+                edit();
+                setFb(e.target.value);
+              }}
+              aria-invalid={facebookError(fb) || undefined}
+              aria-describedby="e-fb"
+            />
+            <span className="mt-1 block text-sm text-muted">{t.fbHint}</span>
+          </label>
+          {facebookError(fb) && (
+            <p id="e-fb" role="alert" className="text-sm text-accent-text">
+              {t.errFb}
+            </p>
+          )}
+          <h2 className="font-serif text-lg font-bold">{t.linkListTitle}</h2>
+          <p className="text-sm text-muted">{t.linkListHint}</p>
+          <ol className="space-y-3">
+            {siteLinks.map((l, i) => {
+              const bad = siteLinkError(l);
+              const patch = (p: Partial<SiteLink>) => {
+                edit();
+                setSiteLinks((m) => m.map((x, j) => (j === i ? { ...x, ...p } : x)));
+              };
+              return (
+                <li key={l.k} className="space-y-3 rounded-2xl border border-line p-4">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-semibold">{t.itemN(i + 1)}</span>
+                    {rowButtons(
+                      i,
+                      siteLinks.length,
+                      (d) => {
+                        edit();
+                        setSiteLinks((m) => moveAt(m, i, d));
+                      },
+                      () => {
+                        edit();
+                        setSiteLinks((m) => removeAt(m, i));
+                      },
+                    )}
+                  </div>
+                  <label className="block">
+                    {t.label}
+                    <input className={input} value={l.label} maxLength={LINK_LABEL_MAX} onChange={(e) => patch({ label: e.target.value })} aria-invalid={bad === "label" || undefined} />
+                  </label>
+                  <label className="block">
+                    {t.linkUrl}
+                    <input
+                      className={input}
+                      value={l.url}
+                      maxLength={URL_MAX}
+                      inputMode="url"
+                      autoCapitalize="none"
+                      onChange={(e) => patch({ url: e.target.value })}
+                      aria-invalid={bad === "url" || undefined}
+                    />
+                  </label>
+                  {bad && (
+                    <p role="alert" className="text-sm text-accent-text">
+                      {bad === "label" ? t.errLabel : t.errLinkUrl}
+                    </p>
+                  )}
+                </li>
+              );
+            })}
+          </ol>
+          <button
+            type="button"
+            className={pill}
+            disabled={siteLinks.length >= LINKS_MAX}
+            onClick={() => {
+              edit();
+              setSiteLinks((m) => [...m, withKey<SiteLink>({ label: "", url: "" })]);
+            }}
+          >
+            + {t.addItem}
+          </button>
+          {siteLinks.length >= LINKS_MAX && <p className="text-sm text-muted">{t.maxReached}</p>}
+        </section>
+      )}
+
+      {tab === "home" && (
+        <section className="space-y-4" aria-label={t.tabHome}>
+          <p className="text-sm text-muted">{t.homeHint}</p>
+          {layoutList(home, setHome, t.sections, t.tabHome)}
+        </section>
+      )}
+
       <div className="sticky bottom-16 flex flex-wrap items-center gap-3 border-t border-line bg-bg py-3 min-[1024px]:bottom-0">
         <button
           type="button"
@@ -399,13 +600,15 @@ export function CustomizeForm() {
         <ConfirmButton
           label={t.resetLabel}
           question={t.resetQuestion}
-          disabled={busy || (menu.length === 0 && footText === "" && footLinks.length === 0)}
+          disabled={busy || isDefaultAll}
           className={pill}
           onConfirm={() => {
             edit();
             setMenu([]);
             setFootText("");
             setFootLinks([]);
+            setSidebar(resolveLayout([], DEFAULT_SIDEBAR));
+            setHome(resolveLayout([], DEFAULT_HOME));
           }}
         />
         {dirty && !msg && <span className="text-sm text-muted">{t.unsaved}</span>}

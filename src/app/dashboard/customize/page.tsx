@@ -3,7 +3,7 @@ import { bn } from "@/i18n/bn";
 import { BuildStatus } from "../BuildStatus";
 import { CustomizeForm } from "./CustomizeForm";
 
-// P9a-২: সাইট সাজান — মেনু ও footer (Mockup §৭.১৭); sidebar/Home P9a-৩, design P9b
+// P9a-২/৩: সাইট সাজান — মেনু, footer, sidebar, Home (Mockup §৭.১৭); design P9b
 export default function CustomizePage() {
   return (
     <>
