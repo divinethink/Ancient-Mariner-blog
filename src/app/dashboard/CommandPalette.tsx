@@ -41,6 +41,13 @@ const COMMANDS: (PaletteItem & { href?: string })[] = [
     href: "/dashboard/search",
   },
   {
+    id: "customize",
+    kind: "command",
+    label: P.customize,
+    keywords: "customize site menu footer সাজান",
+    href: "/dashboard/customize",
+  },
+  {
     id: "settings",
     kind: "command",
     label: P.settings,

@@ -29,6 +29,14 @@ export default function MenuPage() {
           </Link>
         </li>
         <li>
+          <Link href="/dashboard/customize" className="flex min-h-12 items-center justify-between px-4">
+            <span>🎨 {bn.customize.menuLink}</span>
+            <span aria-hidden className="text-muted">
+              ›
+            </span>
+          </Link>
+        </li>
+        <li>
           <Link href="/dashboard/media" className="flex min-h-12 items-center justify-between px-4">
             <span>🖼️ {bn.dashboard.media}</span>
             <span aria-hidden className="text-muted">
