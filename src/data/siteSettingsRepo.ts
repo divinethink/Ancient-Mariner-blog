@@ -1,6 +1,6 @@
 // siteSettingsRepo = interface + Zod boundary (Arch §২ 'Repo গঠন'); adapter: .client.ts (পথ ক), .server.ts (পথ খ)।
 // সম্পাদনাযোগ্য ফিল্ড: নাম, ট্যাগলাইন, থিম-default, timezone, postsPerPage, ইনডেক্স/AI-crawler টগল (P2c-১); authorBio, feedItems, feedMode (P4b-২)।
-// socialLinks.facebook, links, layout (sidebar/home ক্রম) — পাঠ P4b-৩; সম্পাদনা UI P9a। পরের phase-এর ফিল্ড (menu/footer/design…) এই schema-য় নেই — সেভ `merge` বলে সেগুলো অক্ষত থাকে।
+// socialLinks.facebook, links, layout (sidebar/home ক্রম) — পাঠ P4b-৩; menu, footer — পাঠ P9a-১ (খালি = আগের default); সম্পাদনা UI P9a-২/৩। পরের phase-এর ফিল্ড (design…) এই schema-য় নেই — সেভ `merge` বলে সেগুলো অক্ষত থাকে।
 import { z } from "zod";
 import { DEFAULT_TIMEZONE } from "@/lib/datetime";
 import { FeedMode, Theme } from "@/lib/enums";
@@ -18,9 +18,28 @@ import {
   isValidTimeZone,
 } from "@/lib/siteSettings";
 import { bn } from "@/i18n/bn";
+import {
+  FOOTER_LINKS_MAX,
+  FOOTER_TEXT_MAX,
+  MENU_LABEL_MAX,
+  MENU_MAX,
+  MENU_REF_MAX,
+  MENU_TYPES,
+  isSafeHref,
+  isValidMenuRef,
+} from "@/lib/menu";
 
 const HttpUrl = z.string().trim().max(URL_MAX).refine(isHttpUrl, "http/https URL দরকার");
 const LayoutItem = z.object({ id: z.string().min(1).max(40), enabled: z.boolean() });
+
+const SafeHref = z.string().trim().max(URL_MAX).refine(isSafeHref, "http/https বা '/' দিয়ে শুরু পথ দরকার");
+const MenuItemSchema = z
+  .object({
+    label: z.string().trim().min(1).max(MENU_LABEL_MAX),
+    type: z.enum(MENU_TYPES),
+    ref: z.string().trim().min(1).max(MENU_REF_MAX),
+  })
+  .refine((m) => isValidMenuRef(m.type, m.ref), { message: "ref এই type-এর জন্য বৈধ নয়", path: ["ref"] });
 
 const fields = {
   siteTitle: z.string().trim().min(1).max(SITE_TITLE_MAX),
@@ -36,6 +55,11 @@ const fields = {
   socialLinks: z.object({ facebook: z.union([z.literal(""), HttpUrl]) }),
   links: z.array(z.object({ label: z.string().trim().min(1).max(60), url: HttpUrl })).max(LINKS_MAX),
   layout: z.object({ sidebar: z.array(LayoutItem).max(30), home: z.array(LayoutItem).max(30) }),
+  menu: z.array(MenuItemSchema).max(MENU_MAX),
+  footer: z.object({
+    text: z.string().trim().max(FOOTER_TEXT_MAX),
+    links: z.array(z.object({ label: z.string().trim().min(1).max(MENU_LABEL_MAX), url: SafeHref })).max(FOOTER_LINKS_MAX),
+  }),
 };
 
 /** সেভের আগের কঠোর যাচাই (client+server) */
@@ -60,6 +84,8 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   socialLinks: { facebook: "" },
   links: [],
   layout: { sidebar: [], home: [] },
+  menu: [],
+  footer: { text: "", links: [] },
 };
 
 /** Defensive read: প্রতিটা ফিল্ড আলাদাভাবে যাচাই — অবৈধ/অনুপস্থিত মান শুধু সেই ফিল্ডের default-এ ফেরে */

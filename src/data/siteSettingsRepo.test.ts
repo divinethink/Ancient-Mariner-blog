@@ -103,3 +103,39 @@ describe("P4b-৩ ফিল্ড: socialLinks, links, layout", () => {
     expect(SiteSettingsInputSchema.safeParse({ ...valid, links: Array.from({ length: 21 }, () => ({ label: "a", url: "https://a.dev" })) }).success).toBe(false);
   });
 });
+
+describe("P9a-১ ফিল্ড: menu, footer", () => {
+  it("default: দুটোই খালি — পুরনো doc-এ না থাকলেও (আগের মেনু/footer অক্ষত)", () => {
+    const r = parseSiteSettings({ siteTitle: "x" });
+    expect(r.menu).toEqual([]);
+    expect(r.footer).toEqual({ text: "", links: [] });
+  });
+  it("বৈধ মেনু/footer গ্রহণ, trim", () => {
+    const ok = SiteSettingsInputSchema.parse({
+      ...valid,
+      menu: [
+        { label: " নীড় ", type: "link", ref: "/" },
+        { label: "আমি", type: "page", ref: "about" },
+        { label: "গল্প", type: "category", ref: "c1" },
+      ],
+      footer: { text: " আমার সাইট ", links: [{ label: "x", url: "/privacy" }, { label: "y", url: "https://a.dev" }] },
+    });
+    expect(ok.menu[0]?.label).toBe("নীড়");
+    expect(ok.footer.text).toBe("আমার সাইট");
+  });
+  it("অবৈধ ref/URL/সীমা আটকায়", () => {
+    const bad = (menu: unknown, footer?: unknown) => SiteSettingsInputSchema.safeParse({ ...valid, menu, ...(footer ? { footer } : {}) }).success;
+    expect(bad([{ label: "a", type: "link", ref: "javascript:alert(1)" }])).toBe(false);
+    expect(bad([{ label: "a", type: "page", ref: "a b" }])).toBe(false);
+    expect(bad([{ label: "a", type: "nope", ref: "x" }])).toBe(false);
+    expect(bad(Array.from({ length: 13 }, () => ({ label: "a", type: "link", ref: "/" })))).toBe(false);
+    expect(bad([], { text: "", links: [{ label: "a", url: "data:x" }] })).toBe(false);
+    expect(bad([], { text: "x".repeat(201), links: [] })).toBe(false);
+  });
+  it("সংরক্ষিত মান অবৈধ হলে শুধু সেই ফিল্ড default-এ ফেরে, বাকিরা অক্ষত", () => {
+    const r = parseSiteSettings({ ...valid, menu: [{ label: "a", type: "link", ref: "javascript:1" }], footer: { text: "ok", links: [] } });
+    expect(r.menu).toEqual([]);
+    expect(r.footer.text).toBe("ok");
+    expect(r.siteTitle).toBe("আমার ব্লগ");
+  });
+});
