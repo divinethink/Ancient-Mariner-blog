@@ -32,3 +32,5 @@ jobs:
       - name: Size check (Total Upload ≤ 64MiB)
         run: npx wrangler deploy --dry-run
       - run: npx wrangler deploy
+      # P11a-১: D1 টেবিল (numbered migration; আগে প্রয়োগ-হওয়াগুলো বাদ — idempotent)
+      - run: npx wrangler d1 migrations apply DB --remote
