@@ -28,3 +28,14 @@ describe("adjacentIds", () => {
     expect(adjacentIds(posts, "zz")).toEqual({});
   });
 });
+
+import { seriesPosition } from "./related";
+describe("seriesPosition", () => {
+  const s = [{ id: "a" }, { id: "b" }, { id: "c" }];
+  it("মাঝে/প্রান্তে আগের-পরের পর্ব", () => {
+    expect(seriesPosition(s, "b")).toEqual({ index: 1, total: 3, prev: { id: "a" }, next: { id: "c" } });
+    expect(seriesPosition(s, "a")).toEqual({ index: 0, total: 3, next: { id: "b" } });
+    expect(seriesPosition(s, "c")).toEqual({ index: 2, total: 3, prev: { id: "b" } });
+  });
+  it("না পেলে null", () => expect(seriesPosition(s, "z")).toBeNull());
+});

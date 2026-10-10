@@ -3,6 +3,7 @@
 // HTML কখনো string থেকে বসে না (dangerouslySetInnerHTML নেই); টেক্সট React escape করে।
 import { createElement as h, Fragment, type ReactNode } from "react";
 import { isSafeHref } from "@/lib/editor-nodes";
+import { headingId } from "@/lib/toc";
 import { parseBody, type DocMark, type DocNode } from "@/lib/editorDoc";
 
 function applyMarks(text: string, marks: DocMark[] | undefined): ReactNode {
@@ -22,28 +23,34 @@ function applyMarks(text: string, marks: DocMark[] | undefined): ReactNode {
   return out;
 }
 
-function kids(n: DocNode): ReactNode[] {
-  return (n.content ?? []).map((c, i) => renderNode(c, i));
+/** anchors চালু হলে heading-গুলো ক্রমানুসারে `h-1, h-2…` id পায় (TOC-র `lib/toc` একই DFS-ক্রম); নইলে id নেই */
+type State = { anchors: boolean; n: number };
+
+function kids(n: DocNode, st: State): ReactNode[] {
+  return (n.content ?? []).map((c, i) => renderNode(c, i, st));
 }
 
-function renderNode(n: DocNode, key: number): ReactNode {
+function renderNode(n: DocNode, key: number, st: State): ReactNode {
   switch (n.type) {
     case "text":
       return h(Fragment, { key }, applyMarks(n.text ?? "", n.marks));
     case "paragraph":
-      return h("p", { key }, ...kids(n));
+      return h("p", { key }, ...kids(n, st));
     case "heading": // H1 = শিরোনাম; body-তে শুধু H2–H3
-      return h(Number(n.attrs?.level) === 3 ? "h3" : "h2", { key }, ...kids(n));
+    {
+      const id = st.anchors ? headingId(++st.n) : undefined;
+      return h(Number(n.attrs?.level) === 3 ? "h3" : "h2", { key, ...(id && { id }) }, ...kids(n, st));
+    }
     case "bulletList":
-      return h("ul", { key }, ...kids(n));
+      return h("ul", { key }, ...kids(n, st));
     case "orderedList": {
       const start = Number(n.attrs?.start);
-      return h("ol", { key, ...(Number.isInteger(start) && start > 1 ? { start } : {}) }, ...kids(n));
+      return h("ol", { key, ...(Number.isInteger(start) && start > 1 ? { start } : {}) }, ...kids(n, st));
     }
     case "listItem":
-      return h("li", { key }, ...kids(n));
+      return h("li", { key }, ...kids(n, st));
     case "blockquote":
-      return h("blockquote", { key }, ...kids(n));
+      return h("blockquote", { key }, ...kids(n, st));
     case "horizontalRule":
       return h("hr", { key });
     case "hardBreak":
@@ -54,12 +61,12 @@ function renderNode(n: DocNode, key: number): ReactNode {
 }
 
 /** doc যেমন আছে তেমন render (কোনো sanitize ছাড়া) — renderer-এর নিজস্ব allowlist-test-এর জন্য আলাদা export */
-export function DocView({ doc }: { doc: DocNode }): ReactNode {
+export function DocView({ doc, anchors = false }: { doc: DocNode; anchors?: boolean }): ReactNode {
   if (doc.type !== "doc") return null;
-  return h(Fragment, null, ...kids(doc));
+  return h(Fragment, null, ...kids(doc, { anchors, n: 0 }));
 }
 
 /** সংরক্ষিত body-string → `parseBody` (sanitize) → render */
-export function PostBody({ body }: { body: string }): ReactNode {
-  return h(DocView, { doc: parseBody(body) });
+export function PostBody({ body, anchors = false }: { body: string; anchors?: boolean }): ReactNode {
+  return h(DocView, { doc: parseBody(body), anchors });
 }

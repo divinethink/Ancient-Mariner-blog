@@ -16,3 +16,12 @@ export function adjacentIds(posts: readonly { id: string }[], id: string): { old
   const newer = posts[i - 1]?.id;
   return { ...(older && { older }), ...(newer && { newer }) };
 }
+
+/** সিরিজের (পর্ব-ক্রমে সাজানো) তালিকায় id-এর অবস্থান: index (০-ভিত্তিক), total, আগের/পরের পর্ব; না পেলে null */
+export function seriesPosition<T extends { id: string }>(items: readonly T[], id: string): { index: number; total: number; prev?: T; next?: T } | null {
+  const index = items.findIndex((x) => x.id === id);
+  if (index < 0) return null;
+  const prev = items[index - 1];
+  const next = items[index + 1];
+  return { index, total: items.length, ...(prev && { prev }), ...(next && { next }) };
+}

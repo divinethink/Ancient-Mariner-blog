@@ -3,6 +3,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AuthorBox } from "@/components/public/AuthorBox";
 import { PostArticle } from "@/components/public/PostArticle";
+import { ReadingChrome } from "@/components/public/ReadingChrome";
+import { SeriesBanner } from "@/components/public/SeriesBanner";
 import { PostPager, RelatedPosts } from "@/components/public/PostFooterNav";
 import { PublicShell } from "@/components/public/PublicShell";
 import { getPublicScopes } from "@/data/publicLists";
@@ -17,7 +19,9 @@ import { formatDate } from "@/lib/datetime";
 import { pagePath } from "@/lib/pages";
 import { blogPath, planSlugMoves, postExcerpt } from "@/lib/publicSite";
 import { readingMinutes } from "@/lib/readingTime";
-import { adjacentIds, relatedIds } from "@/lib/related";
+import { adjacentIds, relatedIds, seriesPosition } from "@/lib/related";
+import { buildToc } from "@/lib/toc";
+import { parseBody } from "@/lib/editorDoc";
 import { articleJsonLd, buildSeo, resolvePostSeo } from "@/lib/seo";
 
 // build-সময়ে সব published+public লেখার (এবং বাংলা পুরনো-slug-এর redirect-stub) পেজ; অন্য slug = 404 (Arch §২, §১২)
@@ -119,6 +123,10 @@ export default async function BlogPost({ params }: Props) {
   const byId = new Map(blogCards.map((c) => [c.id, c] as const));
   const adj = adjacentIds(posts, post.id);
   const related = relatedIds(posts, post.id).flatMap((id) => byId.get(id) ?? []);
+  // P10b-১: সূচি (heading ≥৩) ও "পর্ব X/Y" — সিরিজ-scope-এর card-তালিকা (seriesOrder-ক্রমে) থেকে
+  const toc = buildToc(parseBody(post.body));
+  const seriesScope = post.seriesId ? (await getPublicScopes()).find((s) => s.kind === "series" && s.term?.id === post.seriesId) : undefined;
+  const sp = seriesScope ? seriesPosition(seriesScope.cards, post.id) : null;
   const minutes = readingMinutes(post.wordCount);
   const ldCover = resolveCover(post.seo?.ogImageId ?? post.coverMediaId, media);
   const ld = articleJsonLd({
@@ -142,11 +150,13 @@ export default async function BlogPost({ params }: Props) {
   );
   return (
     <PublicShell>
+      <ReadingChrome targetId="post-article" title={post.title || bn.library.untitled} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: ld }} />
       <Link href="/" prefetch={false} className="mb-3 inline-flex min-h-11 items-center text-accent-text">
         ← {bn.public.home}
       </Link>
-      <PostArticle title={post.title} meta={meta} links={card ? [...(card.category ? [card.category] : []), ...card.tags.map((t) => ({ ...t, name: `#${t.name}` }))] : []} body={post.body} cover={card?.cover} gallery={resolveGallery(post.gallery, media)} />
+      {seriesScope && sp && <SeriesBanner name={seriesScope.term!.name} path={seriesScope.path} index={sp.index} total={sp.total} prev={sp.prev} next={sp.next} />}
+      <PostArticle toc={toc} anchors title={post.title} meta={meta} links={card ? [...(card.category ? [card.category] : []), ...card.tags.map((t) => ({ ...t, name: `#${t.name}` }))] : []} body={post.body} cover={card?.cover} gallery={resolveGallery(post.gallery, media)} />
       <AuthorBox name={siteTitle} bio={authorBio} aboutHref={pages.some((p) => p.slug === "about") ? pagePath("about") : undefined} />
       <PostPager older={adj.older ? byId.get(adj.older) : undefined} newer={adj.newer ? byId.get(adj.newer) : undefined} />
       <RelatedPosts cards={related} />

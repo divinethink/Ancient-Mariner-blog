@@ -3,6 +3,8 @@ import Link from "next/link";
 import { Cover } from "@/components/public/Cover";
 import { Gallery } from "@/components/public/Gallery";
 import { PostBody } from "@/components/public/PostBody";
+import { Toc } from "@/components/public/Toc";
+import type { TocItem } from "@/lib/toc";
 import { bn } from "@/i18n/bn";
 import type { CardLink, CoverView } from "@/lib/cards";
 
@@ -16,6 +18,8 @@ export function PostArticle({
   body,
   cover,
   gallery = [],
+  toc = [],
+  anchors = false,
 }: {
   title: string;
   meta: ReactNode;
@@ -25,9 +29,12 @@ export function PostArticle({
   cover?: CoverView;
   /** P8a-২: লেখার ছবি-গ্যালারি (লেখকের ক্রমে; খালি হলে কিছু দেখায় না) */
   gallery?: readonly CoverView[];
+  /** P10b-১: স্বয়ংক্রিয় সূচি (খালি = নেই) ও heading-anchor (পাবলিক পেজে) */
+  toc?: readonly TocItem[];
+  anchors?: boolean;
 }) {
   return (
-    <article>
+    <article id="post-article">
       <h1 className="font-serif text-3xl font-bold leading-snug">{title || bn.library.untitled}</h1>
       <p className="mt-2 text-sm text-muted">{meta}</p>
       {links.length > 0 && (
@@ -50,8 +57,9 @@ export function PostArticle({
           <Cover cover={cover} mode="natural" priority sizes="(min-width: 768px) 720px, 100vw" />
         </figure>
       )}
+      <Toc items={toc} />
       <div className="reading mt-6">
-        <PostBody body={body} />
+        <PostBody body={body} anchors={anchors} />
       </div>
       {gallery.length > 0 && <Gallery items={gallery} />}
     </article>

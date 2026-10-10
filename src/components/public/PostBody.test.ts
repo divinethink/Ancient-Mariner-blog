@@ -68,3 +68,12 @@ describe("PostBody (sanitize + render)", () => {
     expect(renderToStaticMarkup(h(PostBody, { body }))).toBe("<p>ঠিক</p>");
   });
 });
+
+describe("DocView — anchors", () => {
+  const hd = (l: number, s: string): DocNode => ({ type: "heading", attrs: { level: l }, content: [t(s)] });
+  it("anchors চালু হলে heading-এ ক্রমিক id (nested-সহ); বন্ধ হলে id নেই", () => {
+    const doc: DocNode = { type: "doc", content: [hd(2, "ক"), { type: "blockquote", content: [hd(3, "খ")] }, hd(2, "গ")] };
+    expect(renderToStaticMarkup(h(DocView, { doc, anchors: true }))).toBe('<h2 id="h-1">ক</h2><blockquote><h3 id="h-2">খ</h3></blockquote><h2 id="h-3">গ</h2>');
+    expect(renderToStaticMarkup(h(DocView, { doc }))).toBe("<h2>ক</h2><blockquote><h3>খ</h3></blockquote><h2>গ</h2>");
+  });
+});
