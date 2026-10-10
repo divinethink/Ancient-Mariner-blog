@@ -17,24 +17,34 @@ import {
 } from "react";
 import { IdeaTextSchema } from "@/data/ideaRepo";
 import { getIdeaRepo } from "@/data/ideaRepo.wire";
+import { getPostRepo } from "@/data/postRepo.wire";
 import { bn } from "@/i18n/bn";
+import { dayKey, formatDate } from "@/lib/datetime";
+import { DIARY_TEXT_MAX, textToDoc } from "@/lib/diary";
+import { countWords, docToText, makeExcerpt, serializeDoc } from "@/lib/editorDoc";
 import { newId } from "@/lib/id";
 import { IDEA_TEXT_MAX } from "@/lib/idea";
+import { useSiteTimezone } from "./SiteSettingsProvider";
 import { TemplatePicker } from "./TemplatePicker";
 
-type Mode = "closed" | "menu" | "idea" | "templates";
+type Mode = "closed" | "menu" | "idea" | "diary" | "templates";
 type Status = "idle" | "saving" | "failed" | "invalid";
 type AddCtx = {
   openMenu: () => void;
   openIdea: () => void;
+  openDiary: () => void;
   /** আইডিয়া সংরক্ষণ হলে বাড়ে — আইডিয়া-তালিকা এটা দেখে নতুন করে আনে */
   ideasVersion: number;
+  /** diary entry সংরক্ষণ হলে বাড়ে — দিনলিপি-পেজ/'এই দিনে' এটা দেখে নতুন করে আনে */
+  diaryVersion: number;
 };
 
 const Ctx = createContext<AddCtx>({
   openMenu: () => undefined,
   openIdea: () => undefined,
+  openDiary: () => undefined,
   ideasVersion: 0,
+  diaryVersion: 0,
 });
 export const useAdd = (): AddCtx => useContext(Ctx);
 
@@ -45,11 +55,16 @@ const row =
 
 export function AddProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
+  const tz = useSiteTimezone();
   const [mode, setMode] = useState<Mode>("closed");
   const [text, setText] = useState("");
+  const [diaryText, setDiaryText] = useState("");
+  const [diaryVersion, setDiaryVersion] = useState(0);
+  const diaryIdRef = useRef<string>("");
+  const diaryTextRef = useRef("");
   const [status, setStatus] = useState<Status>("idle");
   const [version, setVersion] = useState(0);
-  const [toast, setToast] = useState(false);
+  const [toast, setToast] = useState<false | "idea" | "diary">(false);
   const idRef = useRef<string>("");
   const textRef = useRef("");
   const savingRef = useRef(false);
@@ -61,11 +76,13 @@ export function AddProvider({ children }: { children: ReactNode }) {
     triggerRef.current =
       document.activeElement instanceof HTMLElement ? document.activeElement : null;
     if (idRef.current === "") idRef.current = newId();
+    if (diaryIdRef.current === "") diaryIdRef.current = newId();
     setStatus("idle");
     setMode(m);
   }, []);
   const openMenu = useCallback(() => open("menu"), [open]);
   const openIdea = useCallback(() => open("idea"), [open]);
+  const openDiary = useCallback(() => open("diary"), [open]);
   const close = useCallback(() => {
     setMode("closed");
     triggerRef.current?.focus();
@@ -73,7 +90,7 @@ export function AddProvider({ children }: { children: ReactNode }) {
 
   // খোলার পর ফোকাস: আইডিয়া-ফর্মে textarea, নইলে প্রথম বোতাম
   useEffect(() => {
-    if (mode === "idea") areaRef.current?.focus();
+    if (mode === "idea" || mode === "diary") areaRef.current?.focus();
     else if (mode === "menu" || mode === "templates") dialogRef.current?.querySelector<HTMLElement>(FOCUSABLE)?.focus();
   }, [mode]);
 
@@ -104,7 +121,50 @@ export function AddProvider({ children }: { children: ReactNode }) {
       }
       setVersion((v) => v + 1);
       setStatus("idle");
-      setToast(true);
+      setToast("idea");
+      close();
+    } catch {
+      setStatus("failed");
+    } finally {
+      savingRef.current = false;
+    }
+  }
+
+  // Quick Diary Entry (P8a-১): diary · Private · Draft · শিরোনাম = আজকের তারিখ · date = আজ।
+  // id আগে বানানো ⇒ double-tap/retry-তে create idempotent (postRepo.create বিদ্যমান id ফেরত দেয়)।
+  async function saveDiary() {
+    if (savingRef.current) return;
+    const trimmed = diaryText.trim();
+    if (trimmed === "" || trimmed.length > DIARY_TEXT_MAX) {
+      setStatus("invalid");
+      return;
+    }
+    savingRef.current = true;
+    setStatus("saving");
+    const sent = diaryText;
+    try {
+      const doc = textToDoc(trimmed);
+      const plain = docToText(doc);
+      const now = Date.now();
+      const repo = await getPostRepo();
+      await repo.create({
+        id: diaryIdRef.current,
+        title: formatDate(now, tz),
+        body: serializeDoc(doc),
+        excerpt: makeExcerpt(plain),
+        wordCount: countWords(plain),
+        visibility: "private",
+        contentType: "diary",
+        date: dayKey(now, tz),
+      });
+      if (diaryTextRef.current === sent) {
+        diaryIdRef.current = newId();
+        diaryTextRef.current = "";
+        setDiaryText("");
+      }
+      setDiaryVersion((v) => v + 1);
+      setStatus("idle");
+      setToast("diary");
       close();
     } catch {
       setStatus("failed");
@@ -142,17 +202,25 @@ export function AddProvider({ children }: { children: ReactNode }) {
   }, [mode, close]);
 
   const value = useMemo(
-    () => ({ openMenu, openIdea, ideasVersion: version }),
-    [openMenu, openIdea, version],
+    () => ({ openMenu, openIdea, openDiary, ideasVersion: version, diaryVersion }),
+    [openMenu, openIdea, openDiary, version, diaryVersion],
   );
   const t = bn.ideas;
+  const d = bn.diary;
+  const isDiary = mode === "diary";
+  const curText = isDiary ? diaryText : text;
+  const curMax = isDiary ? DIARY_TEXT_MAX : IDEA_TEXT_MAX;
   const msg =
     status === "saving"
       ? t.saving
       : status === "failed"
-        ? t.saveFailed
+        ? isDiary
+          ? d.saveFailed
+          : t.saveFailed
         : status === "invalid"
-          ? t.invalid
+          ? isDiary
+            ? d.invalid
+            : t.invalid
           : "";
 
   return (
@@ -163,7 +231,7 @@ export function AddProvider({ children }: { children: ReactNode }) {
           role="status"
           className="fixed inset-x-0 bottom-24 z-50 mx-auto w-fit rounded-full bg-btn-bg px-4 py-2 text-sm text-btn-tx shadow-lg"
         >
-          {t.saved}
+          {toast === "diary" ? d.saved : t.saved}
         </p>
       )}
       {mode !== "closed" && (
@@ -184,7 +252,7 @@ export function AddProvider({ children }: { children: ReactNode }) {
           >
             <div className="mb-3 flex items-center justify-between">
               <h2 id="add-sheet-title" className="font-serif text-xl font-bold">
-                {mode === "idea" ? t.quickTitle : mode === "templates" ? t.templatesTitle : t.sheetTitle}
+                {mode === "idea" ? t.quickTitle : mode === "diary" ? d.quickTitle : mode === "templates" ? t.templatesTitle : t.sheetTitle}
               </h2>
               <button
                 type="button"
@@ -210,6 +278,10 @@ export function AddProvider({ children }: { children: ReactNode }) {
                   <span aria-hidden>💡</span>
                   {t.quickTitle}
                 </button>
+                <button type="button" onClick={() => setMode("diary")} className={row}>
+                  <span aria-hidden>📔</span>
+                  {d.sheetEntry}
+                </button>
               </div>
             ) : mode === "templates" ? (
               <TemplatePicker
@@ -223,22 +295,27 @@ export function AddProvider({ children }: { children: ReactNode }) {
               <form
                 onSubmit={(e) => {
                   e.preventDefault();
-                  void save();
+                  void (isDiary ? saveDiary() : save());
                 }}
               >
                 <label htmlFor="quick-idea-text" className="sr-only">
-                  {t.quickLabel}
+                  {isDiary ? d.quickLabel : t.quickLabel}
                 </label>
                 <textarea
                   id="quick-idea-text"
                   ref={areaRef}
-                  rows={5}
-                  maxLength={IDEA_TEXT_MAX}
-                  value={text}
-                  placeholder={t.quickPlaceholder}
+                  rows={isDiary ? 7 : 5}
+                  maxLength={curMax}
+                  value={curText}
+                  placeholder={isDiary ? d.quickPlaceholder : t.quickPlaceholder}
                   onChange={(e) => {
-                    textRef.current = e.target.value;
-                    setText(e.target.value);
+                    if (isDiary) {
+                      diaryTextRef.current = e.target.value;
+                      setDiaryText(e.target.value);
+                    } else {
+                      textRef.current = e.target.value;
+                      setText(e.target.value);
+                    }
                     if (status !== "saving") setStatus("idle");
                   }}
                   className="w-full rounded-lg border border-line bg-surface p-3 text-base"
@@ -255,8 +332,8 @@ export function AddProvider({ children }: { children: ReactNode }) {
                   >
                     {msg}
                   </p>
-                  {text.length >= IDEA_TEXT_MAX * 0.9 && (
-                    <span className="text-muted">{t.counter(text.length, IDEA_TEXT_MAX)}</span>
+                  {curText.length >= curMax * 0.9 && (
+                    <span className="text-muted">{t.counter(curText.length, curMax)}</span>
                   )}
                 </div>
                 <button

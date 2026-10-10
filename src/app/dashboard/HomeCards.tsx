@@ -10,6 +10,7 @@ import { getPostRepo } from "@/data/postRepo.wire";
 import { bn } from "@/i18n/bn";
 import { dayKey } from "@/lib/datetime";
 import { DEFAULT_GOAL, goalPercent, pickRandom } from "@/lib/goal";
+import { OnThisDay } from "./OnThisDay";
 import { useSiteTimezone } from "./SiteSettingsProvider";
 import { useHomeCards } from "./useHomeCards";
 
@@ -61,6 +62,7 @@ export function HomeCards({ published, drafts }: { published: number; drafts: nu
         </p>
       )}
       {prefs.pick && <IdeaPick />}
+      <OnThisDay />
     </div>
   );
 }

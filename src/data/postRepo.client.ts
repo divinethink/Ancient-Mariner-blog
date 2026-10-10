@@ -14,7 +14,9 @@ import {
   where,
   updateDoc,
   writeBatch,
+  type DocumentData,
   type Firestore,
+  type Query,
 } from "firebase/firestore";
 import {
   parseDraft,
@@ -95,6 +97,28 @@ export function createPostRepoClient(db: Firestore, ownerUid: string): PostRepo 
     return out;
   }
 
+  // P8a: diary — `date`-এর ওপর single-field range/`in` (auto index); contentType/trashed client-এ ছাঁকা
+  const diaryOnly = async (q: Query<DocumentData>): Promise<PostWithId[]> => {
+    const out: PostWithId[] = [];
+    for (const d of (await getDocs(q)).docs) {
+      try {
+        const p = parsePost(d.id, d.data());
+        if (p.contentType === "diary" && p.status !== "trashed") out.push(p);
+      } catch {
+        // বিকৃত doc বাদ
+      }
+    }
+    return out;
+  };
+  async function listDiary(range: { from: string; to: string }): Promise<PostWithId[]> {
+    return diaryOnly(query(collection(db, "posts"), where("date", ">=", range.from), where("date", "<=", range.to), orderBy("date"), limit(500)));
+  }
+  async function listDiaryOn(days: string[]): Promise<PostWithId[]> {
+    const keys = days.slice(0, 10);
+    if (keys.length === 0) return [];
+    return diaryOnly(query(collection(db, "posts"), where("date", "in", keys), limit(100)));
+  }
+
   /** `slugs/{slug}`-এর মালিক post-id; lock না থাকলে null */
   async function slugOwner(slug: string): Promise<string | null> {
     const snap = await getDoc(slugRef(slug));
@@ -134,6 +158,8 @@ export function createPostRepoClient(db: Firestore, ownerUid: string): PostRepo 
         status: "draft",
         visibility: input.visibility ?? "private",
         wordCount: input.wordCount ?? 0,
+        ...(input.contentType && { contentType: input.contentType }),
+        ...(input.date && { date: input.date }),
         ownerUid,
         createdAt: now,
         updatedAt: now,
@@ -318,6 +344,8 @@ export function createPostRepoClient(db: Firestore, ownerUid: string): PostRepo 
     restore,
     deletePermanently,
     find,
+    listDiary,
+    listDiaryOn,
     listTrashed,
     emptyTrash,
   };

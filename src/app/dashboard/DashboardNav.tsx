@@ -30,6 +30,9 @@ export function TopNav() {
       >
         ＋
       </button>
+      <Link href="/dashboard/diary" className={`${item} ${on("/dashboard/diary")}`}>
+        {bn.nav.diary}
+      </Link>
       <Link href="/dashboard/menu" className={`${item} ${on("/dashboard/menu")}`}>
         {bn.nav.menu}
       </Link>
@@ -56,6 +59,7 @@ export function SidePanel({
   const links = [
     { href: "/dashboard", icon: "📚", label: bn.nav.library },
     { href: "/dashboard/posts/new", icon: "✏️", label: bn.nav.newPost },
+    { href: "/dashboard/diary", icon: "📔", label: bn.nav.diary },
     { href: "/dashboard/menu", icon: "☰", label: bn.nav.menu },
   ];
   return (

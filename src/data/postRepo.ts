@@ -2,6 +2,7 @@
 // Zod শুধু shell field validate করে; `body` (Tiptap JSON string)-র কাঠামো renderer/editor-এ (Arch §২)।
 import { z } from "zod";
 import { ContentType, PostStatus, PostVisibility } from "@/lib/enums";
+import { isValidDayKey } from "@/lib/diary";
 import type { FindOpts } from "@/lib/postFind";
 
 export const SCHEMA_VERSION = 1;
@@ -27,6 +28,13 @@ export const ImportSourceSchema = z.object({
 });
 export type ImportSource = z.infer<typeof ImportSourceSchema>;
 
+/** P8a: diary/travel-এর দিন ("YYYY-MM-DD", সাইট-timezone), স্থান (পাবলিকে কখনো নয়), gallery (media-id) */
+export const MAX_LOCATION = 120;
+export const MAX_GALLERY = 20;
+const DayKey = z.string().refine(isValidDayKey, "তারিখ YYYY-MM-DD নয়");
+const Location = z.string().max(MAX_LOCATION);
+const Gallery = z.array(z.string().min(1).max(40)).max(MAX_GALLERY);
+
 export const PostSchema = z.object({
   title: z.string(),
   slug: z.string().min(1),
@@ -47,6 +55,9 @@ export const PostSchema = z.object({
   importSource: ImportSourceSchema.optional(), // P3c-খ; বিকৃত হলে `parsePost` বাদ দেয়
   featured: z.boolean().optional(), // P4b-৩: Home-এ featured (পুরনো doc-এ নেই = false)
   coverMediaId: z.string().min(1).max(40).optional(), // P6-৩ক: cover = `media/{id}` (পাবলিক ছবি); পুরনো doc-এ নেই = cover নেই
+  date: DayKey.optional(), // P8a: diary-র দিন; পুরনো doc-এ নেই
+  location: Location.optional(), // P8a: শুধু private/owner
+  gallery: Gallery.optional(), // P8a: media-id তালিকা (P8a-২-তে পাবলিক gallery)
   publishedAt: z.date().optional(),
   trashedAt: z.date().optional(),
   ownerUid: z.string().min(1),
@@ -79,6 +90,9 @@ export const PostPatchSchema = z
     seriesOrder: z.number().int().nonnegative().nullable().optional(),
     featured: z.boolean().optional(),
     coverMediaId: z.string().min(1).max(40).nullable().optional(), // null = cover সরানো
+    date: DayKey.nullable().optional(),
+    location: Location.nullable().optional(),
+    gallery: Gallery.nullable().optional(),
   })
   .refine((p) => (p.tagIds === undefined) === (p.tagNames === undefined), "tagIds ও tagNames একসাথে দিতে হবে")
   .refine((p) => p.tagIds === undefined || p.tagIds.length === p.tagNames?.length, "tagIds/tagNames দৈর্ঘ্য অমিল")
@@ -152,6 +166,10 @@ export const parsePost = (id: string, raw: Record<string, unknown>): PostWithId 
   // বিকৃত importSource পুরো লেখা ভাঙে না — শুধু বাদ (defensive read, Dev Rules §৩)
   if (n.importSource !== undefined && !ImportSourceSchema.safeParse(n.importSource).success) delete n.importSource;
   if (n.featured !== undefined && typeof n.featured !== "boolean") delete n.featured; // বিকৃত featured শুধু বাদ
+  // P8a: বিকৃত date/location/gallery পুরো লেখা ভাঙে না — শুধু ওই ফিল্ড বাদ
+  if (n.date !== undefined && !DayKey.safeParse(n.date).success) delete n.date;
+  if (n.location !== undefined && !Location.safeParse(n.location).success) delete n.location;
+  if (n.gallery !== undefined && !Gallery.safeParse(n.gallery).success) delete n.gallery;
   return { ...PostSchema.parse(n), id };
 };
 export const parseDraft = (raw: Record<string, unknown>): Draft =>
@@ -185,6 +203,9 @@ export type CreatePostInput = {
   excerpt?: string;
   wordCount?: number;
   visibility?: PostVisibility;
+  /** P8a: Quick Diary Entry — contentType=diary ও দিন ("YYYY-MM-DD"); না দিলে আগের মতো `post` */
+  contentType?: ContentType;
+  date?: string;
   /** স্পষ্ট slug দিলে সংঘাতে SlugTakenError; না দিলে শিরোনাম থেকে, সংঘাতে suffix */
   slug?: string;
 };
@@ -216,6 +237,10 @@ export interface PostRepo {
    * সর্বশেষ-সম্পাদনা আগে (prefix-খোঁজে শিরোনাম-ক্রমে)।
    */
   find(opts: FindOpts): Promise<PostWithId[]>;
+  /** P8a: দিনের পরিসরে (`from..to`, "YYYY-MM-DD", দুই প্রান্তসহ) diary লেখা, তারিখ-ক্রমে; trashed বাদ; single-field query, index লাগে না */
+  listDiary(range: { from: string; to: string }): Promise<PostWithId[]>;
+  /** P8a: 'এই দিনে' — নির্দিষ্ট দিনগুলোর (সর্বোচ্চ ১০) diary লেখা; trashed বাদ */
+  listDiaryOn(days: string[]): Promise<PostWithId[]>;
   /** trashed লেখা, সর্বোচ্চ ১০০টা (সাজানো UI-তে) */
   listTrashed(): Promise<PostWithId[]>;
   /** সব trashed (১০০টা/বার) মুছে ফেলা; ফল = মোছা/ব্যর্থ সংখ্যা */

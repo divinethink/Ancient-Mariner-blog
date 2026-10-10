@@ -20,6 +20,8 @@ export function fakeRepo(t = { now: 1000 }) {
   const repo: PostRepo = {
     get: async (id) => posts.get(id) ?? null,
     list: async () => [...posts.values()],
+    listDiary: async (r) => [...posts.values()].filter((p) => p.contentType === "diary" && p.date !== undefined && p.date >= r.from && p.date <= r.to),
+    listDiaryOn: async (d) => [...posts.values()].filter((p) => p.contentType === "diary" && p.date !== undefined && d.includes(p.date)),
     find: async (o) => [...posts.values()].filter((p) => matchesFind(p, o)),
     create: async (i: CreatePostInput) => {
       calls.push("create");
@@ -28,7 +30,7 @@ export function fakeRepo(t = { now: 1000 }) {
       if (ex) return ex;
       const at = tick();
       const p = {
-        id, title: i.title, slug: id, slugHistory: [], contentType: "post", body: i.body,
+        id, title: i.title, slug: id, slugHistory: [], contentType: i.contentType ?? "post", ...(i.date && { date: i.date }), body: i.body,
         excerpt: i.excerpt ?? "", status: "draft", visibility: "private", wordCount: i.wordCount ?? 0,
         tagIds: [], tagNames: [],
         ownerUid: "o", createdAt: at, updatedAt: at, schemaVersion: 1,
