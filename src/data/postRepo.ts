@@ -65,6 +65,7 @@ export const PostSchema = z.object({
   seriesOrder: z.number().int().nonnegative().optional(),
   importSource: ImportSourceSchema.optional(), // P3c-খ; বিকৃত হলে `parsePost` বাদ দেয়
   featured: z.boolean().optional(), // P4b-৩: Home-এ featured (পুরনো doc-এ নেই = false)
+  commentsEnabled: z.boolean().optional(), // P11b-২: নতুন মন্তব্য নেওয়া হবে কি (পুরনো doc-এ নেই = চালু; Arch §৬)
   coverMediaId: z.string().min(1).max(40).optional(), // P6-৩ক: cover = `media/{id}` (পাবলিক ছবি); পুরনো doc-এ নেই = cover নেই
   date: DayKey.optional(), // P8a: diary-র দিন; পুরনো doc-এ নেই
   location: Location.optional(), // P8a: owner-লেখা স্থান; প্রকাশিত লেখার meta-তে দেখায় (media-র নিজস্ব location/GPS নয়, সেটা কখনো পাবলিকে না)
@@ -103,6 +104,7 @@ export const PostPatchSchema = z
     seriesId: z.string().min(1).nullable().optional(),
     seriesOrder: z.number().int().nonnegative().nullable().optional(),
     featured: z.boolean().optional(),
+    commentsEnabled: z.boolean().optional(),
     coverMediaId: z.string().min(1).max(40).nullable().optional(), // null = cover সরানো
     date: DayKey.nullable().optional(),
     location: Location.nullable().optional(),

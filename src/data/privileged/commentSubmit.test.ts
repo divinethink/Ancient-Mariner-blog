@@ -20,7 +20,7 @@ const livePost = { status: "published", visibility: "public" };
 describe("submitComment", () => {
   it("সাধারণ মন্তব্য ⇒ সরাসরি approved, ownerUid/schemaVersion সহ", async () => {
     const { db, createComment } = fakeDb({ "posts/P1": livePost });
-    expect(await submitComment(db, P, "OWN", 1_000)).toEqual({ kind: "ok", id: ID, duplicate: false });
+    expect(await submitComment(db, P, "OWN", 1_000)).toEqual({ kind: "ok", id: ID, duplicate: false, spam: false });
     expect(createComment).toHaveBeenCalledWith({
       id: ID,
       comment: { postId: "P1", authorName: "রহিম", content: "ভালো", status: "approved", ownerUid: "OWN", createdAt: new Date(1_000), updatedAt: new Date(1_000), schemaVersion: 1 },
@@ -49,7 +49,7 @@ describe("submitComment", () => {
   });
   it("duplicate (একই commentId) ⇒ ok + duplicate:true", async () => {
     const { db } = fakeDb({ "posts/P1": livePost }, "exists");
-    expect(await submitComment(db, P, "OWN", 1)).toEqual({ kind: "ok", id: ID, duplicate: true });
+    expect(await submitComment(db, P, "OWN", 1)).toEqual({ kind: "ok", id: ID, duplicate: true, spam: false });
   });
   describe("reply", () => {
     const PAR = "B".repeat(20);

@@ -71,6 +71,16 @@ export async function consumeLimit(db: D1Like, key: string, windowStart: string,
   return changes(bump) === 1;
 }
 
+/** 'rebuild বাকি' চিহ্ন বসানো (idempotent — একই key আবার = কিছুই বদলায় না) */
+export async function markRebuildDirty(db: D1Like, key: string, day: string): Promise<void> {
+  await db.prepare("INSERT OR IGNORE INTO rateLimits (key, windowStart, n) VALUES (?, ?, 1)").bind(key, day).run();
+}
+
+/** চিহ্ন থাকলে সরিয়ে true (এক Cron-চালনা এক-বারই তোলে) */
+export async function takeRebuildDirty(db: D1Like, key: string): Promise<boolean> {
+  return changes(await db.prepare("DELETE FROM rateLimits WHERE key = ?").bind(key).run()) > 0;
+}
+
 /** dedupe row-এর পরিষ্কার (Cron): `keepFromDay`-এর (YYYY-MM-DD) আগের row মোছে; `viewCounts`/`dailyVisitors` কখনো মোছা হয় না */
 export async function cleanupRateLimits(db: D1Like, keepFromDay: string, limit = 5000): Promise<number> {
   const r = await db

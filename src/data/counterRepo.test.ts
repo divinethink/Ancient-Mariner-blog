@@ -1,6 +1,6 @@
 import { createRequire } from "node:module";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { type D1Like, cleanupRateLimits, consumeLimit, readStats, recordView } from "./counterRepo";
+import { type D1Like, cleanupRateLimits, consumeLimit, markRebuildDirty, readStats, recordView, takeRebuildDirty } from "./counterRepo";
 import { statsWindow } from "@/lib/stats";
 import { MAX_POSTS_PER_VISITOR_PER_DAY } from "@/lib/views";
 import { readFileSync } from "node:fs";
@@ -135,5 +135,22 @@ describe("consumeLimit (মন্তব্য limiter)", () => {
     await consumeLimit(db, "cd:a:2026-10-01", "2026-10-01", 5);
     await consumeLimit(db, "cd:a:2026-10-10", "2026-10-10", 5);
     expect(await cleanupRateLimits(db, "2026-10-09")).toBe(1);
+  });
+});
+
+describe("rebuild-dirty চিহ্ন (P11b-২)", () => {
+  it("বসানো idempotent; take একবারই true, তারপর false", async () => {
+    expect(await takeRebuildDirty(db, "rb:dirty")).toBe(false);
+    await markRebuildDirty(db, "rb:dirty", "2026-10-10");
+    await markRebuildDirty(db, "rb:dirty", "2026-10-10");
+    expect(all("SELECT key FROM rateLimits")).toEqual([{ key: "rb:dirty" }]);
+    expect(await takeRebuildDirty(db, "rb:dirty")).toBe(true);
+    expect(await takeRebuildDirty(db, "rb:dirty")).toBe(false);
+  });
+  it("অন্য limiter row ছোঁয় না", async () => {
+    await consumeLimit(db, "ch:x:2026", "2026-10-10", 5);
+    await markRebuildDirty(db, "rb:dirty", "2026-10-10");
+    await takeRebuildDirty(db, "rb:dirty");
+    expect(all("SELECT key FROM rateLimits")).toEqual([{ key: "ch:x:2026" }]);
   });
 });

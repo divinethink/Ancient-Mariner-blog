@@ -79,7 +79,7 @@ export function ownedSlugLocks(
 }
 
 export type DeleteOp = {
-  collection: "posts" | "slugs" | "drafts" | "revisions";
+  collection: "posts" | "slugs" | "drafts" | "revisions" | "comments";
   id: string;
   ifUpdateTime?: string;
 };

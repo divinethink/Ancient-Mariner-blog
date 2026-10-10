@@ -65,3 +65,68 @@ export const looksSpammy = (authorName: string, content: string): boolean => cou
 /** D1 `rateLimits` key: উইন্ডো key-র ভেতরেই (PK একক), `windowStart` = দিন (Cron cleanup-এর জন্য) */
 export const commentHourKey = (h: string, hour: string): string => `ch:${h}:${hour}`;
 export const commentDayKey = (h: string, day: string): string => `cd:${h}:${day}`;
+
+// ── P11b-২: পাবলিক পেজের তালিকা (build-সময়ে static) ও owner-উত্তর ──
+/** পাবলিক পেজে যা দেখায় — email/IP/ownerUid কখনো নয় */
+export type PublicComment = {
+  id: string;
+  authorName: string;
+  content: string;
+  createdAt: Date;
+  parentCommentId?: string;
+  /** লেখকের নিজের উত্তর (পাঠকের পাশে 'লেখক' চিহ্ন) */
+  byOwner?: boolean;
+};
+export type CommentNode = { comment: PublicComment; replies: PublicComment[] };
+
+/**
+ * পোস্টের মন্তব্য-গাছ: ১-স্তর; প্রতিটা স্তরে পুরনো আগে (কথোপকথনের ক্রম)।
+ * parent নেই/লুকানো হলে তার reply পাবলিকে যায় না (অনাথ reply দেখানো হয় না)।
+ */
+export function buildThread(list: readonly PublicComment[]): CommentNode[] {
+  const asc = [...list].sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime() || a.id.localeCompare(b.id));
+  const tops = asc.filter((c) => !c.parentCommentId);
+  const byParent = new Map<string, PublicComment[]>();
+  for (const c of asc) {
+    if (!c.parentCommentId) continue;
+    byParent.set(c.parentCommentId, [...(byParent.get(c.parentCommentId) ?? []), c]);
+  }
+  return tops.map((c) => ({ comment: c, replies: byParent.get(c.id) ?? [] }));
+}
+
+/** শিরোনামের সংখ্যা = যা পাতায় সত্যিই দেখা যায় (অনাথ reply বাদে) */
+export const countThread = (t: readonly CommentNode[]): number => t.reduce((n, x) => n + 1 + x.replies.length, 0);
+
+/** owner-উত্তরের লেখা: পাঠকের মতোই পরিষ্কার ও সীমা; অবৈধ হলে null */
+export function parseOwnerReply(raw: unknown): { commentId: string; parentCommentId: string; content: string } | null {
+  if (typeof raw !== "object" || raw === null) return null;
+  const o = raw as Record<string, unknown>;
+  if (typeof o.commentId !== "string" || !ID_RE.test(o.commentId)) return null;
+  if (typeof o.parentCommentId !== "string" || !ID_RE.test(o.parentCommentId) || o.parentCommentId === o.commentId) return null;
+  if (typeof o.content !== "string" || o.content.length > CONTENT_MAX * 4) return null;
+  const content = cleanContent(o.content);
+  if (content.length < 1 || content.length > CONTENT_MAX) return null;
+  return { commentId: o.commentId, parentCommentId: o.parentCommentId, content };
+}
+
+/** owner-ক্রিয়ার body: status বদল / মোছা / উত্তর */
+export type OwnerCommentAction =
+  | { action: "status"; id: string; status: "approved" | "spam" }
+  | { action: "delete"; id: string }
+  | { action: "reply"; commentId: string; parentCommentId: string; content: string };
+
+export function parseOwnerAction(raw: unknown): OwnerCommentAction | null {
+  if (typeof raw !== "object" || raw === null) return null;
+  const o = raw as Record<string, unknown>;
+  if (o.action === "reply") {
+    const r = parseOwnerReply(o);
+    return r ? { action: "reply", ...r } : null;
+  }
+  if (typeof o.id !== "string" || !ID_RE.test(o.id)) return null;
+  if (o.action === "delete") return { action: "delete", id: o.id };
+  if (o.action === "status" && (o.status === "approved" || o.status === "spam")) return { action: "status", id: o.id, status: o.status };
+  return null;
+}
+
+/** D1 `rateLimits`-এ 'নতুন মন্তব্য এসেছে, rebuild বাকি' চিহ্ন (Cron ১৫ মিনিটে তুলে নেয়) */
+export const REBUILD_DIRTY_KEY = "rb:dirty";

@@ -144,4 +144,25 @@ describe("createComment (P11b-১)", () => {
     const db = mk([], () => json({}, 500));
     await expect(db.createComment({ id: "C1", comment })).rejects.toThrow();
   });
+  it("byOwner (P11b-২) থাকলেই লেখা হয়, নইলে field নেই", async () => {
+    const calls: Call[] = [];
+    await mk(calls, () => json({})).createComment({ id: "C3", comment: { ...comment, byOwner: true } });
+    expect(JSON.parse(String(calls[0].init.body)).writes[0].update.fields.byOwner).toEqual({ booleanValue: true });
+  });
+});
+
+describe("setCommentStatus (P11b-২)", () => {
+  it("শুধু status+updatedAt (mask) ও exists:true — নতুন doc তৈরি হয় না", async () => {
+    const calls: Call[] = [];
+    expect(await mk(calls, () => json({})).setCommentStatus({ id: "C1", status: "spam", nowMs: Date.parse("2026-10-10T00:00:00Z") })).toBe("ok");
+    const w = JSON.parse(String(calls[0].init.body)).writes[0];
+    expect(w.update.name).toBe("projects/proj/databases/(default)/documents/comments/C1");
+    expect(w.update.fields).toEqual({ status: { stringValue: "spam" }, updatedAt: { timestampValue: "2026-10-10T00:00:00.000Z" } });
+    expect(w.updateMask).toEqual({ fieldPaths: ["status", "updatedAt"] });
+    expect(w.currentDocument).toEqual({ exists: true });
+  });
+  it("NOT_FOUND ⇒ 'precondition' (retry নয়); ৫০০ ⇒ throw", async () => {
+    expect(await mk([], () => json({ error: { status: "NOT_FOUND" } }, 404)).setCommentStatus({ id: "C1", status: "approved", nowMs: 1 })).toBe("precondition");
+    await expect(mk([], () => json({}, 500)).setCommentStatus({ id: "C1", status: "approved", nowMs: 1 })).rejects.toThrow();
+  });
 });

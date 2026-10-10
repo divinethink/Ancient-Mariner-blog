@@ -6,7 +6,8 @@ import { createTokenProvider, parseServiceAccount } from "../data/privileged/goo
 import { pruneRevisions, purgeTrash } from "../data/privileged/revisionCron";
 import { dispatchDeploy } from "../data/privileged/githubDispatch";
 import { publishDue } from "../data/privileged/scheduleCron";
-import { cleanupRateLimits, type D1Like } from "../data/counterRepo";
+import { cleanupRateLimits, markRebuildDirty, takeRebuildDirty, type D1Like } from "../data/counterRepo";
+import { REBUILD_DIRTY_KEY } from "../lib/comments";
 import { dayKey } from "../lib/datetime";
 import { isHeavySlot } from "../lib/schedule";
 import { createLogger } from "../lib/logger";
@@ -50,14 +51,31 @@ export async function runScheduled(source: unknown, nowMs: number = Date.now()):
     publishedNow = r.published;
     return r;
   });
+  const d1 = (source as { DB?: D1Like } | null)?.DB;
+  let rebuilt = false;
   if (publishedNow > 0 && env.GITHUB_TOKEN && env.GITHUB_REPO) {
     // rebuild trigger; ব্যর্থ হলে পোস্ট ইতিমধ্যে published — ৩-ঘণ্টার deploy schedule-ই তুলে নেবে
     await step("rebuild", async () => {
       await dispatchDeploy({ token: env.GITHUB_TOKEN!, repo: env.GITHUB_REPO! });
+      rebuilt = true;
       return { dispatched: true };
     });
   } else if (publishedNow > 0) {
     log.warn("cron.rebuild.skip", { reason: "GITHUB_TOKEN/GITHUB_REPO নেই — পরের নির্ধারিত deploy-এ live হবে" });
+  }
+  // P11b-২: নতুন/বদলানো মন্তব্য থাকলে (D1 চিহ্ন) একবার rebuild — ১৫ মিনিটে সর্বোচ্চ একটা, spam হলেও না। dispatch ব্যর্থ হলে চিহ্ন ফিরিয়ে পরের চালনায় আবার
+  if (d1 && env.GITHUB_TOKEN && env.GITHUB_REPO) {
+    await step("commentRebuild", async () => {
+      if (!(await takeRebuildDirty(d1, REBUILD_DIRTY_KEY))) return { dirty: false };
+      if (rebuilt) return { dirty: true, dispatched: "আগের ধাপেই" };
+      try {
+        await dispatchDeploy({ token: env.GITHUB_TOKEN!, repo: env.GITHUB_REPO! });
+      } catch (e) {
+        await markRebuildDirty(d1, REBUILD_DIRTY_KEY, dayKey(nowMs)).catch(() => undefined);
+        throw e;
+      }
+      return { dirty: true, dispatched: true };
+    });
   }
   const heavy = isHeavySlot(nowMs);
   if (heavy) {
@@ -65,7 +83,6 @@ export async function runScheduled(source: unknown, nowMs: number = Date.now()):
     await step("revisionPrune", () => pruneRevisions(db, nowMs, log, shuffle));
   }
   // P11a-১: পুরনো dedupe row পরিষ্কার (২ দিনের আগের); DB binding না থাকলে বাদ
-  const d1 = (source as { DB?: D1Like } | null)?.DB;
   if (d1 && heavy) {
     await step("d1Cleanup", async () => ({ deleted: await cleanupRateLimits(d1, dayKey(nowMs - 2 * 86_400_000)) }));
   }

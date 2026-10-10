@@ -94,6 +94,62 @@ describe("runScheduled", () => {
     expect(b.urls.filter((u) => u.includes("api.github.com"))).toHaveLength(0);
   });
 
+  describe("commentRebuild (P11b-২)", () => {
+    // ছোট D1 নকল: শুধু 'rb:dirty' চিহ্ন (INSERT = বসানো, DELETE = তোলা)
+    const fakeD1 = (initial: boolean) => {
+      let dirty = initial;
+      const d1 = {
+        prepare: (sql: string) => ({
+          bind: () => ({
+            run: async () => {
+              if (sql.startsWith("INSERT")) {
+                dirty = true;
+                return { meta: { changes: 1 } };
+              }
+              const was = dirty;
+              dirty = false;
+              return { meta: { changes: was ? 1 : 0 } };
+            },
+            all: async () => ({ results: [] }),
+          }),
+        }),
+      };
+      return { d1, isDirty: () => dirty };
+    };
+    const setup = async (gh: number) => {
+      const base = await envWithKey();
+      const urls: string[] = [];
+      stubFetch((url) => {
+        urls.push(url);
+        if (url.includes("oauth2.googleapis.com")) return new Response(JSON.stringify({ access_token: "T", expires_in: 3600 }));
+        if (url.includes("api.github.com")) return new Response(gh === 204 ? null : "{}", { status: gh });
+        return new Response(JSON.stringify([{ readTime: "x" }]));
+      });
+      return { urls, env: { ...base, GITHUB_TOKEN: "gh", GITHUB_REPO: "o/r" } };
+    };
+    it("চিহ্ন থাকলে একবার dispatch ও চিহ্ন সরে; না থাকলে dispatch নেই", async () => {
+      const a = await setup(204);
+      const f = fakeD1(true);
+      await runScheduled({ ...a.env, DB: f.d1 }, OFF_SLOT);
+      expect(a.urls.filter((u) => u.includes("api.github.com"))).toHaveLength(1);
+      expect(f.isDirty()).toBe(false);
+      await runScheduled({ ...a.env, DB: f.d1 }, OFF_SLOT);
+      expect(a.urls.filter((u) => u.includes("api.github.com"))).toHaveLength(1);
+    });
+    it("dispatch ব্যর্থ হলে চিহ্ন ফিরে আসে (পরের চালনায় আবার) ও শেষে throw", async () => {
+      const a = await setup(500);
+      const f = fakeD1(true);
+      await expect(runScheduled({ ...a.env, DB: f.d1 }, OFF_SLOT)).rejects.toThrow(/1টি কাজ ব্যর্থ/);
+      expect(f.isDirty()).toBe(true);
+    }, 20000);
+    it("GITHUB_TOKEN না থাকলে চিহ্ন অক্ষত (কিছু হারায় না)", async () => {
+      const a = await setup(204);
+      const f = fakeD1(true);
+      await runScheduled({ FIREBASE_PROJECT_ID: "proj", FIREBASE_SERVICE_ACCOUNT: a.env.FIREBASE_SERVICE_ACCOUNT, DB: f.d1 }, OFF_SLOT);
+      expect(f.isDirty()).toBe(true);
+    });
+  });
+
   it("এক কাজ ব্যর্থ হলেও অন্যটা চলে; শেষে throw", async () => {
     const env = await envWithKey();
     const seen: string[] = [];

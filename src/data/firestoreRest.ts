@@ -59,3 +59,14 @@ export function publishedPagesQuery() {
     },
   };
 }
+
+/** build-এর পাবলিক মন্তব্য query (P11b-২): শুধু approved (rules-সম্মত; single-field filter — নতুন index লাগে না); ক্রম কোডে ঠিক হয় */
+export function approvedCommentsQuery(limit = 5000) {
+  return {
+    structuredQuery: {
+      from: [{ collectionId: "comments" }],
+      where: { fieldFilter: { field: { fieldPath: "status" }, op: "EQUAL", value: { stringValue: "approved" } } },
+      limit,
+    },
+  };
+}

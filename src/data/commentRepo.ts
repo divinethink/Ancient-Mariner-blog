@@ -13,6 +13,7 @@ export const CommentSchema = z.object({
   content: z.string().min(1).max(CONTENT_MAX), // plain-text; render-এ কখনো HTML নয়
   status: CommentStatus.default("approved"),
   parentCommentId: z.string().min(1).optional(),
+  byOwner: z.boolean().optional(), // P11b-২: লেখকের নিজের উত্তর; পুরনো doc-এ নেই = পাঠক
   ownerUid: z.string().min(1),
   createdAt: z.date(),
   updatedAt: z.date(),
@@ -25,3 +26,9 @@ export const parseComment = (id: string, raw: Record<string, unknown>): CommentW
   ...CommentSchema.parse(normalizeRaw(raw)),
   id,
 });
+
+/** owner-ড্যাশবোর্ডের পাঠ (P11b-২; rules: owner সব মন্তব্য পড়তে পারে)। লেখা শুধু `/api/owner/comments`-এর privileged পথে */
+export interface CommentRepo {
+  /** নতুন আগে; সর্বোচ্চ ২০০ — বিকৃত doc বাদ */
+  list(): Promise<CommentWithId[]>;
+}

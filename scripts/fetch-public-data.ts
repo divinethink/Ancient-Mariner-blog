@@ -8,6 +8,8 @@ import { getPublicSettingsSource } from "../src/data/siteSettingsRepo.server";
 import { designMediaIds } from "../src/lib/design";
 import { mediaIdsOf } from "../src/lib/gallery";
 import { getPublicMediaSource } from "../src/data/mediaRepo.server";
+import { CommentsForbidden, getPublicCommentSource } from "../src/data/commentRepo.server";
+import { writeComments } from "../src/data/commentSnapshot";
 import { queryPostViews } from "../src/data/popularRepo.server";
 import { writePopular } from "../src/data/popularSnapshot";
 import { dayKey } from "../src/lib/datetime";
@@ -45,6 +47,17 @@ async function main() {
   const popular = await loadPopular(new Set(posts.map((p) => p.id)), settings.timezone, startedAt);
   await writePopular(popular);
   console.log(`✅ 'পঠিত': ${popular.length}টি লেখা`);
+  // P11b-২: approved মন্তব্য, শুধু এই build-এ থাকা published+public লেখার। rules-deploy বাকি (403) হলে খালি; অন্য ত্রুটিতে build থামে (পুরনো সাইট ও তার মন্তব্য অক্ষত)
+  let commentRows: Awaited<ReturnType<ReturnType<typeof getPublicCommentSource>["listApproved"]>> = [];
+  try {
+    const ids = new Set(posts.map((p) => p.id));
+    commentRows = (await getPublicCommentSource().listApproved()).filter((c) => ids.has(c.postId));
+  } catch (e) {
+    if (!(e instanceof CommentsForbidden)) throw e;
+    console.warn("⚠️ মন্তব্য পড়া যায়নি (rules deploy হয়নি?) — মন্তব্য ছাড়া এগোচ্ছি");
+  }
+  await writeComments(commentRows);
+  console.log(`✅ মন্তব্য: ${commentRows.length}টি`);
   console.log(`✅ ${posts.length}টি published+public লেখা + সাইট-সেটিং (ইনডেক্স: ${settings.allowIndexing ? "চালু" : "বন্ধ"}) + ${terms.categories.length} ক্যাটাগরি/${terms.tags.length} ট্যাগ/${terms.series.length} সিরিজ + ${pages.length}টি পেজ + ${media.length}/${coverIds.length}টি cover/gallery-ছবি → ${SNAPSHOT_PATH}`);
 }
 

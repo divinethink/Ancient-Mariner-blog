@@ -66,6 +66,7 @@ export function PublishPanel(p: Props) {
   const [schedIn, setSchedIn] = useState("");
   const [dateIn, setDateIn] = useState("");
   const [feat, setFeat] = useState(false);
+  const [commentsOn, setCommentsOn] = useState(true);
   const [coverIn, setCoverIn] = useState<string | null>(null);
   const [galleryIn, setGalleryIn] = useState<string[]>([]);
   const [placeIn, setPlaceIn] = useState("");
@@ -94,6 +95,7 @@ export function PublishPanel(p: Props) {
       setSchedIn(post.scheduledAt ? toZonedInput(post.scheduledAt, tz) : "");
       setDateIn(post.publishedAt ? toZonedInput(post.publishedAt, tz) : "");
       setFeat(post.featured === true);
+      setCommentsOn(post.commentsEnabled !== false);
       setCoverIn(post.coverMediaId ?? null);
       setGalleryIn(post.gallery ?? []);
       setPlaceIn(post.location ?? "");
@@ -195,6 +197,7 @@ export function PublishPanel(p: Props) {
       ...(sameSeo(nextSeo, cur.seo) ? {} : { seo: nextSeo }),
       ...(vis !== cur.visibility ? { visibility: vis } : {}),
       ...(feat !== (cur.featured === true) ? { featured: feat } : {}),
+      ...(commentsOn !== (cur.commentsEnabled !== false) ? { commentsEnabled: commentsOn } : {}),
       ...(coverIn !== (cur.coverMediaId ?? null) ? { coverMediaId: coverIn } : {}),
       ...(sameIds(galleryIn, cur.gallery ?? []) ? {} : { gallery: galleryIn.length ? galleryIn : null }),
       ...(placeIn.trim() !== (cur.location ?? "") ? { location: placeIn.trim() || null } : {}),
@@ -437,6 +440,14 @@ export function PublishPanel(p: Props) {
               <span>
                 {bn.publishPanel.featured}
                 <span className="block text-xs text-muted">{bn.publishPanel.featuredHint}</span>
+              </span>
+            </label>
+
+            <label className="flex min-h-11 cursor-pointer items-start gap-3">
+              <input type="checkbox" checked={commentsOn} onChange={(e) => setCommentsOn(e.target.checked)} className="mt-1 size-5" />
+              <span>
+                {bn.publishPanel.commentsOn}
+                <span className="block text-xs text-muted">{bn.publishPanel.commentsOnHint}</span>
               </span>
             </label>
 

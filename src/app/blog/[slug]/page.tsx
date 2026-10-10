@@ -10,6 +10,9 @@ import { PublicShell } from "@/components/public/PublicShell";
 import { ReaderSize } from "@/components/public/ReaderTools";
 import { ViewBeacon } from "@/components/public/ViewBeacon";
 import { ShareBar } from "@/components/public/ShareBar";
+import { Comments, type CommentView } from "@/components/public/Comments";
+import { getPostComments } from "@/data/commentSnapshot";
+import { buildThread } from "@/lib/comments";
 import { getPublicScopes } from "@/data/publicLists";
 import { getSiteUrl } from "@/config/env";
 import { hasDefaultOgImage } from "@/data/publicAssets";
@@ -146,6 +149,16 @@ export default async function BlogPost({ params }: Props) {
     publishedTime: post.publishedAt,
     modifiedTime: post.updatedAt,
   });
+  // P11b-২: মন্তব্য শুধু published+public লেখায় (unlisted-এ নয়); তারিখ-লেবেল server-এ (timezone/hydration নিরাপদ)
+  const showComments = !r.unlisted;
+  const toView = (c: { id: string; authorName: string; content: string; createdAt: Date; byOwner?: boolean }): CommentView => ({
+    id: c.id,
+    authorName: c.authorName,
+    content: c.content,
+    dateLabel: formatDate(c.createdAt, tz),
+    byOwner: c.byOwner,
+  });
+  const thread = showComments ? buildThread(await getPostComments(post.id)).map((n) => ({ comment: toView(n.comment), replies: n.replies.map(toView) })) : [];
   const meta = (
     <>
       {post.publishedAt && <time dateTime={post.publishedAt.toISOString()}>{formatDate(post.publishedAt, tz)}</time>}
@@ -168,6 +181,7 @@ export default async function BlogPost({ params }: Props) {
       <PostArticle toc={toc} anchors poem={post.contentType === "poetry"} title={post.title} meta={meta} links={card ? [...(card.category ? [card.category] : []), ...card.tags.map((t) => ({ ...t, name: `#${t.name}` }))] : []} body={post.body} cover={card?.cover} gallery={resolveGallery(post.gallery, media)} />
       <ShareBar url={absoluteUrl(safeSiteUrl(), blogPath(post.slug))} />
       <AuthorBox name={siteTitle} bio={authorBio} aboutHref={pages.some((p) => p.slug === "about") ? pagePath("about") : undefined} />
+      {showComments && <Comments postId={post.id} thread={thread} open={post.commentsEnabled !== false} tz={tz} />}
       <PostPager older={adj.older ? byId.get(adj.older) : undefined} newer={adj.newer ? byId.get(adj.newer) : undefined} />
       <RelatedPosts cards={related} />
     </PublicShell>

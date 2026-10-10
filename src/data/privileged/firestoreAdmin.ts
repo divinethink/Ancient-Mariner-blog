@@ -55,6 +55,10 @@ export type AdminDb = {
    * মন্তব্য তৈরি (P11b-১; allowlist ১) — শুধু নতুন doc (`exists:false`), overwrite নয়। একই id আবার এলে "exists" (retry/double-submit-এ duplicate নয়)।
    */
   createComment(op: CommentCreateOp): Promise<"created" | "exists">;
+  /**
+   * মন্তব্যের status বদল (P11b-২; owner-moderation) — শুধু `status`/`updatedAt` (mask); doc না থাকলে "precondition" (নতুন doc তৈরি হয় না)।
+   */
+  setCommentStatus(op: { id: string; status: "approved" | "spam"; nowMs: number }): Promise<CommitResult>;
 };
 
 export type CommentCreateOp = { id: string; comment: Comment };
@@ -116,6 +120,7 @@ export function createAdminDb(opts: {
         updatedAt: ts(c.updatedAt),
         schemaVersion: { integerValue: String(c.schemaVersion) },
         ...(c.parentCommentId ? { parentCommentId: str(c.parentCommentId) } : {}),
+        ...(c.byOwner ? { byOwner: { booleanValue: true } } : {}),
       };
       return withRetry(async (signal): Promise<"created" | "exists"> => {
         const res = await post(":commit", { writes: [{ update: { name: nameOf("comments", id), fields }, currentDocument: { exists: false } }] }, signal);
@@ -126,6 +131,19 @@ export function createAdminDb(opts: {
         }
         throw new Error(`Firestore commit ${res.status}`);
       });
+    },
+
+    async setCommentStatus(op) {
+      return commit([
+        {
+          update: {
+            name: nameOf("comments", op.id),
+            fields: { status: { stringValue: op.status }, updatedAt: { timestampValue: new Date(op.nowMs).toISOString() } },
+          },
+          updateMask: { fieldPaths: ["status", "updatedAt"] },
+          currentDocument: { exists: true },
+        },
+      ]);
     },
 
     async commitPublish(op) {

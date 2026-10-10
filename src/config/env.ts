@@ -54,11 +54,26 @@ const commentSchema = z.object({
   SITE_TIMEZONE: z.string().min(1).default("Asia/Dhaka"),
   VIEW_HASH_SALT: z.string().min(16),
   TURNSTILE_SECRET_KEY: z.string().min(10),
+  // P11b-২: site-key (পাবলিক মান; Worker secret হিসেবেই রাখা — `wrangler deploy` dashboard-var মুছে দেয়) ফর্ম runtime-এ `GET /api/comment` থেকে পায়, build-এ নয়
+  TURNSTILE_SITE_KEY: z.string().min(5).optional(),
+  // ঐচ্ছিক ইমেইল-খবর (Resend); যেকোনো একটা না থাকলে খবর বাদ, মন্তব্য-জমা অক্ষত
+  RESEND_API_KEY: z.string().min(10).optional(),
+  NOTIFY_EMAIL: z.email().optional(),
   FIREBASE_PROJECT_ID: z.string().min(1),
   FIREBASE_SERVICE_ACCOUNT: z.string().min(1),
   OWNER_UID: z.string().min(1),
 });
 export const getCommentEnv = () => parse(commentSchema);
+
+// `POST /api/owner/comments` (P11b-২): মালিকের মন্তব্য-ব্যবস্থাপনা — Turnstile/ইমেইল লাগে না
+const ownerCommentSchema = z.object({
+  SITE_URL: z.url(),
+  SITE_TIMEZONE: z.string().min(1).default("Asia/Dhaka"),
+  FIREBASE_PROJECT_ID: z.string().min(1),
+  FIREBASE_SERVICE_ACCOUNT: z.string().min(1),
+  OWNER_UID: z.string().min(1),
+});
+export const getOwnerCommentEnv = () => parse(ownerCommentSchema);
 
 // Cron (`scheduled`, P5a-৩): FIREBASE_SERVICE_ACCOUNT = Worker secret (service-account JSON, Firestore access; শুধু Cron-এ)
 const cronSchema = z.object({

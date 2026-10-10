@@ -5,7 +5,7 @@ import { looksSpammy, type CommentPayload } from "../../lib/comments";
 import type { AdminDb } from "./firestoreAdmin";
 
 export type SubmitResult =
-  | { kind: "ok"; id: string; duplicate: boolean }
+  | { kind: "ok"; id: string; duplicate: boolean; spam: boolean }
   | { kind: "closed" } // পোস্ট নেই/প্রকাশিত-পাবলিক নয়/মন্তব্য বন্ধ
   | { kind: "bad_parent" };
 
@@ -23,11 +23,12 @@ export async function submitComment(db: AdminDb, p: CommentPayload, ownerUid: st
   }
 
   const now = new Date(nowMs);
+  const spam = looksSpammy(p.authorName, p.content);
   const comment: Comment = {
     postId: p.postId,
     authorName: p.authorName,
     content: p.content,
-    status: looksSpammy(p.authorName, p.content) ? "spam" : "approved",
+    status: spam ? "spam" : "approved",
     ...(p.parentCommentId ? { parentCommentId: p.parentCommentId } : {}),
     ownerUid,
     createdAt: now,
@@ -35,5 +36,5 @@ export async function submitComment(db: AdminDb, p: CommentPayload, ownerUid: st
     schemaVersion: COMMENT_SCHEMA_VERSION,
   };
   const r = await db.createComment({ id: p.commentId, comment });
-  return { kind: "ok", id: p.commentId, duplicate: r === "exists" };
+  return { kind: "ok", id: p.commentId, duplicate: r === "exists", spam };
 }
