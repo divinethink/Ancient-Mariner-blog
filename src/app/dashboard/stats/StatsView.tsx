@@ -59,7 +59,8 @@ export function StatsView() {
   const [errState, setErrState] = useState<{ range: StatsRange; kind: "no_db" | "failed" } | null>(null);
   const data = res?.range === range ? res : null;
   const err = errState?.range === range ? errState.kind : null;
-  const [titles, setTitles] = useState<Record<string, string | null>>({});
+  // শিরোনাম-আনা শেষ হলে (সফল/ব্যর্থ) কোন `data`-র জন্য — render-সময়ে 'অপেক্ষা' বনাম 'মোছা লেখা' ঠিক করতে
+  const [doneData, setDoneData] = useState<StatsPayload | null>(null);
   const [tick, setTick] = useState(0);
 
   useEffect(() => {
@@ -74,19 +75,21 @@ export function StatsView() {
   }, [range, tick]);
 
   // শীর্ষ লেখাগুলোর শিরোনাম (আগে cache, বাকি `PostRepo.get`; ব্যর্থ হলে চুপচাপ 'মোছা লেখা')
+  // effect-এর বডিতে sync setState নেই — শিরোনাম render-সময়ে `titleCache` থেকে; শুধু async শেষে re-render ট্রিগার
+  const topIds = data ? data.posts.slice(0, SHOWN).map((p) => p.postId) : [];
+  const pending = data !== null && doneData !== data && topIds.some((id) => !titleCache.has(id));
+
   useEffect(() => {
     if (!data) return;
     const ids = data.posts.slice(0, SHOWN).map((p) => p.postId).filter((id) => !titleCache.has(id));
-    const fromCache = () => Object.fromEntries(data.posts.map((p) => [p.postId, titleCache.get(p.postId) ?? null]));
-    if (ids.length === 0) {
-      setTitles(fromCache());
-      return;
-    }
+    if (ids.length === 0) return;
     let dead = false;
     getPostRepo()
       .then((repo) => Promise.all(ids.map((id) => repo.get(id).then((p) => titleCache.set(id, p ? p.title || bn.library.untitled : null)).catch(() => undefined))))
-      .then(() => !dead && setTitles(fromCache()))
-      .catch(() => undefined);
+      .catch(() => undefined)
+      .then(() => {
+        if (!dead) setDoneData(data);
+      });
     return () => {
       dead = true;
     };
@@ -157,7 +160,7 @@ export function StatsView() {
                 <Ranked
                   title={T.topPosts}
                   rows={data.posts.map((p) => ({ k: p.postId, n: p.n }))}
-                  label={(id) => (id in titles ? (titles[id] ?? T.deletedPost) : "…")}
+                  label={(id) => (pending ? "…" : (titleCache.get(id) ?? T.deletedPost))}
                 />
                 <Ranked title={T.referrers} rows={data.referrers} label={(k) => referrerLabel(k, T.direct)} />
               </div>
