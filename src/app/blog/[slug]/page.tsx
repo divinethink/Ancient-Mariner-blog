@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { AuthorBox } from "@/components/public/AuthorBox";
 import { PostArticle } from "@/components/public/PostArticle";
 import { ReadingChrome } from "@/components/public/ReadingChrome";
+import { ReadingResume } from "@/components/public/ReadingResume";
 import { SeriesBanner } from "@/components/public/SeriesBanner";
 import { PostPager, RelatedPosts } from "@/components/public/PostFooterNav";
 import { PublicShell } from "@/components/public/PublicShell";
@@ -173,6 +174,7 @@ export default async function BlogPost({ params }: Props) {
     <PublicShell>
       <ViewBeacon postId={post.id} />
       <ReadingChrome targetId="post-article" title={post.title || bn.library.untitled} />
+      <ReadingResume slug={post.slug} targetId="post-article" />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: ld }} />
       <Link href="/" prefetch={false} className="zen-hide mb-3 inline-flex min-h-11 items-center text-accent-text">
         ← {bn.public.home}
