@@ -2,7 +2,7 @@
 
 // Design ট্যাব (P9b-২): রঙ/ফন্ট/card বাছাই + লোগো/ব্যানার + live preview। preview = `data-accent/font/card` সহ wrapper
 // (tokens.css-এর একই নিয়ম, তাই সাইটের সাথে মেলে); desktop-এ পাশাপাশি, মোবাইলে টগল।
-import { useEffect, useState, type ReactNode } from "react";
+import { useState, useSyncExternalStore, type ReactNode } from "react";
 import type { SiteSettings } from "@/data/siteSettingsRepo";
 import { bn } from "@/i18n/bn";
 import { ACCENTS, CARD_STYLES, FONT_PAIRS } from "@/lib/design";
@@ -10,6 +10,8 @@ import { CoverPicker } from "../posts/[postId]/edit/CoverPicker";
 
 type Design = SiteSettings["design"];
 const t = bn.customize.design;
+const noSubscribe = () => () => {};
+const readTheme = () => document.documentElement.getAttribute("data-theme") ?? "light";
 
 function Group<K extends string>({
   legend,
@@ -41,10 +43,8 @@ function Group<K extends string>({
 
 export function DesignTab({ value, onChange }: { value: Design; onChange: (d: Design) => void }) {
   const [preview, setPreview] = useState(false); // শুধু মোবাইলে অর্থবহ
-  const [theme, setTheme] = useState("light");
-  useEffect(() => {
-    setTheme(document.documentElement.getAttribute("data-theme") ?? "light"); // বর্তমান থিমেই প্রিভিউ (৫ থিমেই tokens মেলে)
-  }, []);
+  // বর্তমান থিমেই প্রিভিউ (৫ থিমেই tokens মেলে); effect+setState নয় (lint) — সার্ভার-snapshot "light"
+  const theme = useSyncExternalStore(noSubscribe, readTheme, () => "light");
   const set = (p: Partial<Design>) => onChange({ ...value, ...p });
 
   return (
