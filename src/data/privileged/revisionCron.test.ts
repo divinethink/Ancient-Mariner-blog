@@ -30,6 +30,9 @@ function fakeDb(s: Script) {
     async commitPublish() {
       return "ok";
     },
+    async createComment() {
+      return "created";
+    },
   };
   return { db, queries, commits };
 }

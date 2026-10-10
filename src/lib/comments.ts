@@ -12,7 +12,7 @@ export const MAX_COMMENTS_PER_DAY = 20;
 
 const ID_RE = /^[A-Za-z0-9]{20}$/;
 // eslint-disable-next-line no-control-regex
-const CTRL = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F​-‏‪-‮⁦-⁩﻿]/g;
+const CTRL = new RegExp("[\\u0000-\\u0008\\u000B\\u000C\\u000E-\\u001F\\u007F\\u200B-\\u200F\\u202A-\\u202E\\u2066-\\u2069\\uFEFF]", "g");
 
 export type CommentPayload = {
   /** client-বানানো ২০-অক্ষরের ID — একই ID-তে দ্বিতীয় জমা = duplicate (double-submit/retry নিরাপদ) */
