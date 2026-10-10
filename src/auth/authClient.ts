@@ -30,7 +30,7 @@ export type SignInResult =
   | { status: "ok" }
   | { status: "not-owner" }
   | { status: "cancelled" }
-  | { status: "error" };
+  | { status: "error"; detail?: string };
 
 export async function signInWithGoogle(): Promise<SignInResult> {
   try {
@@ -41,13 +41,16 @@ export async function signInWithGoogle(): Promise<SignInResult> {
     const res = await post("/api/auth/session", { idToken: await cred.user.getIdToken() });
     if (res.ok) return { status: "ok" };
     await fb.signOut(auth); // ভুল অ্যাকাউন্ট/ব্যর্থ — Firebase-সেশনও রাখা হয় না
-    return res.status === 403 ? { status: "not-owner" } : { status: "error" };
+    if (res.status === 403) return { status: "not-owner" };
+    // নির্ণয়ের জন্য শুধু HTTP-কোড ও সার্ভারের reason-কোড (গোপন কিছু নয়)
+    const body = (await res.json().catch(() => null)) as { error?: string } | null;
+    return { status: "error", detail: `session:${res.status}:${body?.error ?? "?"}` };
   } catch (e) {
     const code = (e as { code?: string }).code;
     if (code === "auth/popup-closed-by-user" || code === "auth/cancelled-popup-request") {
       return { status: "cancelled" };
     }
-    return { status: "error" };
+    return { status: "error", detail: `popup:${code ?? (e instanceof Error ? e.message : "?")}`.slice(0, 120) };
   }
 }
 
