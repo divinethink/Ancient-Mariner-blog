@@ -2,7 +2,7 @@
 // সংরক্ষিত মান আংশিক/পুরনো/অজানা-id-যুক্ত হতে পারে — তাই default-এর সাথে মিলিয়ে সবসময় পূর্ণ তালিকা (defensive read)।
 export type LayoutItem = { id: string; enabled: boolean };
 
-export const SIDEBAR_WIDGETS = ["search", "facebook", "category", "archive", "calendar", "links", "follow", "recent", "author"] as const;
+export const SIDEBAR_WIDGETS = ["search", "facebook", "category", "popular", "archive", "calendar", "links", "follow", "recent", "author"] as const;
 export type SidebarWidget = (typeof SIDEBAR_WIDGETS)[number];
 export const HOME_SECTIONS = ["hero", "featured", "recent"] as const;
 export type HomeSection = (typeof HOME_SECTIONS)[number];
@@ -12,6 +12,7 @@ export const DEFAULT_SIDEBAR: readonly { id: SidebarWidget; enabled: boolean }[]
   { id: "search", enabled: true },
   { id: "facebook", enabled: true },
   { id: "category", enabled: true },
+  { id: "popular", enabled: true }, // P11a-২: ডেটা না থাকলে (গণনা শুরু হয়নি) এমনিতেই লুকানো
   { id: "archive", enabled: true },
   { id: "calendar", enabled: true },
   { id: "links", enabled: true },

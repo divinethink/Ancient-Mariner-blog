@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Analytics } from "@/components/public/Analytics";
 import { sidebarContent } from "@/components/public/Sidebar";
 import { ThemeToggle } from "@/components/public/ThemeToggle";
+import { getPopular } from "@/data/popularSnapshot";
 import { getPublicScopes } from "@/data/publicLists";
 import { getPublicMedia, getPublicPages, getPublicSettings } from "@/data/publicSnapshot";
 import { bn } from "@/i18n/bn";
@@ -33,14 +34,14 @@ function NavLink({ l, className }: { l: ResolvedLink; className: string }) {
 
 /** পাবলিক পেজের header/footer (Arch §১৭ P4a, P9a)। `siteSettings.menu/footer` খালি হলে আগের default; নইলে owner-এর মেনু (draft/মোছা আইটেম লুকানো)। */
 export async function PublicShell({ children, sidebar = false, month }: { children: ReactNode; sidebar?: boolean; month?: MonthRef }) {
-  const [settings, scopes, pages, media] = await Promise.all([getPublicSettings(), getPublicScopes(), getPublicPages(), getPublicMedia()]);
+  const [settings, scopes, pages, media, popular] = await Promise.all([getPublicSettings(), getPublicScopes(), getPublicPages(), getPublicMedia(), getPopular()]);
   // P9b-২: লোগো (media না পেলে/অবৈধ হলে শুধু সাইটের নাম — আগের মতো)
   const logo = resolveCover(settings.design.logoMediaId || undefined, media);
   const logoSrc = logo ? cldUrl(logo.cloud, logo.publicId, { w: 96 }) : null;
   // default মেনু/footer: শুধু published system পেজের লিংক
   const about = pages.find((p) => p.slug === "about");
   const privacy = pages.find((p) => p.slug === "privacy");
-  const side = sidebar ? sidebarContent(settings, scopes, month) : null;
+  const side = sidebar ? sidebarContent(settings, scopes, popular, month) : null;
   const cats = scopes.filter((s) => s.kind === "category" && s.term);
   const top = cats.filter((s) => !s.term?.parentCategoryId);
   const custom = resolveMenu(

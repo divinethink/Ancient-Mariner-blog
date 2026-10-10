@@ -1,6 +1,7 @@
 import { createRequire } from "node:module";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { type D1Like, cleanupRateLimits, recordView } from "./counterRepo";
+import { type D1Like, cleanupRateLimits, readStats, recordView } from "./counterRepo";
+import { statsWindow } from "@/lib/stats";
 import { MAX_POSTS_PER_VISITOR_PER_DAY } from "@/lib/views";
 import { readFileSync } from "node:fs";
 
@@ -13,7 +14,10 @@ type SqliteDb = { exec(s: string): void; prepare(s: string): { run(...v: unknown
 function fakeD1(raw: SqliteDb): D1Like {
   return {
     prepare: (sql) => ({
-      bind: (...v) => ({ run: async () => ({ meta: { changes: Number(raw.prepare(sql).run(...v).changes) } }) }),
+      bind: (...v) => ({
+        run: async () => ({ meta: { changes: Number(raw.prepare(sql).run(...v).changes) } }),
+        all: async () => ({ results: raw.prepare(sql).all(...v) }),
+      }),
     }),
   };
 }
@@ -75,5 +79,42 @@ describe("cleanupRateLimits", () => {
     expect(all("SELECT windowStart FROM rateLimits").every((r) => r.windowStart === "2026-10-10")).toBe(true);
     expect(all("SELECT COUNT(*) AS c FROM viewCounts")).toEqual([{ c: 2 }]);
     expect(all("SELECT COUNT(*) AS c FROM dailyVisitors")).toEqual([{ c: 2 }]);
+  });
+});
+
+describe("readStats", () => {
+  const NOW = Date.UTC(2026, 9, 10, 12, 0, 0);
+  const seed = () => {
+    raw.exec(`
+      INSERT INTO viewCounts VALUES ('P1','2026-10-10','BD','google.com',5),('P1','2026-10-09','BD','direct',2),
+        ('P2','2026-10-10','US','direct',3),('P1','2026-10-02','BD','direct',4),('P1','2026-09-01','BD','direct',9);
+      INSERT INTO dailyVisitors VALUES ('2026-10-10',6),('2026-10-09',2),('2026-10-02',4),('2026-09-01',9);`);
+  };
+  it("৭ দিন: মোট, আগের ৭ দিন, দিনভিত্তিক সিরিজ, শীর্ষ তালিকা", async () => {
+    seed();
+    const s = await readStats(db, statsWindow("7d", NOW, "Asia/Dhaka")); // 04–10 অক্টো; আগের 27 সেপ্টে–03 অক্টো
+    expect(s.views).toBe(10);
+    expect(s.visitors).toBe(8);
+    expect(s.prevViews).toBe(4);
+    expect(s.prevVisitors).toBe(4);
+    expect(s.series).toHaveLength(7);
+    expect(s.series.reduce((t, p) => t + p.n, 0)).toBe(10);
+    expect(s.posts).toEqual([{ postId: "P1", n: 7 }, { postId: "P2", n: 3 }]);
+    expect(s.referrers[0]).toEqual({ k: "direct", n: 5 });
+    expect(s.countries[0]).toEqual({ k: "BD", n: 7 });
+  });
+  it("সব সময়: তুলনা নেই, মাসভিত্তিক", async () => {
+    seed();
+    const s = await readStats(db, statsWindow("all", NOW, "Asia/Dhaka"));
+    expect(s.views).toBe(23);
+    expect(s.prevViews).toBeNull();
+    expect(s.series.map((p) => p.k)).toEqual(["2026-09", "2026-10"]);
+    expect(s.series.map((p) => p.n)).toEqual([9, 14]);
+  });
+  it("ডেটা না থাকলে সব ০/খালি (ভাঙে না)", async () => {
+    const s = await readStats(db, statsWindow("30d", NOW, "Asia/Dhaka"));
+    expect(s.views).toBe(0);
+    expect(s.posts).toEqual([]);
+    expect(s.series).toHaveLength(30);
   });
 });

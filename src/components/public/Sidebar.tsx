@@ -4,6 +4,7 @@ import type { SiteSettings } from "@/data/siteSettingsRepo";
 import { bn } from "@/i18n/bn";
 import { archiveMonths, buildCalendar, type MonthRef } from "@/lib/archive";
 import { DEFAULT_SIDEBAR, resolveLayout, type SidebarWidget } from "@/lib/layout";
+import type { PopularRow } from "@/lib/popular";
 import { SEARCH_PATH } from "@/lib/publicSearch";
 import type { Scope } from "@/lib/publicLists";
 import { FEED_PATH } from "@/lib/rss";
@@ -27,7 +28,7 @@ function Box({ title, children }: { title: string; children: ReactNode }) {
 }
 
 /** একটা widget; দেখানোর মতো কিছু না থাকলে null (খালি ফেসবুক/লিংক/ক্যাটাগরি লুকানো — Mockup §৫) */
-function widget(id: SidebarWidget, s: SiteSettings, scopes: readonly Scope[], month?: MonthRef): ReactNode {
+function widget(id: SidebarWidget, s: SiteSettings, scopes: readonly Scope[], popular: readonly PopularRow[], month?: MonthRef): ReactNode {
   const blogCards = () => scopes.find((x) => x.kind === "blog")?.cards ?? [];
   switch (id) {
     case "search":
@@ -200,17 +201,36 @@ function widget(id: SidebarWidget, s: SiteSettings, scopes: readonly Scope[], mo
         </Box>
       ) : null;
     }
+    case "popular": {
+      // build-সময়ে D1 top-N (শেষ ৩০ দিন); এখনো-published লেখার কার্ড মিলিয়ে। ডেটা না থাকলে (গণনা শুরু হয়নি) লুকানো; ভিউ-সংখ্যা দেখানো হয় না
+      const byId = new Map(blogCards().map((c) => [c.id, c] as const));
+      const cards = popular.flatMap((p) => byId.get(p.postId) ?? []);
+      return cards.length ? (
+        <Box title={bn.public.popularTitle}>
+          <ul>
+            {cards.map((c) => (
+              <li key={c.id}>
+                <Link href={c.href} prefetch={false} className="block min-h-11 py-2 leading-snug">
+                  {c.title || bn.library.untitled}
+                  {c.dateLabel && <span className="block text-xs text-muted">{c.dateLabel}</span>}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </Box>
+      ) : null;
+    }
     case "author":
       return s.authorBio.trim() ? <AuthorBox name={s.siteTitle} bio={s.authorBio} compact /> : null;
   }
 }
 
 /** `layout.sidebar` অনুযায়ী চালু widget-গুলো; কিছুই না থাকলে null (কলার গ্রিড বানায় না) */
-export function sidebarContent(s: SiteSettings, scopes: readonly Scope[], month?: MonthRef): ReactNode {
+export function sidebarContent(s: SiteSettings, scopes: readonly Scope[], popular: readonly PopularRow[], month?: MonthRef): ReactNode {
   const blocks = resolveLayout(s.layout.sidebar, DEFAULT_SIDEBAR)
     .filter((w) => w.enabled)
     .flatMap((w) => {
-      const b = widget(w.id, s, scopes, month);
+      const b = widget(w.id, s, scopes, popular, month);
       return b ? [<div key={w.id}>{b}</div>] : [];
     });
   return blocks.length ? <aside aria-label={bn.public.sidebarLabel} className="space-y-4">{blocks}</aside> : null;

@@ -1,12 +1,16 @@
 // view-গণনার D1 অ্যাক্সেস — D1-এ হাত দেওয়ার একমাত্র জায়গা (Arch §৭; পথ গ)। Firestore-এর সাথে সম্পর্ক নেই।
 // সব SQL parameterized; ব্যর্থতা কলারে throw হয় (route পাঠককে কখনো error দেখায় না)।
 import { getCloudflareContext } from "@opennextjs/cloudflare";
+import { fillBuckets, toCount, type Point, type StatsWindow } from "@/lib/stats";
 import { MAX_POSTS_PER_VISITOR_PER_DAY } from "@/lib/views";
 
 /** `D1Database`-এর যতটুকু লাগে (workers-types dependency ছাড়া; unit-test-এ SQLite adapter) */
 export interface D1Like {
   prepare(sql: string): {
-    bind(...v: unknown[]): { run(): Promise<{ meta?: { changes?: number } }> };
+    bind(...v: unknown[]): {
+      run(): Promise<{ meta?: { changes?: number } }>;
+      all(): Promise<{ results?: Record<string, unknown>[] }>;
+    };
   };
 }
 
@@ -63,4 +67,54 @@ export async function cleanupRateLimits(db: D1Like, keepFromDay: string, limit =
     .bind(keepFromDay, limit)
     .run();
   return changes(r);
+}
+
+export type StatsData = {
+  views: number;
+  visitors: number;
+  prevViews: number | null;
+  prevVisitors: number | null;
+  /** দিনভিত্তিক (বা মাসভিত্তিক) ভিউ — ফাঁকা দিন/মাস ০ দিয়ে ভরা */
+  series: Point[];
+  posts: { postId: string; n: number }[];
+  referrers: Point[];
+  countries: Point[];
+};
+
+/** তালিকা-সীমা: UI শীর্ষ ~১০টা দেখায়, [সব দেখুন]-এ এই কয়টা পর্যন্ত */
+export const STATS_LIST_LIMIT = 30;
+
+/**
+ * পরিসংখ্যান পড়া (owner-only route থেকে; শুধু SELECT, aggregation-এ LIMIT নেই — মোট/চার্ট কখনো truncate হয় না, শুধু তালিকা-র্যাংক ছাঁটা)।
+ * ভিজিটর = দিনের আনুমানিক ভিজিটরের যোগফল (একই মানুষ ভিন্ন দিনে দুইবার গণ্য — 'আনুমানিক')।
+ */
+export async function readStats(db: D1Like, w: StatsWindow): Promise<StatsData> {
+  const q = async (sql: string, ...bind: unknown[]) => (await db.prepare(sql).bind(...bind).all()).results ?? [];
+  const sum = async (table: "viewCounts" | "dailyVisitors", from: string, to: string) =>
+    toCount((await q(`SELECT COALESCE(SUM(n), 0) AS n FROM ${table} WHERE day BETWEEN ? AND ?`, from, to))[0]?.n);
+  const keyExpr = w.bucket === "month" ? "substr(day, 1, 7)" : "day";
+  const top = async (col: "postId" | "referrer" | "country") =>
+    q(`SELECT ${col} AS k, SUM(n) AS n FROM viewCounts WHERE day BETWEEN ? AND ? GROUP BY ${col} ORDER BY n DESC, k ASC LIMIT ?`, w.from, w.to, STATS_LIST_LIMIT);
+  const pts = (rows: Record<string, unknown>[]): Point[] => rows.map((r) => ({ k: String(r.k), n: toCount(r.n) })).filter((p) => p.n > 0);
+
+  const [views, visitors, prevViews, prevVisitors, seriesRows, posts, referrers, countries] = await Promise.all([
+    sum("viewCounts", w.from, w.to),
+    sum("dailyVisitors", w.from, w.to),
+    w.prev ? sum("viewCounts", w.prev.from, w.prev.to) : Promise.resolve(null),
+    w.prev ? sum("dailyVisitors", w.prev.from, w.prev.to) : Promise.resolve(null),
+    q(`SELECT ${keyExpr} AS k, SUM(n) AS n FROM viewCounts WHERE day BETWEEN ? AND ? GROUP BY k`, w.from, w.to),
+    top("postId"),
+    top("referrer"),
+    top("country"),
+  ]);
+  return {
+    views,
+    visitors,
+    prevViews,
+    prevVisitors,
+    series: fillBuckets(pts(seriesRows), w),
+    posts: pts(posts).map((p) => ({ postId: p.k, n: p.n })),
+    referrers: pts(referrers),
+    countries: pts(countries),
+  };
 }

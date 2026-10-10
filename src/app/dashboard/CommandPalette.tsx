@@ -48,6 +48,13 @@ const COMMANDS: (PaletteItem & { href?: string })[] = [
     href: "/dashboard/customize",
   },
   {
+    id: "stats",
+    kind: "command",
+    label: P.stats,
+    keywords: "stats views visitors পরিসংখ্যান ভিউ",
+    href: "/dashboard/stats",
+  },
+  {
     id: "settings",
     kind: "command",
     label: P.settings,
