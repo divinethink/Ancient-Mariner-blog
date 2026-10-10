@@ -3,8 +3,8 @@ on:
   workflow_dispatch:
     inputs:
       owner_uid:
-        description: 'Firebase OWNER_UID'
-        required: true
+        description: 'ঐচ্ছিক — খালি রাখলে OWNER_UID secret ব্যবহার হয়'
+        required: false
 jobs:
   rules:
     runs-on: ubuntu-latest
@@ -22,6 +22,6 @@ jobs:
           SA_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
       - name: Deploy rules + indexes
         env:
-          OWNER_UID: ${{ inputs.owner_uid }}
+          OWNER_UID: ${{ inputs.owner_uid || secrets.OWNER_UID }}
           GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/sa.json
         run: npm run deploy:rules
