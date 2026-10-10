@@ -20,6 +20,7 @@ export function PostArticle({
   gallery = [],
   toc = [],
   anchors = false,
+  poem = false,
 }: {
   title: string;
   meta: ReactNode;
@@ -32,6 +33,8 @@ export function PostArticle({
   /** P10b-১: স্বয়ংক্রিয় সূচি (খালি = নেই) ও heading-anchor (পাবলিক পেজে) */
   toc?: readonly TocItem[];
   anchors?: boolean;
+  /** P10b-২: কবিতা (contentType=poetry) — কেন্দ্রে, পঙ্‌ক্তি-ভাঙা অক্ষত */
+  poem?: boolean;
 }) {
   return (
     <article id="post-article">
@@ -58,7 +61,7 @@ export function PostArticle({
         </figure>
       )}
       <Toc items={toc} />
-      <div className="reading mt-6">
+      <div className={`reading mt-6${poem ? " reading-poem" : ""}`}>
         <PostBody body={body} anchors={anchors} />
       </div>
       {gallery.length > 0 && <Gallery items={gallery} />}

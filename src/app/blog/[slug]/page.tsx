@@ -7,6 +7,8 @@ import { ReadingChrome } from "@/components/public/ReadingChrome";
 import { SeriesBanner } from "@/components/public/SeriesBanner";
 import { PostPager, RelatedPosts } from "@/components/public/PostFooterNav";
 import { PublicShell } from "@/components/public/PublicShell";
+import { ReaderSize } from "@/components/public/ReaderTools";
+import { ShareBar } from "@/components/public/ShareBar";
 import { getPublicScopes } from "@/data/publicLists";
 import { getSiteUrl } from "@/config/env";
 import { hasDefaultOgImage } from "@/data/publicAssets";
@@ -18,6 +20,7 @@ import { cldOgUrl } from "@/lib/cloudinary";
 import { formatDate } from "@/lib/datetime";
 import { pagePath } from "@/lib/pages";
 import { blogPath, planSlugMoves, postExcerpt } from "@/lib/publicSite";
+import { absoluteUrl } from "@/lib/reader";
 import { readingMinutes } from "@/lib/readingTime";
 import { adjacentIds, relatedIds, seriesPosition } from "@/lib/related";
 import { buildToc } from "@/lib/toc";
@@ -156,7 +159,9 @@ export default async function BlogPost({ params }: Props) {
         ← {bn.public.home}
       </Link>
       {seriesScope && sp && <SeriesBanner name={seriesScope.term!.name} path={seriesScope.path} index={sp.index} total={sp.total} prev={sp.prev} next={sp.next} />}
-      <PostArticle toc={toc} anchors title={post.title} meta={meta} links={card ? [...(card.category ? [card.category] : []), ...card.tags.map((t) => ({ ...t, name: `#${t.name}` }))] : []} body={post.body} cover={card?.cover} gallery={resolveGallery(post.gallery, media)} />
+      <div className="mt-3"><ReaderSize /></div>
+      <PostArticle toc={toc} anchors poem={post.contentType === "poetry"} title={post.title} meta={meta} links={card ? [...(card.category ? [card.category] : []), ...card.tags.map((t) => ({ ...t, name: `#${t.name}` }))] : []} body={post.body} cover={card?.cover} gallery={resolveGallery(post.gallery, media)} />
+      <ShareBar url={absoluteUrl(safeSiteUrl(), blogPath(post.slug))} />
       <AuthorBox name={siteTitle} bio={authorBio} aboutHref={pages.some((p) => p.slug === "about") ? pagePath("about") : undefined} />
       <PostPager older={adj.older ? byId.get(adj.older) : undefined} newer={adj.newer ? byId.get(adj.newer) : undefined} />
       <RelatedPosts cards={related} />

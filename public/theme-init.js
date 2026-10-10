@@ -29,6 +29,12 @@
       root.setAttribute("data-accent", DESIGN.accent);
       root.setAttribute("data-font", DESIGN.font);
       root.setAttribute("data-card", DESIGN.card);
+      // P10b-২: পাঠকের লেখার-আকার (s|m|l; অবৈধ → m)
+      var rs = null;
+      try {
+        rs = localStorage.getItem("readerSize");
+      } catch (e) {}
+      root.setAttribute("data-rsize", rs === "s" || rs === "l" ? rs : "m");
     }
     var m = document.querySelector('meta[name="theme-color"]');
     if (m) m.setAttribute("content", BG[t]);

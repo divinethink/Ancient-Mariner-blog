@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { Analytics } from "@/components/public/Analytics";
 import { sidebarContent } from "@/components/public/Sidebar";
+import { ThemeToggle } from "@/components/public/ThemeToggle";
 import { getPublicScopes } from "@/data/publicLists";
 import { getPublicMedia, getPublicPages, getPublicSettings } from "@/data/publicSnapshot";
 import { bn } from "@/i18n/bn";
@@ -118,6 +119,7 @@ export async function PublicShell({ children, sidebar = false, month }: { childr
               🔍
             </button>
           </form>
+          <ThemeToggle />
         </nav>
       </header>
       {side ? (

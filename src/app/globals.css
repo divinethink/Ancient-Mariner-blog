@@ -169,6 +169,26 @@ main:has(.dash-shell) {
   margin: 1.5em 0;
 }
 
+/* পাঠক-টুল (P10b-২): লেখার-আকার (<html data-rsize>) ও কবিতার view */
+[data-rsize="s"] .reading {
+  font-size: 16.5px;
+}
+[data-rsize="l"] .reading {
+  font-size: 21px;
+}
+.reading-poem {
+  max-width: 30rem;
+  margin-inline: auto;
+  text-align: center;
+  line-height: 2.1;
+}
+.reading-poem p {
+  margin: 0 0 1.4em;
+}
+.reading-poem blockquote {
+  text-align: start;
+}
+
 /* ফোকাস মোড (P2b-২): টাইপ চলাকালে header/toolbar মিলিয়ে যায়; মাউস/আঙুল নড়লে বা focus সরলে ফেরে */
 .chrome {
   transition: opacity 0.6s;
