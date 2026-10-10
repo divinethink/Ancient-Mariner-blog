@@ -4,6 +4,8 @@ import { getCronEnv } from "../config/env";
 import { createAdminDb, createBudget } from "../data/privileged/firestoreAdmin";
 import { createTokenProvider, parseServiceAccount } from "../data/privileged/googleAuth";
 import { pruneRevisions, purgeTrash } from "../data/privileged/revisionCron";
+import { cleanupRateLimits, type D1Like } from "../data/counterRepo";
+import { dayKey } from "../lib/datetime";
 import { createLogger } from "../lib/logger";
 
 const shuffle = <T>(a: T[]): T[] => {
@@ -40,6 +42,11 @@ export async function runScheduled(source: unknown, nowMs: number = Date.now()):
 
   await step("trashPurge", () => purgeTrash(db, nowMs, log));
   await step("revisionPrune", () => pruneRevisions(db, nowMs, log, shuffle));
+  // P11a-১: পুরনো dedupe row পরিষ্কার (২ দিনের আগের); DB binding না থাকলে বাদ
+  const d1 = (source as { DB?: D1Like } | null)?.DB;
+  if (d1) {
+    await step("d1Cleanup", async () => ({ deleted: await cleanupRateLimits(d1, dayKey(nowMs - 2 * 86_400_000)) }));
+  }
   log.info("cron.done", { failed, subrequests: budget.used });
   if (failed > 0) throw new Error(`cron: ${failed}টি কাজ ব্যর্থ`);
 }

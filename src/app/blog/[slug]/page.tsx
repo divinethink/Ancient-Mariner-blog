@@ -8,6 +8,7 @@ import { SeriesBanner } from "@/components/public/SeriesBanner";
 import { PostPager, RelatedPosts } from "@/components/public/PostFooterNav";
 import { PublicShell } from "@/components/public/PublicShell";
 import { ReaderSize } from "@/components/public/ReaderTools";
+import { ViewBeacon } from "@/components/public/ViewBeacon";
 import { ShareBar } from "@/components/public/ShareBar";
 import { getPublicScopes } from "@/data/publicLists";
 import { getSiteUrl } from "@/config/env";
@@ -153,6 +154,7 @@ export default async function BlogPost({ params }: Props) {
   );
   return (
     <PublicShell>
+      <ViewBeacon postId={post.id} />
       <ReadingChrome targetId="post-article" title={post.title || bn.library.untitled} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: ld }} />
       <Link href="/" prefetch={false} className="mb-3 inline-flex min-h-11 items-center text-accent-text">

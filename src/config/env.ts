@@ -41,6 +41,13 @@ const cloudinarySchema = z.object({
   CLOUDINARY_API_SECRET: z.string().min(10),
 });
 
+// `POST /api/view` (P11a-১): VIEW_HASH_SALT = শুধু Worker secret (দৈনিক dedupe-hash-এর salt); SITE_TIMEZONE ঐচ্ছিক `wrangler.jsonc` var (দিন-গণনা; না থাকলে Asia/Dhaka)
+const viewSchema = z.object({
+  SITE_URL: z.url(),
+  VIEW_HASH_SALT: z.string().min(16),
+  SITE_TIMEZONE: z.string().min(1).default("Asia/Dhaka"),
+});
+
 // Cron (`scheduled`, P5a-৩): FIREBASE_SERVICE_ACCOUNT = Worker secret (service-account JSON, Firestore access; শুধু Cron-এ)
 const cronSchema = z.object({
   FIREBASE_PROJECT_ID: z.string().min(1),
@@ -54,6 +61,7 @@ export const getAuthEnv = () => parse(authSchema);
 export const getSiteUrl = () => parse(siteSchema).SITE_URL;
 export const getRebuildEnv = () => parse(rebuildSchema);
 export const getCloudinaryEnv = () => parse(cloudinarySchema);
+export const getViewEnv = () => parse(viewSchema);
 /** `scheduled` handler-এর নিজস্ব `env` দিয়ে (process.env-এর ওপর নির্ভর না করে); মিসিং হলে fail-closed */
 export const getCronEnv = (source: unknown) => parse(cronSchema, source);
 
