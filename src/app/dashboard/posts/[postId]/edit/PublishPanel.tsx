@@ -6,7 +6,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { draftStore } from "@/data/draftStore";
 import { triggerSiteRebuild } from "@/data/rebuildClient";
 import { snapshotOnPublish } from "@/data/revisionHooks";
-import { MAX_LOCATION, PostNotFoundError, SlugTakenError, type PostRepo, type PostWithId } from "@/data/postRepo";
+import { MAX_LOCATION, MAX_SEO_DESC, MAX_SEO_TITLE, PostNotFoundError, SlugTakenError, type PostRepo, type PostWithId } from "@/data/postRepo";
 import { getTaxonomyOps } from "@/data/taxonomyOps.wire";
 import { getTaxonomyRepo } from "@/data/taxonomyRepo.wire";
 import { bn } from "@/i18n/bn";
@@ -14,6 +14,7 @@ import { toZonedInput } from "@/lib/datetime";
 import { sameIds } from "@/lib/gallery";
 import { orgFromPost, orgPatch, parseSeriesOrder, type OrgState } from "@/lib/postOrg";
 import { parsePublishDate } from "@/lib/publish";
+import { normalizeSeoInput, sameSeo } from "@/lib/seo";
 import { useSiteTimezone } from "../../../SiteSettingsProvider";
 import { isValidSlug, slugify } from "@/lib/slug";
 import type { SyncStatus } from "@/data/syncEngine";
@@ -65,6 +66,10 @@ export function PublishPanel(p: Props) {
   const [coverIn, setCoverIn] = useState<string | null>(null);
   const [galleryIn, setGalleryIn] = useState<string[]>([]);
   const [placeIn, setPlaceIn] = useState("");
+  const [seoTitleIn, setSeoTitleIn] = useState("");
+  const [seoDescIn, setSeoDescIn] = useState("");
+  const [seoNoindexIn, setSeoNoindexIn] = useState(false);
+  const [ogIn, setOgIn] = useState<string | null>(null);
   /** প্রকাশের তারিখের `max` — render-এ Date.now() নয়, meta লোডের সময় বসে */
   const [maxIn, setMaxIn] = useState("");
   const [org, setOrg] = useState<OrgState | null>(null);
@@ -88,6 +93,10 @@ export function PublishPanel(p: Props) {
       setCoverIn(post.coverMediaId ?? null);
       setGalleryIn(post.gallery ?? []);
       setPlaceIn(post.location ?? "");
+      setSeoTitleIn(post.seo?.title ?? "");
+      setSeoDescIn(post.seo?.description ?? "");
+      setSeoNoindexIn(post.seo?.noindex === true);
+      setOgIn(post.seo?.ogImageId ?? null);
       setMaxIn(toZonedInput(new Date(), tz));
       setOrg(orgFromPost(post));
       setOrderIn(post.seriesId && post.seriesOrder !== undefined ? String(post.seriesOrder) : "");
@@ -176,8 +185,10 @@ export function PublishPanel(p: Props) {
     const dateChanged =
       date.date !== undefined && (!cur.publishedAt || toZonedInput(cur.publishedAt, tz) !== dateIn);
     const orgChange = await resolveOrg(cur, opts.defaultCategory ?? false);
+    const nextSeo = normalizeSeoInput({ title: seoTitleIn, description: seoDescIn, ogImageId: ogIn, noindex: seoNoindexIn });
     const patch = {
       ...orgChange,
+      ...(sameSeo(nextSeo, cur.seo) ? {} : { seo: nextSeo }),
       ...(vis !== cur.visibility ? { visibility: vis } : {}),
       ...(feat !== (cur.featured === true) ? { featured: feat } : {}),
       ...(coverIn !== (cur.coverMediaId ?? null) ? { coverMediaId: coverIn } : {}),
@@ -419,6 +430,28 @@ export function PublishPanel(p: Props) {
               />
               <span className="block text-xs text-muted">{bn.publishPanel.place.hint}</span>
             </label>
+
+            <fieldset className="space-y-3 border-t border-line pt-4" disabled={busy}>
+              <legend className="font-serif text-lg font-bold">{bn.publishPanel.seo.title}</legend>
+              <label className="block space-y-1">
+                <span className="text-sm">{bn.publishPanel.seo.titleLabel}</span>
+                <input type="text" value={seoTitleIn} maxLength={MAX_SEO_TITLE} onChange={(e) => setSeoTitleIn(e.target.value)} className="min-h-11 w-full rounded-lg border border-line bg-surface px-3 text-base" />
+                <span className="block text-xs text-muted">{bn.publishPanel.seo.titleHint} {bn.publishPanel.seo.count(seoTitleIn.length, MAX_SEO_TITLE)}</span>
+              </label>
+              <label className="block space-y-1">
+                <span className="text-sm">{bn.publishPanel.seo.descLabel}</span>
+                <textarea value={seoDescIn} maxLength={MAX_SEO_DESC} rows={3} onChange={(e) => setSeoDescIn(e.target.value)} className="w-full rounded-lg border border-line bg-surface px-3 py-2 text-base" />
+                <span className="block text-xs text-muted">{bn.publishPanel.seo.descHint} {bn.publishPanel.seo.count(seoDescIn.length, MAX_SEO_DESC)}</span>
+              </label>
+              <label className="flex min-h-11 cursor-pointer items-start gap-3">
+                <input type="checkbox" checked={seoNoindexIn} onChange={(e) => setSeoNoindexIn(e.target.checked)} className="mt-1 size-5" />
+                <span>
+                  {bn.publishPanel.seo.noindex}
+                  <span className="block text-xs text-muted">{bn.publishPanel.seo.noindexHint}</span>
+                </span>
+              </label>
+              <CoverPicker value={ogIn} onChange={setOgIn} disabled={busy} labels={{ title: bn.publishPanel.ogImage.title, none: bn.publishPanel.ogImage.none }} />
+            </fieldset>
 
             {org && (
               <OrgSection

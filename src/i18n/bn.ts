@@ -730,6 +730,20 @@ export const bn = {
     trashedNotice: "এই লেখা ট্র্যাশে আছে — সিঙ্ক বন্ধ।",
   },
   publishPanel: {
+    seo: {
+      title: "SEO (সার্চ-ইঞ্জিন)",
+      titleLabel: "সার্চ-শিরোনাম (ঐচ্ছিক)",
+      titleHint: "খালি থাকলে 'লেখার শিরোনাম — সাইটের নাম' বসবে।",
+      descLabel: "সার্চ-বিবরণ (ঐচ্ছিক)",
+      descHint: "খালি থাকলে সারাংশ বসবে। প্রকাশিত লেখায় সেভ করলে সাইটে আসতে ~১–২ মিনিট লাগবে।",
+      noindex: "এই লেখা সার্চ-ইঞ্জিনে দেখাবেন না (noindex)",
+      noindexHint: "সাইটে লেখাটি থাকবে, শুধু Google-এ ও sitemap-এ আসবে না।",
+      count: (n: number, max: number) => `${n}/${max}`,
+    },
+    ogImage: {
+      title: "শেয়ার-ছবি (ঐচ্ছিক)",
+      none: "খালি থাকলে কভার ছবি ব্যবহার হবে।",
+    },
     featured: "Home-এ featured",
     featuredHint: "চালু থাকলে নীড়পাতার উপরে বড় কার্ডে দেখায় (একাধিক হলে সর্বশেষটি)।",
     place: {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { AI_CRAWLERS, MAX_SITEMAP_URLS, buildSeo, renderRobots, renderSitemap, verificationToken } from "./seo";
+import { AI_CRAWLERS, MAX_SITEMAP_URLS, articleJsonLd, buildSeo, normalizeSeoInput, resolvePostSeo, sameSeo, renderRobots, renderSitemap, verificationToken } from "./seo";
 
 const base = {
   siteUrl: "https://ex.dev/",
@@ -97,5 +97,43 @@ describe("P6-৩ক: ogImage ও verification", () => {
     expect(verificationToken(undefined)).toBeUndefined();
     expect(verificationToken("short")).toBeUndefined();
     expect(verificationToken('"><script>alert(1)</script>aaaaaaaaaaaaaaaa')).toBeUndefined();
+  });
+});
+
+describe("P10a-১ per-post SEO", () => {
+  const base = { siteName: "S", title: "T", path: "/blog/a", type: "article" as const, hasOgImage: false };
+  it("noindex লেখা: ইনডেক্স চালু থাকলেও robots index=false, follow=true", () => {
+    expect(buildSeo({ ...base, allowIndexing: true, noindex: true }).robots).toEqual({ index: false, follow: true });
+    expect(buildSeo({ ...base, allowIndexing: true }).robots).toEqual({ index: true, follow: true });
+    expect(buildSeo({ ...base, allowIndexing: false, noindex: false }).robots).toBeUndefined();
+  });
+  it("sitemap থেকে noindex লেখা বাদ", () => {
+    const d = new Date("2026-02-01T00:00:00Z");
+    const x = renderSitemap("https://ex.dev", [{ slug: "keep", updatedAt: d }, { slug: "hide", updatedAt: d, seo: { noindex: true } }]);
+    expect(x).toContain("/blog/keep");
+    expect(x).not.toContain("/blog/hide");
+  });
+  it("resolvePostSeo: override বনাম ডিফল্ট", () => {
+    const d = { title: "লেখা", description: "সারাংশ", siteName: "ব্লগ" };
+    expect(resolvePostSeo(undefined, d)).toMatchObject({ title: "লেখা — ব্লগ", description: "সারাংশ", noindex: false });
+    expect(resolvePostSeo({ title: " X ", description: "  ", noindex: true, ogImageId: "m1" }, d)).toEqual({ title: "X", description: "সারাংশ", noindex: true, ogImageId: "m1" });
+  });
+  it("normalizeSeoInput: খালি ⇒ null; undefined key নেই; sameSeo", () => {
+    expect(normalizeSeoInput({ title: " ", description: "", ogImageId: null, noindex: false })).toBeNull();
+    const n = normalizeSeoInput({ title: "a", description: "", ogImageId: null, noindex: true });
+    expect(n).toEqual({ title: "a", noindex: true });
+    expect(sameSeo(n, { title: "a", noindex: true })).toBe(true);
+    expect(sameSeo(null, undefined)).toBe(true);
+    expect(sameSeo(n, null)).toBe(false);
+  });
+  it("articleJsonLd: বৈধ JSON, '<' escaped, http ছবি বাদ", () => {
+    const s = articleJsonLd({ siteUrl: "https://ex.dev/", siteName: "S", headline: "a</script>b", path: "/blog/x", image: "http://x/y.png", publishedTime: new Date("2026-01-01T00:00:00Z") });
+    expect(s).not.toContain("<");
+    const o = JSON.parse(s);
+    expect(o["@type"]).toBe("Article");
+    expect(o.headline).toBe("a</script>b");
+    expect(o.url).toBe("https://ex.dev/blog/x");
+    expect(o.image).toBeUndefined();
+    expect(o.datePublished).toBe("2026-01-01T00:00:00.000Z");
   });
 });

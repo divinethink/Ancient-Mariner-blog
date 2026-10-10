@@ -16,7 +16,7 @@ import { formatDate } from "@/lib/datetime";
 import { pagePath } from "@/lib/pages";
 import { blogPath, planSlugMoves, postExcerpt } from "@/lib/publicSite";
 import { readingMinutes } from "@/lib/readingTime";
-import { buildSeo } from "@/lib/seo";
+import { articleJsonLd, buildSeo, resolvePostSeo } from "@/lib/seo";
 
 // build-সময়ে সব published+public লেখার (এবং বাংলা পুরনো-slug-এর redirect-stub) পেজ; অন্য slug = 404 (Arch §২, §১২)
 export const dynamic = "force-static";
@@ -59,14 +59,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const [r, { siteTitle, allowIndexing }, media] = await Promise.all([resolve((await params).slug), getPublicSettings(), getPublicMedia()]);
   if (!r) return {};
   if (r.kind === "post") {
-    const cv = resolveCover(r.post.coverMediaId, media);
+    const cv = resolveCover(r.post.seo?.ogImageId ?? r.post.coverMediaId, media);
+    const o = resolvePostSeo(r.post.seo, { title: r.post.title || bn.library.untitled, description: postExcerpt(r.post), siteName: siteTitle });
     return buildSeo({
       siteUrl: safeSiteUrl(),
       siteName: siteTitle,
-      title: `${r.post.title || bn.library.untitled} — ${siteTitle}`,
-      description: postExcerpt(r.post),
+      title: o.title,
+      description: o.description,
       path: blogPath(r.post.slug),
       allowIndexing,
+      noindex: o.noindex,
       type: "article",
       publishedTime: r.post.publishedAt,
       modifiedTime: r.post.updatedAt,
@@ -110,6 +112,17 @@ export default async function BlogPost({ params }: Props) {
   // category/tag লিংক scope-ডেটার card থেকে (একই build-ডেটা)
   const card = (await getPublicScopes()).find((s) => s.kind === "blog")?.cards.find((c) => c.id === post.id);
   const minutes = readingMinutes(post.wordCount);
+  const ldCover = resolveCover(post.seo?.ogImageId ?? post.coverMediaId, media);
+  const ld = articleJsonLd({
+    siteUrl: safeSiteUrl(),
+    siteName: siteTitle,
+    headline: post.title || bn.library.untitled,
+    description: resolvePostSeo(post.seo, { title: post.title, description: postExcerpt(post), siteName: siteTitle }).description,
+    path: blogPath(post.slug),
+    image: ldCover ? (cldOgUrl(ldCover.cloud, ldCover.publicId) ?? undefined) : undefined,
+    publishedTime: post.publishedAt,
+    modifiedTime: post.updatedAt,
+  });
   const meta = (
     <>
       {post.publishedAt && <time dateTime={post.publishedAt.toISOString()}>{formatDate(post.publishedAt, tz)}</time>}
@@ -121,6 +134,7 @@ export default async function BlogPost({ params }: Props) {
   );
   return (
     <PublicShell>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: ld }} />
       <Link href="/" prefetch={false} className="mb-3 inline-flex min-h-11 items-center text-accent-text">
         ← {bn.public.home}
       </Link>

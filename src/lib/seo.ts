@@ -46,6 +46,8 @@ export type SeoInput = {
   hasOgImage: boolean;
   /** P6-৩ক: লেখার cover থেকে absolute https OG-ছবি (১২০০×৬৩০); না থাকলে ডিফল্ট `og-default.png` */
   ogImage?: string;
+  /** P10a-১: লেখা-পর্যায়ের noindex — true হলে (ইনডেক্স চালু থাকলেও) `noindex,follow` */
+  noindex?: boolean;
 };
 
 export type SeoMetadata = {
@@ -53,7 +55,7 @@ export type SeoMetadata = {
   description?: string;
   alternates?: { canonical: string };
   /** শুধু ইনডেক্স চালু থাকলে; নইলে undefined = root layout-এর noindex বহাল */
-  robots?: { index: true; follow: true };
+  robots?: { index: boolean; follow: true };
   openGraph: Record<string, unknown>;
   twitter: Record<string, unknown>;
 };
@@ -89,7 +91,7 @@ export function buildSeo(i: SeoInput): SeoMetadata {
     title: i.title,
     ...(description && { description }),
     ...(url && { alternates: { canonical: url } }),
-    ...(i.allowIndexing && { robots: { index: true as const, follow: true as const } }),
+    ...(i.allowIndexing && { robots: { index: !i.noindex, follow: true as const } }),
     openGraph,
     twitter: {
       card: images ? "summary_large_image" : "summary",
@@ -103,10 +105,11 @@ export function buildSeo(i: SeoInput): SeoMetadata {
 const xmlEscape = (s: string): string =>
   s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&apos;");
 
-export type SitemapPost = { slug: string; publishedAt?: Date; updatedAt: Date };
+export type SitemapPost = { slug: string; publishedAt?: Date; updatedAt: Date; seo?: { noindex?: boolean } };
 
 /** Home + extraPaths (`/blog`, category/tag/series — percent-encoded) + প্রতিটি পাবলিক লেখা; `lastmod` = updatedAt (অবৈধ হলে বাদ) */
-export function renderSitemap(siteUrl: string, posts: readonly SitemapPost[], extraPaths: readonly string[] = []): string {
+export function renderSitemap(siteUrl: string, allPosts: readonly SitemapPost[], extraPaths: readonly string[] = []): string {
+  const posts = allPosts.filter((p) => p.seo?.noindex !== true); // P10a-১: noindex লেখা sitemap-এ নেই
   const total = posts.length + extraPaths.length + 1;
   if (total > MAX_SITEMAP_URLS) {
     throw new Error(`sitemap সীমা (${MAX_SITEMAP_URLS}) ছাড়িয়েছে: ${total} — owner-আলোচনা`);
@@ -146,4 +149,65 @@ export function renderRobots(opts: { siteUrl: string; allowIndexing: boolean; bl
 export function verificationToken(raw: string | undefined): string | undefined {
   const t = (raw ?? "").trim();
   return /^[A-Za-z0-9_-]{20,100}$/.test(t) ? t : undefined;
+}
+
+// ── P10a-১: per-post SEO (pure; SDK/UI-মুক্ত) ──
+export type PostSeoFields = { title?: string; description?: string; ogImageId?: string; noindex?: boolean };
+
+/** Publish panel-এর ইনপুট → সংরক্ষণযোগ্য map; সব খালি/false হলে null (পুরো ফিল্ড সরানো)। `undefined` কখনো নয় (Firestore নেয় না) */
+export function normalizeSeoInput(i: { title: string; description: string; ogImageId: string | null; noindex: boolean }): PostSeoFields | null {
+  const out: PostSeoFields = {};
+  const t = clean(i.title);
+  const d = clean(i.description);
+  if (t) out.title = t;
+  if (d) out.description = d;
+  if (i.ogImageId) out.ogImageId = i.ogImageId;
+  if (i.noindex) out.noindex = true;
+  return Object.keys(out).length ? out : null;
+}
+
+export const sameSeo = (a: PostSeoFields | null | undefined, b: PostSeoFields | null | undefined): boolean =>
+  JSON.stringify([a?.title ?? "", a?.description ?? "", a?.ogImageId ?? "", a?.noindex === true]) ===
+  JSON.stringify([b?.title ?? "", b?.description ?? "", b?.ogImageId ?? "", b?.noindex === true]);
+
+/** override থাকলে সেটা, নইলে ডিফল্ট; seo.title হলে সাইট-নাম সংযুক্ত (`— siteName`) হয় না — লেখক যা দিয়েছেন তা-ই */
+export function resolvePostSeo(
+  seo: PostSeoFields | undefined,
+  d: { title: string; description?: string; siteName: string },
+): { title: string; description?: string; noindex: boolean; ogImageId?: string } {
+  return {
+    title: clean(seo?.title) ?? `${d.title} — ${d.siteName}`,
+    description: clean(seo?.description) ?? clean(d.description),
+    noindex: seo?.noindex === true,
+    ogImageId: seo?.ogImageId,
+  };
+}
+
+/** schema.org Article JSON-LD (সংখ্যা-মান নয়, শুধু স্ট্রিং; `<` escape — script-ভেতরে `</script>` ঢোকা অসম্ভব) */
+export function articleJsonLd(i: {
+  siteUrl?: string;
+  siteName: string;
+  headline: string;
+  description?: string;
+  path: string;
+  image?: string;
+  publishedTime?: Date;
+  modifiedTime?: Date;
+}): string {
+  const base = i.siteUrl ? trimSlash(i.siteUrl) : undefined;
+  const iso = (d?: Date) => (d && !Number.isNaN(d.getTime()) ? d.toISOString() : undefined);
+  const description = clean(i.description);
+  const obj: Record<string, unknown> = {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    headline: i.headline,
+    ...(description && { description }),
+    ...(base && { mainEntityOfPage: `${base}${i.path}`, url: `${base}${i.path}` }),
+    ...(i.image && /^https:\/\//.test(i.image) && { image: [i.image] }),
+    ...(iso(i.publishedTime) && { datePublished: iso(i.publishedTime) }),
+    ...(iso(i.modifiedTime) && { dateModified: iso(i.modifiedTime) }),
+    author: { "@type": "Person", name: i.siteName },
+    publisher: { "@type": "Person", name: i.siteName },
+  };
+  return JSON.stringify(obj).replace(/</g, "\\u003c");
 }

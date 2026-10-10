@@ -35,6 +35,17 @@ const DayKey = z.string().refine(isValidDayKey, "তারিখ YYYY-MM-DD ন�
 const Location = z.string().max(MAX_LOCATION);
 const Gallery = z.array(z.string().min(1).max(40)).max(MAX_GALLERY);
 
+/** P10a-১: per-post SEO (Arch §৬ `seo{}`); সব ফিল্ড ঐচ্ছিক, খালি = ডিফল্ট (শিরোনাম/সারাংশ/cover) */
+export const MAX_SEO_TITLE = 120;
+export const MAX_SEO_DESC = 300;
+export const SeoSchema = z.object({
+  title: z.string().max(MAX_SEO_TITLE).optional(),
+  description: z.string().max(MAX_SEO_DESC).optional(),
+  ogImageId: z.string().min(1).max(40).optional(),
+  noindex: z.boolean().optional(),
+});
+export type Seo = z.infer<typeof SeoSchema>;
+
 export const PostSchema = z.object({
   title: z.string(),
   slug: z.string().min(1),
@@ -58,6 +69,7 @@ export const PostSchema = z.object({
   date: DayKey.optional(), // P8a: diary-র দিন; পুরনো doc-এ নেই
   location: Location.optional(), // P8a: owner-লেখা স্থান; প্রকাশিত লেখার meta-তে দেখায় (media-র নিজস্ব location/GPS নয়, সেটা কখনো পাবলিকে না)
   gallery: Gallery.optional(), // P8a: media-id তালিকা (P8a-২-তে পাবলিক gallery)
+  seo: SeoSchema.optional(), // P10a-১: per-post SEO; পুরনো doc-এ নেই; বিকৃত হলে `parsePost` বাদ দেয়
   publishedAt: z.date().optional(),
   trashedAt: z.date().optional(),
   ownerUid: z.string().min(1),
@@ -93,6 +105,7 @@ export const PostPatchSchema = z
     date: DayKey.nullable().optional(),
     location: Location.nullable().optional(),
     gallery: Gallery.nullable().optional(),
+    seo: SeoSchema.nullable().optional(), // null = SEO-সেটিং সরানো (পুরো map)
   })
   .refine((p) => (p.tagIds === undefined) === (p.tagNames === undefined), "tagIds ও tagNames একসাথে দিতে হবে")
   .refine((p) => p.tagIds === undefined || p.tagIds.length === p.tagNames?.length, "tagIds/tagNames দৈর্ঘ্য অমিল")
@@ -170,6 +183,7 @@ export const parsePost = (id: string, raw: Record<string, unknown>): PostWithId 
   if (n.date !== undefined && !DayKey.safeParse(n.date).success) delete n.date;
   if (n.location !== undefined && !Location.safeParse(n.location).success) delete n.location;
   if (n.gallery !== undefined && !Gallery.safeParse(n.gallery).success) delete n.gallery;
+  if (n.seo !== undefined && !SeoSchema.safeParse(n.seo).success) delete n.seo; // P10a-১: বিকৃত seo শুধু বাদ
   return { ...PostSchema.parse(n), id };
 };
 export const parseDraft = (raw: Record<string, unknown>): Draft =>

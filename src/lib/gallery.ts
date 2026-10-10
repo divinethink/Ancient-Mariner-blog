@@ -3,13 +3,14 @@ import { resolveCover, type CardMedia, type CoverView } from "./cards";
 /** postRepo.MAX_GALLERY-র সমান (data → lib দিক বজায় রাখতে আলাদা ধ্রুবক) */
 export const MAX_GALLERY_ITEMS = 20;
 
-type WithMedia = { coverMediaId?: string; gallery?: readonly string[] };
+type WithMedia = { coverMediaId?: string; gallery?: readonly string[]; seo?: { ogImageId?: string } };
 
-/** published লেখাগুলোর cover + gallery media-id (ডুপ্লিকেট ছাড়া, ক্রম বজায়) */
+/** published লেখাগুলোর cover + OG-ছবি + gallery media-id (ডুপ্লিকেট ছাড়া, ক্রম বজায়) */
 export function mediaIdsOf(posts: readonly WithMedia[]): string[] {
   const out = new Set<string>();
   for (const p of posts) {
     if (p.coverMediaId) out.add(p.coverMediaId);
+    if (p.seo?.ogImageId) out.add(p.seo.ogImageId); // P10a-১: OG-ছবি override
     for (const id of p.gallery ?? []) out.add(id);
   }
   return [...out];
