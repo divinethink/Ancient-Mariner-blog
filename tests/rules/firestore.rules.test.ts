@@ -311,3 +311,30 @@ describe("shareLinks (P11c-২)", () => {
     await assertFails(setDoc(doc(owner(), "shareLinks", "b3"), link({ postId: 5 })));
   });
 });
+
+describe("comments (P11b-১)", () => {
+  const cm = (status: string, extra: Record<string, unknown> = {}) => ({ postId: "p1", authorName: "পাঠক", content: "ভালো লাগল", status, ownerUid: OWNER, ...extra });
+  it("approved পাবলিক পড়তে পারে; pending/spam পারে না (get ও query দুই পথে)", async () => {
+    await seed("comments", "a1", cm("approved"));
+    await seed("comments", "s1", cm("spam"));
+    await seed("comments", "p9", cm("pending"));
+    await assertSucceeds(getDoc(doc(anon(), "comments", "a1")));
+    await assertFails(getDoc(doc(anon(), "comments", "s1")));
+    await assertFails(getDoc(doc(anon(), "comments", "p9")));
+    await assertSucceeds(getDocs(query(collection(anon(), "comments"), where("status", "==", "approved"))));
+    await assertFails(getDocs(collection(anon(), "comments"))); // filter ছাড়া পুরো collection নয়
+    await assertFails(getDocs(query(collection(anon(), "comments"), where("status", "==", "spam"))));
+  });
+  it("owner সব status পড়তে পারে", async () => {
+    await seed("comments", "s1", cm("spam"));
+    await assertSucceeds(getDoc(doc(owner(), "comments", "s1")));
+  });
+  it("কেউ — owner-সহ — client থেকে লিখতে/বদলাতে/মুছতে পারে না", async () => {
+    await seed("comments", "a1", cm("approved"));
+    for (const db of [anon(), other(), owner()]) {
+      await assertFails(setDoc(doc(db, "comments", "n1"), cm("approved")));
+      await assertFails(updateDoc(doc(db, "comments", "a1"), { status: "spam" }));
+      await assertFails(deleteDoc(doc(db, "comments", "a1")));
+    }
+  });
+});

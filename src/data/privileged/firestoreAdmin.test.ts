@@ -117,3 +117,31 @@ describe("createAdminDb", () => {
     await expect(db.runQuery({})).rejects.toBeInstanceOf(BudgetExceeded);
   });
 });
+
+describe("createComment (P11b-১)", () => {
+  const comment = { postId: "P1", authorName: "রহিম", content: "ভালো", status: "approved" as const, ownerUid: "O", createdAt: new Date("2026-10-10T00:00:00Z"), updatedAt: new Date("2026-10-10T00:00:00Z"), schemaVersion: 1 };
+  it("শুধু নতুন doc (exists:false) + সব field; parent না থাকলে field নেই", async () => {
+    const calls: Call[] = [];
+    const db = mk(calls, () => json({}));
+    expect(await db.createComment({ id: "C1", comment })).toBe("created");
+    const w = JSON.parse(String(calls[0].init.body)).writes[0];
+    expect(w.currentDocument).toEqual({ exists: false });
+    expect(w.update.name).toBe("projects/proj/databases/(default)/documents/comments/C1");
+    expect(w.update.fields.status).toEqual({ stringValue: "approved" });
+    expect(w.update.fields.createdAt).toEqual({ timestampValue: "2026-10-10T00:00:00.000Z" });
+    expect(w.update.fields.parentCommentId).toBeUndefined();
+  });
+  it("parentCommentId থাকলে লেখা হয়", async () => {
+    const calls: Call[] = [];
+    await mk(calls, () => json({})).createComment({ id: "C2", comment: { ...comment, parentCommentId: "P0" } });
+    expect(JSON.parse(String(calls[0].init.body)).writes[0].update.fields.parentCommentId).toEqual({ stringValue: "P0" });
+  });
+  it("ALREADY_EXISTS ⇒ 'exists' (retry/double-submit নিরাপদ)", async () => {
+    const db = mk([], () => json({ error: { status: "ALREADY_EXISTS" } }, 409));
+    expect(await db.createComment({ id: "C1", comment })).toBe("exists");
+  });
+  it("৫০০ ⇒ throw", async () => {
+    const db = mk([], () => json({}, 500));
+    await expect(db.createComment({ id: "C1", comment })).rejects.toThrow();
+  });
+});

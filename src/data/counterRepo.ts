@@ -60,6 +60,17 @@ export async function recordView(db: D1Like, v: ViewInput): Promise<ViewResult> 
   return "counted";
 }
 
+/**
+ * fixed-window limiter (মন্তব্য; P11b-১): `key`-এ উইন্ডো মিশানো (PK একক), `windowStart` = দিন (Cron cleanup-এর জন্য)।
+ * atomic: প্রথম ব্যবহারে INSERT; পরেরগুলোয় `n < max` থাকলেই +১। সীমা ছুঁলে false (row অপরিবর্তিত)।
+ */
+export async function consumeLimit(db: D1Like, key: string, windowStart: string, max: number): Promise<boolean> {
+  const ins = await db.prepare("INSERT OR IGNORE INTO rateLimits (key, windowStart, n) VALUES (?, ?, 1)").bind(key, windowStart).run();
+  if (changes(ins) === 1) return max >= 1;
+  const bump = await db.prepare("UPDATE rateLimits SET n = n + 1 WHERE key = ? AND n < ?").bind(key, max).run();
+  return changes(bump) === 1;
+}
+
 /** dedupe row-এর পরিষ্কার (Cron): `keepFromDay`-এর (YYYY-MM-DD) আগের row মোছে; `viewCounts`/`dailyVisitors` কখনো মোছা হয় না */
 export async function cleanupRateLimits(db: D1Like, keepFromDay: string, limit = 5000): Promise<number> {
   const r = await db

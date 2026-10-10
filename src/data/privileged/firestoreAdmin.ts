@@ -2,6 +2,7 @@
 // ক্ষমতা ইচ্ছাকৃতভাবে সীমিত: query, batchGet, delete-commit। কোনো generic write নেই। শুধু `src/cron/**` থেকে import।
 import { decodeDocument, type RestDocument } from "../firestoreRest";
 import { withRetry } from "../retry";
+import type { Comment } from "../commentRepo";
 import type { DeleteOp } from "../../lib/prune";
 
 /** Workers Free: ৫০ external subrequest/invocation — আগেই থামি */
@@ -50,7 +51,13 @@ export type AdminDb = {
    * ব্যর্থ হলে "precondition" (owner মাঝে বদলেছে — পরের চালনায় আবার দেখা হবে)
    */
   commitPublish(op: PublishOp): Promise<CommitResult>;
+  /**
+   * মন্তব্য তৈরি (P11b-১; allowlist ১) — শুধু নতুন doc (`exists:false`), overwrite নয়। একই id আবার এলে "exists" (retry/double-submit-এ duplicate নয়)।
+   */
+  createComment(op: CommentCreateOp): Promise<"created" | "exists">;
 };
+
+export type CommentCreateOp = { id: string; comment: Comment };
 
 export type PublishOp = { id: string; ifUpdateTime: string; publishedAt: Date; nowMs: number };
 
@@ -96,6 +103,31 @@ export function createAdminDb(opts: {
     });
 
   return {
+    async createComment({ id, comment: c }) {
+      const str = (v: string) => ({ stringValue: v });
+      const ts = (d: Date) => ({ timestampValue: d.toISOString() });
+      const fields: Record<string, unknown> = {
+        postId: str(c.postId),
+        authorName: str(c.authorName),
+        content: str(c.content),
+        status: str(c.status),
+        ownerUid: str(c.ownerUid),
+        createdAt: ts(c.createdAt),
+        updatedAt: ts(c.updatedAt),
+        schemaVersion: { integerValue: String(c.schemaVersion) },
+        ...(c.parentCommentId ? { parentCommentId: str(c.parentCommentId) } : {}),
+      };
+      return withRetry(async (signal): Promise<"created" | "exists"> => {
+        const res = await post(":commit", { writes: [{ update: { name: nameOf("comments", id), fields }, currentDocument: { exists: false } }] }, signal);
+        if (res.ok) return "created";
+        if (res.status === 409 || res.status === 400) {
+          const j = (await res.json().catch(() => null)) as { error?: { status?: string } } | null;
+          if (j?.error?.status === "ALREADY_EXISTS" || j?.error?.status === "FAILED_PRECONDITION") return "exists";
+        }
+        throw new Error(`Firestore commit ${res.status}`);
+      });
+    },
+
     async commitPublish(op) {
       return commit([
         {

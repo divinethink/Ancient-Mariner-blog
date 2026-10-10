@@ -1,6 +1,6 @@
 import { createRequire } from "node:module";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { type D1Like, cleanupRateLimits, readStats, recordView } from "./counterRepo";
+import { type D1Like, cleanupRateLimits, consumeLimit, readStats, recordView } from "./counterRepo";
 import { statsWindow } from "@/lib/stats";
 import { MAX_POSTS_PER_VISITOR_PER_DAY } from "@/lib/views";
 import { readFileSync } from "node:fs";
@@ -116,5 +116,24 @@ describe("readStats", () => {
     expect(s.views).toBe(0);
     expect(s.posts).toEqual([]);
     expect(s.series).toHaveLength(30);
+  });
+});
+
+describe("consumeLimit (মন্তব্য limiter)", () => {
+  it("max পর্যন্ত true, তারপর false; row-র n সীমা ছাড়ায় না", async () => {
+    const r = [] as boolean[];
+    for (let i = 0; i < 4; i++) r.push(await consumeLimit(db, "ch:a:2026-10-10T05", "2026-10-10", 3));
+    expect(r).toEqual([true, true, true, false]);
+    expect(all("SELECT n FROM rateLimits WHERE key = 'ch:a:2026-10-10T05'")).toEqual([{ n: 3 }]);
+  });
+  it("ভিন্ন key (ভিন্ন উইন্ডো/ভিজিটর) স্বাধীন", async () => {
+    expect(await consumeLimit(db, "k1", "2026-10-10", 1)).toBe(true);
+    expect(await consumeLimit(db, "k1", "2026-10-10", 1)).toBe(false);
+    expect(await consumeLimit(db, "k2", "2026-10-10", 1)).toBe(true);
+  });
+  it("Cron cleanup পুরনো-দিনের limiter row মোছে", async () => {
+    await consumeLimit(db, "cd:a:2026-10-01", "2026-10-01", 5);
+    await consumeLimit(db, "cd:a:2026-10-10", "2026-10-10", 5);
+    expect(await cleanupRateLimits(db, "2026-10-09")).toBe(1);
   });
 });

@@ -48,6 +48,18 @@ const viewSchema = z.object({
   SITE_TIMEZONE: z.string().min(1).default("Asia/Dhaka"),
 });
 
+// `POST /api/comment` (P11b-১): TURNSTILE_SECRET_KEY = শুধু Worker secret; VIEW_HASH_SALT/FIREBASE_SERVICE_ACCOUNT/OWNER_UID বিদ্যমান Worker secret। না থাকলে route fail-closed (503)
+const commentSchema = z.object({
+  SITE_URL: z.url(),
+  SITE_TIMEZONE: z.string().min(1).default("Asia/Dhaka"),
+  VIEW_HASH_SALT: z.string().min(16),
+  TURNSTILE_SECRET_KEY: z.string().min(10),
+  FIREBASE_PROJECT_ID: z.string().min(1),
+  FIREBASE_SERVICE_ACCOUNT: z.string().min(1),
+  OWNER_UID: z.string().min(1),
+});
+export const getCommentEnv = () => parse(commentSchema);
+
 // Cron (`scheduled`, P5a-৩): FIREBASE_SERVICE_ACCOUNT = Worker secret (service-account JSON, Firestore access; শুধু Cron-এ)
 const cronSchema = z.object({
   FIREBASE_PROJECT_ID: z.string().min(1),

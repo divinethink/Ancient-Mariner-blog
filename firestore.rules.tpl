@@ -1,5 +1,5 @@
 rules_version = '2';
-// P1b: posts / slugs / siteSettings · P2a: drafts · P3a: categories / tags / series · P3b: ideas / notes · P4b: pages · P5a: revisions · P5b: backups · P6: media · P7b: templates · P11c: shareLinks (Arch §৯)। বাকি collection phase-অনুযায়ী যোগ হয়; বাকি সব deny-all।
+// P1b: posts / slugs / siteSettings · P2a: drafts · P3a: categories / tags / series · P3b: ideas / notes · P4b: pages · P5a: revisions · P5b: backups · P6: media · P7b: templates · P11b: comments · P11c: shareLinks (Arch §৯)। বাকি collection phase-অনুযায়ী যোগ হয়; বাকি সব deny-all।
 // placeholder scripts/render-rules.ts বসায়; rendered firestore.rules git-এ commit হয় না।
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -75,6 +75,13 @@ service cloud.firestore {
                             && request.resource.data.ownerUid == '__OWNER_UID__'
                             && request.resource.data.postId is string
                             && request.resource.data.expiresAt is timestamp;
+    }
+
+    // মন্তব্য (P11b-১): approved পাবলিক-read (build-সময়ে REST; query-তে explicit status filter), বাকি (pending/spam) শুধু owner; client write নেই — জমা/মোছা/লুকানো শুধু Worker-এর privileged পথে
+    match /comments/{commentId} {
+      allow read: if resource.data.status == 'approved';
+      allow read: if isOwner();
+      allow write: if false;
     }
 
     // নিজের লেখার ছাঁচ (P7b-২) — শুধু owner; পাবলিক read নেই
