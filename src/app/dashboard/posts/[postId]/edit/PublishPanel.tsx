@@ -563,6 +563,9 @@ export function PublishPanel(p: Props) {
                 </button>
               )}
             </div>
+            <a href={`/dashboard/shares?post=${postId}`} className="inline-flex min-h-11 items-center text-accent-text underline">
+              🔗 {bn.shareLink.openPanel}
+            </a>
             {published && <BuildStatus />}
           </div>
         )}

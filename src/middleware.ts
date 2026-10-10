@@ -50,6 +50,9 @@ export async function middleware(req: NextRequest) {
     return secure(NextResponse.redirect(url));
   }
 
+  // P11c-২: share পেজ — token URL-এ আছে, তাই referrer যায় না; cache/index নয় (পেজেও noindex metadata আছে)
+  const isShare = pathname.startsWith("/share/");
+
   // পাতা: nonce-CSP (Next নিজের inline script-এ request-header-এর CSP থেকে nonce বসায়)
   const nonce = btoa(crypto.randomUUID());
   const csp = buildAppCsp(nonce, env.FIREBASE_PROJECT_ID);
@@ -58,7 +61,12 @@ export async function middleware(req: NextRequest) {
   headers.set("Content-Security-Policy", csp);
   const res = NextResponse.next({ request: { headers } });
   res.headers.set("Content-Security-Policy", csp);
-  return secure(session ? await withRefresh(res, session.iat, env) : res);
+  const out = secure(session ? await withRefresh(res, session.iat, env) : res);
+  if (isShare) {
+    out.headers.set("Referrer-Policy", "no-referrer");
+    out.headers.set("X-Robots-Tag", "noindex, nofollow");
+  }
+  return out;
 }
 
 async function withRefresh(
@@ -76,4 +84,4 @@ async function withRefresh(
   return res;
 }
 
-export const config = { matcher: ["/login", "/dashboard", "/dashboard/:path*", "/api/owner/:path*"] };
+export const config = { matcher: ["/login", "/dashboard", "/dashboard/:path*", "/api/owner/:path*", "/share/:path*"] };

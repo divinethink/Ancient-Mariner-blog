@@ -77,6 +77,14 @@ export default function MenuPage() {
           </Link>
         </li>
         <li>
+          <Link href="/dashboard/shares" className="flex min-h-12 items-center justify-between px-4">
+            <span>🔗 {bn.shareLink.menu}</span>
+            <span aria-hidden className="text-muted">
+              ›
+            </span>
+          </Link>
+        </li>
+        <li>
           <Link href="/dashboard/backups" className="flex min-h-12 items-center justify-between px-4">
             <span>☁️ {bn.backup.title}</span>
             <span aria-hidden className="text-muted">

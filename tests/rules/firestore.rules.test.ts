@@ -292,3 +292,22 @@ describe("pages", () => {
     await assertFails(deleteDoc(doc(owner(), "pages", "about")));
   });
 });
+
+describe("shareLinks (P11c-২)", () => {
+  const link = (extra: Record<string, unknown> = {}) => ({ postId: "p1", ownerUid: OWNER, expiresAt: new Date(Date.now() + 86_400_000), ...extra });
+  it("পাবলিক/অন্য ব্যবহারকারী পড়তে বা লিখতে পারে না; owner পারে", async () => {
+    await seed("shareLinks", "h1", link());
+    await assertFails(getDoc(doc(anon(), "shareLinks", "h1")));
+    await assertFails(getDoc(doc(other(), "shareLinks", "h1")));
+    await assertFails(setDoc(doc(other(), "shareLinks", "h2"), link()));
+    await assertSucceeds(getDoc(doc(owner(), "shareLinks", "h1")));
+    await assertSucceeds(setDoc(doc(owner(), "shareLinks", "h2"), link()));
+    await assertSucceeds(updateDoc(doc(owner(), "shareLinks", "h1"), { revokedAt: new Date() }));
+    await assertSucceeds(deleteDoc(doc(owner(), "shareLinks", "h1")));
+  });
+  it("অবৈধ আকার আটকায় (expiresAt timestamp নয়, ownerUid ভুল, postId নেই)", async () => {
+    await assertFails(setDoc(doc(owner(), "shareLinks", "b1"), link({ expiresAt: "kal" })));
+    await assertFails(setDoc(doc(owner(), "shareLinks", "b2"), link({ ownerUid: "other" })));
+    await assertFails(setDoc(doc(owner(), "shareLinks", "b3"), link({ postId: 5 })));
+  });
+});

@@ -14,7 +14,7 @@ const firebase = {
 };
 const privileged = {
   group: ["@/data/privileged", "@/data/privileged/*", "**/data/privileged", "**/data/privileged/*"],
-  message: "data/privileged শুধু route handler/middleware/cron থেকে",
+  message: "data/privileged শুধু route handler/middleware/cron (ও server-only /share পেজ) থেকে",
 };
 const libBanned = [
   {
@@ -40,7 +40,7 @@ const config = [
   },
   { files: ["src/data/privileged/**"], rules: rule(compat) },
   {
-    files: ["src/app/**/route.ts", "src/middleware.ts", "src/cron/**"],
+    files: ["src/app/**/route.ts", "src/app/share/**/page.tsx", "src/middleware.ts", "src/cron/**"],
     rules: rule(compat, firebase),
   },
   { files: ["src/lib/**"], rules: rule(compat, firebase, privileged, ...libBanned) },

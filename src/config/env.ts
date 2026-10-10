@@ -57,6 +57,13 @@ const cronSchema = z.object({
   GITHUB_REPO: z.string().regex(/^[\w.-]+\/[\w.-]+$/).optional(),
 });
 
+// `/share/[token]` পেজ (Worker runtime, P11c-২): service-account দিয়ে সংকীর্ণ doc-get; Cron-এর সমান secret
+const shareSchema = z.object({
+  FIREBASE_PROJECT_ID: z.string().min(1),
+  FIREBASE_SERVICE_ACCOUNT: z.string().min(1),
+});
+export const getShareEnv = () => parse(shareSchema);
+
 // build-সময়ে ডাকা হয়; মিসিং থাকলে অস্পষ্ট error নয়, স্পষ্ট বার্তা
 export const getEnv = () => parse(schema);
 // runtime-এ ডাকা হয় (P1a); মিসিং হলে fail-closed
