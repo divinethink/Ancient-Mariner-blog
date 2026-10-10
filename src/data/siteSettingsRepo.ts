@@ -1,6 +1,6 @@
 // siteSettingsRepo = interface + Zod boundary (Arch §২ 'Repo গঠন'); adapter: .client.ts (পথ ক), .server.ts (পথ খ)।
 // সম্পাদনাযোগ্য ফিল্ড: নাম, ট্যাগলাইন, থিম-default, timezone, postsPerPage, ইনডেক্স/AI-crawler টগল (P2c-১); authorBio, feedItems, feedMode (P4b-২)।
-// socialLinks.facebook, links, layout (sidebar/home ক্রম) — পাঠ P4b-৩; menu, footer — পাঠ P9a-১ (খালি = আগের default); সম্পাদনা UI P9a-২/৩। পরের phase-এর ফিল্ড (design…) এই schema-য় নেই — সেভ `merge` বলে সেগুলো অক্ষত থাকে।
+// socialLinks.facebook, links, layout (sidebar/home ক্রম) — পাঠ P4b-৩; menu, footer — পাঠ P9a-১ (খালি = আগের default); সম্পাদনা UI P9a-২/৩। design (accent/fontPair/cardStyle) — P9b-১ (খালি/অজানা = ডিফল্ট; সম্পাদনা UI P9b-২)। পরের phase-এর ফিল্ড (logo/banner…) এই schema-য় নেই — সেভ `merge` বলে সেগুলো অক্ষত থাকে।
 import { z } from "zod";
 import { DEFAULT_TIMEZONE } from "@/lib/datetime";
 import { FeedMode, Theme } from "@/lib/enums";
@@ -18,6 +18,7 @@ import {
   isValidTimeZone,
 } from "@/lib/siteSettings";
 import { bn } from "@/i18n/bn";
+import { ACCENTS, CARD_STYLES, DEFAULT_DESIGN, FONT_PAIRS } from "@/lib/design";
 import {
   FOOTER_LINKS_MAX,
   FOOTER_TEXT_MAX,
@@ -41,6 +42,13 @@ const MenuItemSchema = z
   })
   .refine((m) => isValidMenuRef(m.type, m.ref), { message: "ref এই type-এর জন্য বৈধ নয়", path: ["ref"] });
 
+// প্রতিটা উপ-ফিল্ড আলাদাভাবে `.catch` — একটা অজানা মান পুরো design নষ্ট করে না
+const DesignSchema = z.object({
+  accent: z.enum(ACCENTS).catch(DEFAULT_DESIGN.accent),
+  fontPair: z.enum(FONT_PAIRS).catch(DEFAULT_DESIGN.fontPair),
+  cardStyle: z.enum(CARD_STYLES).catch(DEFAULT_DESIGN.cardStyle),
+});
+
 const fields = {
   siteTitle: z.string().trim().min(1).max(SITE_TITLE_MAX),
   tagline: z.string().trim().max(TAGLINE_MAX),
@@ -56,6 +64,7 @@ const fields = {
   links: z.array(z.object({ label: z.string().trim().min(1).max(60), url: HttpUrl })).max(LINKS_MAX),
   layout: z.object({ sidebar: z.array(LayoutItem).max(30), home: z.array(LayoutItem).max(30) }),
   menu: z.array(MenuItemSchema).max(MENU_MAX),
+  design: DesignSchema,
   footer: z.object({
     text: z.string().trim().max(FOOTER_TEXT_MAX),
     links: z.array(z.object({ label: z.string().trim().min(1).max(MENU_LABEL_MAX), url: SafeHref })).max(FOOTER_LINKS_MAX),
@@ -86,6 +95,7 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   layout: { sidebar: [], home: [] },
   menu: [],
   footer: { text: "", links: [] },
+  design: DEFAULT_DESIGN,
 };
 
 /** Defensive read: প্রতিটা ফিল্ড আলাদাভাবে যাচাই — অবৈধ/অনুপস্থিত মান শুধু সেই ফিল্ডের default-এ ফেরে */

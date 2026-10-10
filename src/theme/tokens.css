@@ -62,6 +62,26 @@
   --btn-bg: #e0805f;
   --btn-tx: #000000;
 }
+/* সাইট-accent (P9b-১): <html data-accent="teal"> — শুধু accent/accent-text/btn ওভাররাইড; AA ≥ ৪.৫:১ (লেখা/বোতাম), accent ≥ ৩:১ — স্ক্রিপ্টে গণনা-করা।
+   specificity: [data-accent][data-theme] > [data-theme] */
+[data-accent="teal"][data-theme="light"] { --accent: #2a8f8f; --accent-text: #0b6666; --btn-bg: #0b6666; --btn-tx: #ffffff; }
+[data-accent="teal"][data-theme="sepia"] { --accent: #2a8585; --accent-text: #0a5f5f; --btn-bg: #0a5f5f; --btn-tx: #ffffff; }
+[data-accent="teal"][data-theme="warm"] { --accent: #2a7f7f; --accent-text: #075a5a; --btn-bg: #075a5a; --btn-tx: #ffffff; }
+[data-accent="teal"][data-theme="dark"] { --accent: #4fb3b3; --accent-text: #6cc7c7; --btn-bg: #4fb3b3; --btn-tx: #1c1b19; }
+[data-accent="teal"][data-theme="amoled"] { --accent: #4fb3b3; --accent-text: #6cc7c7; --btn-bg: #4fb3b3; --btn-tx: #000000; }
+
+/* ফন্ট-জোড়া (P9b-১): <html data-font="sans|serif"> — default 'serif-sans' = লেখা সিরিফ, UI সান্স */
+:root {
+  --ff-sans: "Noto Sans Bengali", system-ui, sans-serif;
+  --ff-serif: "Noto Serif Bengali", serif;
+}
+[data-font="sans"] { --ff-serif: var(--ff-sans); }
+[data-font="serif"] { --ff-sans: var(--ff-serif); }
+
+/* card-ধরন (P9b-১): <html data-card="flat|shadow"> — শুধু পাবলিক <main>-এর rounded-2xl/3xl card (border+bg-surface); 'outline' = আজকের রূপ */
+[data-card="flat"] main :is(.rounded-2xl, .rounded-3xl).border.bg-surface { border-color: transparent; }
+[data-card="shadow"] main :is(.rounded-2xl, .rounded-3xl).border.bg-surface { border-color: transparent; box-shadow: 0 1px 3px rgb(0 0 0 / 0.12), 0 4px 12px rgb(0 0 0 / 0.06); }
+
 /* JS ছাড়া fallback: data-theme না থাকলে সিস্টেম dark অনুসরণ */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme]) {
@@ -89,6 +109,6 @@
   --color-line: var(--line);
   --color-btn-bg: var(--btn-bg);
   --color-btn-tx: var(--btn-tx);
-  --font-sans: "Noto Sans Bengali", system-ui, sans-serif;
-  --font-serif: "Noto Serif Bengali", serif;
+  --font-sans: var(--ff-sans);
+  --font-serif: var(--ff-serif);
 }

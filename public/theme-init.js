@@ -3,6 +3,8 @@
 // bg-মান tokens.css-এর --bg-র সাথে মিলিয়ে রাখতে হবে (theme-color meta-র জন্য)।
 (function () {
   var DEFAULT_THEME = "light";
+  // siteSettings.design — build-সময়ে scripts/build-theme-default.ts বসায় (P9b-১); শুধু পাবলিক সাইটে প্রযোজ্য
+  var DESIGN = { accent: "terracotta", font: "serif-sans", card: "outline" };
   var BG = {
     light: "#faf9f5",
     sepia: "#f4ecd8",
@@ -23,6 +25,11 @@
       t = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
     if (!BG[t]) t = "light";
     root.setAttribute("data-theme", t);
+    if (!/^\/(dashboard|login|share)(\/|$)/.test(location.pathname)) {
+      root.setAttribute("data-accent", DESIGN.accent);
+      root.setAttribute("data-font", DESIGN.font);
+      root.setAttribute("data-card", DESIGN.card);
+    }
     var m = document.querySelector('meta[name="theme-color"]');
     if (m) m.setAttribute("content", BG[t]);
   } catch (e) {}
