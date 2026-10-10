@@ -7,20 +7,20 @@ import { LoadMore } from "./LoadMore";
 import { PostCardList } from "./PostCard";
 import { PublicShell } from "./PublicShell";
 
-const KIND_LABEL = { blog: "", category: bn.public.kindCategory, tag: bn.public.kindTag, series: bn.public.kindSeries } as const;
+const KIND_LABEL = { blog: "", category: bn.public.kindCategory, tag: bn.public.kindTag, series: bn.public.kindSeries, archive: bn.public.kindArchive } as const;
 
 /** /blog, category/tag/series-এর সাধারণ পেজ: breadcrumb + নাম/বিবরণ + card-তালিকা + [আরও দেখান] */
 export async function ListPage({ scope }: { scope: Scope }) {
   const { postsPerPage } = await getPublicSettings();
   const { first, chunks } = splitCards(scope.cards, postsPerPage, scope.key);
-  const title = scope.term?.name ?? bn.public.blog;
+  const title = scope.term?.name ?? scope.label ?? bn.public.blog;
   const crumbs = [
     { label: bn.public.home, href: "/" },
     ...(scope.kind !== "blog" ? [{ label: bn.public.blog, href: "/blog" }] : []),
     ...(scope.parent ? [{ label: scope.parent.name, href: undefined as string | undefined }] : []),
   ];
   return (
-    <PublicShell sidebar>
+    <PublicShell sidebar month={scope.month}>
       <nav aria-label={bn.public.breadcrumbLabel} className="text-sm text-muted">
         <ol className="flex flex-wrap items-center gap-x-2">
           {crumbs.map((c) => (

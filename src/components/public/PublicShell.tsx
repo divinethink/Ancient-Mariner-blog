@@ -5,6 +5,7 @@ import { sidebarContent } from "@/components/public/Sidebar";
 import { getPublicScopes } from "@/data/publicLists";
 import { getPublicMedia, getPublicPages, getPublicSettings } from "@/data/publicSnapshot";
 import { bn } from "@/i18n/bn";
+import type { MonthRef } from "@/lib/archive";
 import { resolveCover } from "@/lib/cards";
 import { cldUrl } from "@/lib/cloudinary";
 import { resolveFooter, resolveMenu, type ResolvedLink } from "@/lib/menu";
@@ -30,7 +31,7 @@ function NavLink({ l, className }: { l: ResolvedLink; className: string }) {
 }
 
 /** পাবলিক পেজের header/footer (Arch §১৭ P4a, P9a)। `siteSettings.menu/footer` খালি হলে আগের default; নইলে owner-এর মেনু (draft/মোছা আইটেম লুকানো)। */
-export async function PublicShell({ children, sidebar = false }: { children: ReactNode; sidebar?: boolean }) {
+export async function PublicShell({ children, sidebar = false, month }: { children: ReactNode; sidebar?: boolean; month?: MonthRef }) {
   const [settings, scopes, pages, media] = await Promise.all([getPublicSettings(), getPublicScopes(), getPublicPages(), getPublicMedia()]);
   // P9b-২: লোগো (media না পেলে/অবৈধ হলে শুধু সাইটের নাম — আগের মতো)
   const logo = resolveCover(settings.design.logoMediaId || undefined, media);
@@ -38,7 +39,7 @@ export async function PublicShell({ children, sidebar = false }: { children: Rea
   // default মেনু/footer: শুধু published system পেজের লিংক
   const about = pages.find((p) => p.slug === "about");
   const privacy = pages.find((p) => p.slug === "privacy");
-  const side = sidebar ? sidebarContent(settings, scopes) : null;
+  const side = sidebar ? sidebarContent(settings, scopes, month) : null;
   const cats = scopes.filter((s) => s.kind === "category" && s.term);
   const top = cats.filter((s) => !s.term?.parentCategoryId);
   const custom = resolveMenu(

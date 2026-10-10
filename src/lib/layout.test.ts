@@ -16,10 +16,23 @@ describe("resolveLayout", () => {
       ],
       DEFAULT_SIDEBAR,
     );
-    expect(r.map((x) => x.id)).toEqual(["recent", "facebook", "category", "links", "follow", "author"]);
+    expect(r.map((x) => x.id)).toEqual(["recent", "facebook", "search", "category", "archive", "calendar", "links", "follow", "author"]);
     expect(r[0]).toEqual({ id: "recent", enabled: true });
     expect(r[1]).toEqual({ id: "facebook", enabled: false });
     expect(r.find((x) => x.id === "author")?.enabled).toBe(false);
+  });
+  it("পুরনো সংরক্ষিত layout (নতুন widget ছাড়া)-এ search/archive/calendar শেষে, চালু অবস্থায়", () => {
+    const old = [
+      { id: "facebook", enabled: true },
+      { id: "category", enabled: false },
+      { id: "links", enabled: true },
+      { id: "follow", enabled: true },
+      { id: "recent", enabled: false },
+      { id: "author", enabled: false },
+    ];
+    const r = resolveLayout(old, DEFAULT_SIDEBAR);
+    expect(r.slice(0, 6)).toEqual(old);
+    expect(r.slice(6).map((x) => `${x.id}:${x.enabled}`)).toEqual(["search:true", "archive:true", "calendar:true"]);
   });
   it("Home default: hero, featured, recent সব চালু", () => {
     expect(resolveLayout([], DEFAULT_HOME).map((x) => `${x.id}:${x.enabled}`)).toEqual(["hero:true", "featured:true", "recent:true"]);

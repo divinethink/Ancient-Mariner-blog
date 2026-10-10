@@ -87,3 +87,8 @@ export function tzLabel(timeZone: string, at: DateInput = new Date()): string {
     return timeZone;
   }
 }
+
+/** মাসের লেবেল, বাংলায়: "সেপ্টেম্বর ২০২৬" (y, m = ১–১২; ক্যালেন্ডার-মাস, তাই timezone-নিরপেক্ষ — Archive/পঞ্জিকা) */
+export function formatMonthYear(y: number, m: number): string {
+  return new Intl.DateTimeFormat("bn-BD", { timeZone: "UTC", month: "long", year: "numeric" }).format(new Date(Date.UTC(y, m - 1, 15)));
+}

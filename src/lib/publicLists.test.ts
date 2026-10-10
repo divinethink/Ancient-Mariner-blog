@@ -37,4 +37,18 @@ describe("buildScopes", () => {
     expect(get("s-s1")?.cards.map((c) => c.id)).toEqual(["b", "a"]);
     expect(get("c-c1")?.path).toBe("/category/s-c1");
   });
+  it("archive: মাসভিত্তিক scope (সাইট-timezone), নতুন আগে; blog-ক্রম অক্ষত", () => {
+    const ps = [
+      post("n", { publishedAt: new Date("2026-09-30T19:00:00Z") }), // ঢাকায় ১ অক্টোবর
+      post("m", { publishedAt: new Date("2026-09-30T05:00:00Z") }),
+      post("o", { publishedAt: new Date("2026-09-02T05:00:00Z") }),
+      post("u", { publishedAt: undefined }),
+    ];
+    const sc = buildScopes({ posts: ps, terms: { categories: [], tags: [], series: [] }, timeZone: "Asia/Dhaka" });
+    const a = sc.filter((s) => s.kind === "archive");
+    expect(a.map((s) => s.key)).toEqual(["a-2026-10", "a-2026-09"]);
+    expect(a[0].path).toBe("/archive/2026/10");
+    expect(a[1].cards.map((c) => c.id)).toEqual(["m", "o"]);
+    expect(a[1].month).toEqual({ y: 2026, m: 9 });
+  });
 });

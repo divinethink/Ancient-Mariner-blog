@@ -25,7 +25,7 @@ async function main() {
   await writeFile(`${DIR}${SEARCH_INDEX_PATH}`, JSON.stringify(searchIndex), "utf8");
   await writeFile(`${DIR}/robots.txt`, renderRobots({ siteUrl, allowIndexing, blockAiCrawlers }), "utf8");
   if (allowIndexing) {
-    await writeFile(`${DIR}/sitemap.xml`, renderSitemap(siteUrl, snap.posts, [...scopes.map((x) => x.path), ...snap.pages.map((pg) => pagePath(pg.slug))]), "utf8");
+    await writeFile(`${DIR}/sitemap.xml`, renderSitemap(siteUrl, snap.posts, [...scopes.filter((x) => x.kind !== "archive").map((x) => x.path), ...snap.pages.map((pg) => pagePath(pg.slug))]), "utf8");
   }
   console.log(`✅ search-index.json (${searchIndex.items.length} লেখা)`);
   console.log(`✅ rss.xml (${Math.min(feedItems, snap.posts.length)} লেখা, ${feedMode}) + robots.txt (ইনডেক্স ${allowIndexing ? "চালু" : "বন্ধ"}, AI-ব্লক ${blockAiCrawlers ? "চালু" : "বন্ধ"})${allowIndexing ? ` + sitemap.xml (${snap.posts.length + snap.pages.length + 1} URL)` : "; sitemap নেই"}`);
