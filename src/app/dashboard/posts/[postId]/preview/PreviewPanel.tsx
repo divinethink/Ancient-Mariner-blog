@@ -7,6 +7,7 @@ import { bn } from "@/i18n/bn";
 import { countWords, docToText } from "@/lib/editorDoc";
 import { readingMinutes } from "@/lib/readingTime";
 import { load, type State } from "../edit/PostEditor";
+import { ReadingMarks } from "./ReadingMarks";
 
 /**
  * লেখা পাবলিকে যেমন দেখাবে — একই `PostArticle`/allowlist-renderer; উৎস editor-এর মতোই (সর্বশেষ লোকাল অবস্থা,
@@ -66,6 +67,7 @@ export function PreviewPanel({ postId }: { postId: string }) {
   return (
     <div className="mx-auto max-w-3xl">
       {back}
+      <ReadingMarks postId={postId} title={title} />
       <p role="note" className="mb-4 rounded-xl border border-line bg-surface p-3 text-sm">
         {bn.editor.previewBanner}
       </p>

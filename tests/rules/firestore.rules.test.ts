@@ -338,3 +338,36 @@ describe("comments (P11b-১)", () => {
     }
   });
 });
+
+// P12-৩: bookmarks (doc-ID = postId) ও highlights — শুধু owner; পাবলিক/অন্য ব্যবহারকারী কিছুই পারে না
+describe("bookmarks / highlights (P12-৩)", () => {
+  const bm = { postId: "p1", postTitle: "ক", ownerUid: OWNER };
+  const hl = { postId: "p1", postTitle: "ক", quote: "একটি নির্বাচিত উদ্ধৃতি", ownerUid: OWNER };
+  it("owner create/read/delete পারে", async () => {
+    await assertSucceeds(setDoc(doc(owner(), "bookmarks", "p1"), bm));
+    await assertSucceeds(getDoc(doc(owner(), "bookmarks", "p1")));
+    await assertSucceeds(deleteDoc(doc(owner(), "bookmarks", "p1")));
+    await assertSucceeds(setDoc(doc(owner(), "highlights", "h1"), hl));
+    await assertSucceeds(getDoc(doc(owner(), "highlights", "h1")));
+    await assertSucceeds(deleteDoc(doc(owner(), "highlights", "h1")));
+  });
+  it("অবৈধ ফিল্ড (doc-ID≠postId, ভুল ownerUid, খালি/অতিদীর্ঘ/non-string quote) ব্যর্থ", async () => {
+    await assertFails(setDoc(doc(owner(), "bookmarks", "p2"), bm)); // postId ≠ doc-ID
+    await assertFails(setDoc(doc(owner(), "bookmarks", "p1"), { ...bm, ownerUid: "x" }));
+    await assertFails(setDoc(doc(owner(), "highlights", "h2"), { ...hl, quote: "" }));
+    await assertFails(setDoc(doc(owner(), "highlights", "h2"), { ...hl, quote: "অ".repeat(2401) }));
+    await assertFails(setDoc(doc(owner(), "highlights", "h2"), { ...hl, quote: 5 }));
+    await assertFails(setDoc(doc(owner(), "highlights", "h2"), { ...hl, ownerUid: "x" }));
+  });
+  it("non-owner ও anonymous read/write/list পারে না", async () => {
+    await seed("bookmarks", "p3", { ...bm, postId: "p3" });
+    await seed("highlights", "h3", hl);
+    for (const [name, id] of [["bookmarks", "p3"], ["highlights", "h3"]] as const) {
+      await assertFails(getDoc(doc(other(), name, id)));
+      await assertFails(getDoc(doc(anon(), name, id)));
+      await assertFails(getDocs(collection(anon(), name)));
+      await assertFails(setDoc(doc(other(), name, "z"), name === "bookmarks" ? { ...bm, postId: "z" } : hl));
+      await assertFails(deleteDoc(doc(other(), name, id)));
+    }
+  });
+});
