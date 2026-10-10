@@ -30,7 +30,7 @@ export type ImportSource = z.infer<typeof ImportSourceSchema>;
 
 /** P8a: diary/travel-এর দিন ("YYYY-MM-DD", সাইট-timezone), স্থান (পাবলিকে কখনো নয়), gallery (media-id) */
 export const MAX_LOCATION = 120;
-export const MAX_GALLERY = 20;
+export const MAX_GALLERY = 20; // lib/gallery.MAX_GALLERY_ITEMS-এর সমান
 const DayKey = z.string().refine(isValidDayKey, "তারিখ YYYY-MM-DD নয়");
 const Location = z.string().max(MAX_LOCATION);
 const Gallery = z.array(z.string().min(1).max(40)).max(MAX_GALLERY);
@@ -56,7 +56,7 @@ export const PostSchema = z.object({
   featured: z.boolean().optional(), // P4b-৩: Home-এ featured (পুরনো doc-এ নেই = false)
   coverMediaId: z.string().min(1).max(40).optional(), // P6-৩ক: cover = `media/{id}` (পাবলিক ছবি); পুরনো doc-এ নেই = cover নেই
   date: DayKey.optional(), // P8a: diary-র দিন; পুরনো doc-এ নেই
-  location: Location.optional(), // P8a: শুধু private/owner
+  location: Location.optional(), // P8a: owner-লেখা স্থান; প্রকাশিত লেখার meta-তে দেখায় (media-র নিজস্ব location/GPS নয়, সেটা কখনো পাবলিকে না)
   gallery: Gallery.optional(), // P8a: media-id তালিকা (P8a-২-তে পাবলিক gallery)
   publishedAt: z.date().optional(),
   trashedAt: z.date().optional(),

@@ -6,11 +6,12 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { draftStore } from "@/data/draftStore";
 import { triggerSiteRebuild } from "@/data/rebuildClient";
 import { snapshotOnPublish } from "@/data/revisionHooks";
-import { PostNotFoundError, SlugTakenError, type PostRepo, type PostWithId } from "@/data/postRepo";
+import { MAX_LOCATION, PostNotFoundError, SlugTakenError, type PostRepo, type PostWithId } from "@/data/postRepo";
 import { getTaxonomyOps } from "@/data/taxonomyOps.wire";
 import { getTaxonomyRepo } from "@/data/taxonomyRepo.wire";
 import { bn } from "@/i18n/bn";
 import { toZonedInput } from "@/lib/datetime";
+import { sameIds } from "@/lib/gallery";
 import { orgFromPost, orgPatch, parseSeriesOrder, type OrgState } from "@/lib/postOrg";
 import { parsePublishDate } from "@/lib/publish";
 import { useSiteTimezone } from "../../../SiteSettingsProvider";
@@ -18,6 +19,7 @@ import { isValidSlug, slugify } from "@/lib/slug";
 import type { SyncStatus } from "@/data/syncEngine";
 import { BuildStatus } from "@/app/dashboard/BuildStatus";
 import { CoverPicker } from "./CoverPicker";
+import { GalleryPicker } from "./GalleryPicker";
 import { OrgSection, type OrgOptions } from "./OrgSection";
 import type { PubInfo, SyncEngine } from "./useRemoteSync";
 
@@ -61,6 +63,8 @@ export function PublishPanel(p: Props) {
   const [dateIn, setDateIn] = useState("");
   const [feat, setFeat] = useState(false);
   const [coverIn, setCoverIn] = useState<string | null>(null);
+  const [galleryIn, setGalleryIn] = useState<string[]>([]);
+  const [placeIn, setPlaceIn] = useState("");
   /** প্রকাশের তারিখের `max` — render-এ Date.now() নয়, meta লোডের সময় বসে */
   const [maxIn, setMaxIn] = useState("");
   const [org, setOrg] = useState<OrgState | null>(null);
@@ -82,6 +86,8 @@ export function PublishPanel(p: Props) {
       setDateIn(post.publishedAt ? toZonedInput(post.publishedAt, tz) : "");
       setFeat(post.featured === true);
       setCoverIn(post.coverMediaId ?? null);
+      setGalleryIn(post.gallery ?? []);
+      setPlaceIn(post.location ?? "");
       setMaxIn(toZonedInput(new Date(), tz));
       setOrg(orgFromPost(post));
       setOrderIn(post.seriesId && post.seriesOrder !== undefined ? String(post.seriesOrder) : "");
@@ -175,6 +181,8 @@ export function PublishPanel(p: Props) {
       ...(vis !== cur.visibility ? { visibility: vis } : {}),
       ...(feat !== (cur.featured === true) ? { featured: feat } : {}),
       ...(coverIn !== (cur.coverMediaId ?? null) ? { coverMediaId: coverIn } : {}),
+      ...(sameIds(galleryIn, cur.gallery ?? []) ? {} : { gallery: galleryIn.length ? galleryIn : null }),
+      ...(placeIn.trim() !== (cur.location ?? "") ? { location: placeIn.trim() || null } : {}),
       ...(dateChanged ? { publishedAt: date.date } : {}),
       ...extra,
     };
@@ -395,6 +403,22 @@ export function PublishPanel(p: Props) {
             </label>
 
             <CoverPicker value={coverIn} onChange={setCoverIn} disabled={busy} />
+
+            <GalleryPicker value={galleryIn} onChange={setGalleryIn} disabled={busy} />
+
+            <label className="block space-y-1 border-t border-line pt-4">
+              <span className="font-serif text-lg font-bold">{bn.publishPanel.place.label}</span>
+              <input
+                type="text"
+                value={placeIn}
+                maxLength={MAX_LOCATION}
+                disabled={busy}
+                placeholder={bn.publishPanel.place.placeholder}
+                onChange={(e) => setPlaceIn(e.target.value)}
+                className="min-h-11 w-full rounded-lg border border-line bg-surface px-3 text-base"
+              />
+              <span className="block text-xs text-muted">{bn.publishPanel.place.hint}</span>
+            </label>
 
             {org && (
               <OrgSection

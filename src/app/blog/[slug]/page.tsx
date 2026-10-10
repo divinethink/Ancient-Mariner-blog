@@ -10,6 +10,7 @@ import { hasDefaultOgImage } from "@/data/publicAssets";
 import { getPublicMedia, getPublicPages, getPublicSettings, listPublicPosts } from "@/data/publicSnapshot";
 import { bn } from "@/i18n/bn";
 import { resolveCover } from "@/lib/cards";
+import { resolveGallery } from "@/lib/gallery";
 import { cldOgUrl } from "@/lib/cloudinary";
 import { formatDate } from "@/lib/datetime";
 import { pagePath } from "@/lib/pages";
@@ -87,7 +88,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function BlogPost({ params }: Props) {
-  const [r, { timezone: tz, siteTitle, authorBio }, pages] = await Promise.all([resolve((await params).slug), getPublicSettings(), getPublicPages()]);
+  const [r, { timezone: tz, siteTitle, authorBio }, pages, media] = await Promise.all([resolve((await params).slug), getPublicSettings(), getPublicPages(), getPublicMedia()]);
   if (!r) notFound();
 
   if (r.kind === "moved") {
@@ -115,6 +116,7 @@ export default async function BlogPost({ params }: Props) {
       {" · "}
       {post.wordCount} {bn.library.words}
       {minutes > 0 && ` · ${bn.public.readMinutes(minutes)}`}
+      {post.location && ` · 📍 ${post.location}`}
     </>
   );
   return (
@@ -122,7 +124,7 @@ export default async function BlogPost({ params }: Props) {
       <Link href="/" prefetch={false} className="mb-3 inline-flex min-h-11 items-center text-accent-text">
         ← {bn.public.home}
       </Link>
-      <PostArticle title={post.title} meta={meta} links={card ? [...(card.category ? [card.category] : []), ...card.tags.map((t) => ({ ...t, name: `#${t.name}` }))] : []} body={post.body} cover={card?.cover} />
+      <PostArticle title={post.title} meta={meta} links={card ? [...(card.category ? [card.category] : []), ...card.tags.map((t) => ({ ...t, name: `#${t.name}` }))] : []} body={post.body} cover={card?.cover} gallery={resolveGallery(post.gallery, media)} />
       <AuthorBox name={siteTitle} bio={authorBio} aboutHref={pages.some((p) => p.slug === "about") ? pagePath("about") : undefined} />
     </PublicShell>
   );

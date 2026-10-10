@@ -1,0 +1,26 @@
+import { describe, expect, it } from "vitest";
+import { mediaIdsOf, moveId, resolveGallery, sameIds, toggleId } from "./gallery";
+
+const m = (id: string) => ({ cloudinaryPublicId: `blog/${id}`, cloudinaryUrl: `https://res.cloudinary.com/demo/image/upload/v1/blog/${id}.jpg`, width: 800, height: 600, altText: id });
+
+describe("gallery", () => {
+  it("mediaIdsOf: cover+gallery, ডুপ্লিকেট ছাড়া", () => {
+    expect(mediaIdsOf([{ coverMediaId: "a", gallery: ["b", "a", "c"] }, { gallery: ["c", "d"] }, {}])).toEqual(["a", "b", "c", "d"]);
+  });
+  it("resolveGallery: ক্রম বজায়, মেটা-না-থাকা বাদ, সীমা ২০", () => {
+    const media = new Map([["a", m("a")], ["b", m("b")]]);
+    expect(resolveGallery(["b", "x", "a"], media).map((v) => v.alt)).toEqual(["b", "a"]);
+    expect(resolveGallery(undefined, media)).toEqual([]);
+    const big = new Map(Array.from({ length: 25 }, (_, i) => [`i${i}`, m(`i${i}`)] as const));
+    expect(resolveGallery([...big.keys()], big)).toHaveLength(20);
+  });
+  it("toggleId/moveId/sameIds", () => {
+    expect(toggleId(["a"], "b")).toEqual(["a", "b"]);
+    expect(toggleId(["a", "b"], "a")).toEqual(["b"]);
+    expect(toggleId(["a", "b"], "c", 2)).toEqual(["a", "b"]);
+    expect(moveId(["a", "b", "c"], 1, -1)).toEqual(["b", "a", "c"]);
+    expect(moveId(["a", "b"], 0, -1)).toEqual(["a", "b"]);
+    expect(sameIds(["a"], ["a"])).toBe(true);
+    expect(sameIds(["a", "b"], ["b", "a"])).toBe(false);
+  });
+});
