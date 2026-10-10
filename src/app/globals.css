@@ -4,7 +4,33 @@
 @import "@fontsource/noto-sans-bengali/600.css";
 @import "@fontsource/noto-serif-bengali/500.css";
 @import "@fontsource/noto-serif-bengali/700.css";
+@import "@fontsource/hind-siliguri/400.css";
+@import "@fontsource/hind-siliguri/700.css";
+@import "@fontsource/inter/400.css";
+@import "@fontsource/inter/700.css";
+@import "@fontsource/roboto/400.css";
+@import "@fontsource/roboto/700.css";
 @import "../theme/tokens.css";
+
+/* P12-১: SolaimanLipi/Kalpurush — self-hosted, বাংলা+Latin subset (.woff); শুধু ব্যবহৃত হলে লোড */
+@font-face {
+  font-family: "SolaimanLipi";
+  font-weight: 400;
+  font-display: swap;
+  src: url("../fonts/solaimanlipi-400.woff") format("woff");
+}
+@font-face {
+  font-family: "SolaimanLipi";
+  font-weight: 700;
+  font-display: swap;
+  src: url("../fonts/solaimanlipi-700.woff") format("woff");
+}
+@font-face {
+  font-family: "Kalpurush";
+  font-weight: 400;
+  font-display: swap;
+  src: url("../fonts/kalpurush-400.woff") format("woff");
+}
 
 body {
   background: var(--bg);
@@ -176,6 +202,20 @@ main:has(.dash-shell) {
 [data-rsize="l"] .reading {
   font-size: 21px;
 }
+/* P12-১: পাঠকের ফন্ট (<html data-rfont>) — stack lib/fonts.ts-এর FONT_STACK-এর সাথে হুবহু (fonts.test.ts যাচাই করে) */
+[data-rfont="serif"] .reading { font-family: "Noto Serif Bengali", Georgia, serif; }
+[data-rfont="sans"] .reading { font-family: "Noto Sans Bengali", system-ui, sans-serif; }
+[data-rfont="hind"] .reading { font-family: "Hind Siliguri", "Noto Sans Bengali", system-ui, sans-serif; }
+[data-rfont="solaiman"] .reading { font-family: "SolaimanLipi", "Noto Sans Bengali", system-ui, sans-serif; }
+[data-rfont="kalpurush"] .reading { font-family: "Kalpurush", "Noto Sans Bengali", system-ui, sans-serif; }
+[data-rfont="inter"] .reading { font-family: "Inter", "Noto Sans Bengali", system-ui, sans-serif; }
+[data-rfont="roboto"] .reading { font-family: "Roboto", "Noto Sans Bengali", system-ui, sans-serif; }
+
+/* জেন মোড (P12-১): <html data-zen="true"> — header/footer/সূচি/শেয়ার/মন্তব্য ইত্যাদি (.zen-hide) লুকিয়ে বিশুদ্ধ পড়ার view */
+[data-zen="true"] .zen-hide {
+  display: none !important;
+}
+
 .reading-poem {
   max-width: 30rem;
   margin-inline: auto;

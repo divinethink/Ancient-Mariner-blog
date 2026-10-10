@@ -1,8 +1,9 @@
 // লেখার ঘরের আরাম-সেটিং ও থিম-পছন্দের pure যুক্তি (Arch §১১) — SDK/UI-মুক্ত।
 // অবৈধ/ভাঙা মান সবসময় default-এ ফেরে (defensive read)।
 import { z } from "zod";
+import { FONT_IDS, fontStack } from "./fonts";
 
-export const FONTS = ["serif", "sans"] as const;
+export const FONTS = FONT_IDS;
 export const WIDTHS = [560, 680, 860] as const;
 export const SIZE_RANGE = { min: 16, max: 26 } as const;
 /** লাইনের ফাঁক দশমাংশে (১৫–২৪ = ১.৫–২.৪) — slider-এ পূর্ণসংখ্যা */
@@ -35,7 +36,7 @@ export function parseComfort(raw: unknown): Comfort {
 /** <html>-এ বসার CSS variable (style.setProperty — CSP-নিরাপদ) */
 export function comfortVars(c: Comfort): Record<string, string> {
   return {
-    "--ff": c.font === "sans" ? "var(--font-sans)" : "var(--font-serif)",
+    "--ff": fontStack(c.font),
     "--fs": `${c.size}px`,
     "--lh": String(c.line / 10),
     "--mw": `${c.width}px`,

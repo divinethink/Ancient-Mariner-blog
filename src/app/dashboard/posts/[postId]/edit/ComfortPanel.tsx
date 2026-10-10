@@ -13,6 +13,7 @@ import {
   saveTypewriter,
 } from "@/data/comfortStore";
 import { bn } from "@/i18n/bn";
+import { FONT_IDS, FONT_NAME } from "@/lib/fonts";
 import { type Comfort, LINE_RANGE, SIZE_RANGE, type ThemePref, WIDTHS } from "@/lib/comfort";
 
 const t = bn.editor.comfort;
@@ -105,15 +106,10 @@ export function ComfortPanel({ onClose }: { onClose: () => void }) {
         </div>
 
         <h2 className={h}>{t.font}</h2>
-        <div className="flex gap-2">
-          {(
-            [
-              ["serif", t.serif],
-              ["sans", t.sans],
-            ] as const
-          ).map(([k, label]) => (
+        <div className="flex flex-wrap gap-2">
+          {FONT_IDS.map((k) => (
             <button key={k} type="button" aria-pressed={c.font === k} onClick={() => set({ font: k })} className={chip(c.font === k)}>
-              {label}
+              {FONT_NAME[k]}
             </button>
           ))}
         </div>

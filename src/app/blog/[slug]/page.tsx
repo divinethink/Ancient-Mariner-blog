@@ -7,7 +7,8 @@ import { ReadingChrome } from "@/components/public/ReadingChrome";
 import { SeriesBanner } from "@/components/public/SeriesBanner";
 import { PostPager, RelatedPosts } from "@/components/public/PostFooterNav";
 import { PublicShell } from "@/components/public/PublicShell";
-import { ReaderSize } from "@/components/public/ReaderTools";
+import { QuoteShare } from "@/components/public/QuoteShare";
+import { ReaderFont, ReaderSize, ZenToggle } from "@/components/public/ReaderTools";
 import { ViewBeacon } from "@/components/public/ViewBeacon";
 import { ShareBar } from "@/components/public/ShareBar";
 import { Comments, type CommentView } from "@/components/public/Comments";
@@ -173,17 +174,28 @@ export default async function BlogPost({ params }: Props) {
       <ViewBeacon postId={post.id} />
       <ReadingChrome targetId="post-article" title={post.title || bn.library.untitled} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: ld }} />
-      <Link href="/" prefetch={false} className="mb-3 inline-flex min-h-11 items-center text-accent-text">
+      <Link href="/" prefetch={false} className="zen-hide mb-3 inline-flex min-h-11 items-center text-accent-text">
         ← {bn.public.home}
       </Link>
-      {seriesScope && sp && <SeriesBanner name={seriesScope.term!.name} path={seriesScope.path} index={sp.index} total={sp.total} prev={sp.prev} next={sp.next} />}
-      <div className="mt-3"><ReaderSize /></div>
+      {seriesScope && sp && (
+        <div className="zen-hide">
+          <SeriesBanner name={seriesScope.term!.name} path={seriesScope.path} index={sp.index} total={sp.total} prev={sp.prev} next={sp.next} />
+        </div>
+      )}
+      <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+        <ReaderSize />
+        <ReaderFont />
+        <ZenToggle />
+      </div>
       <PostArticle toc={toc} anchors poem={post.contentType === "poetry"} title={post.title} meta={meta} links={card ? [...(card.category ? [card.category] : []), ...card.tags.map((t) => ({ ...t, name: `#${t.name}` }))] : []} body={post.body} cover={card?.cover} gallery={resolveGallery(post.gallery, media)} />
-      <ShareBar url={absoluteUrl(safeSiteUrl(), blogPath(post.slug))} />
-      <AuthorBox name={siteTitle} bio={authorBio} aboutHref={pages.some((p) => p.slug === "about") ? pagePath("about") : undefined} />
-      {showComments && <Comments postId={post.id} thread={thread} open={post.commentsEnabled !== false} tz={tz} />}
-      <PostPager older={adj.older ? byId.get(adj.older) : undefined} newer={adj.newer ? byId.get(adj.newer) : undefined} />
-      <RelatedPosts cards={related} />
+      <div className="zen-hide">
+        <ShareBar url={absoluteUrl(safeSiteUrl(), blogPath(post.slug))} />
+        <AuthorBox name={siteTitle} bio={authorBio} aboutHref={pages.some((p) => p.slug === "about") ? pagePath("about") : undefined} />
+        {showComments && <Comments postId={post.id} thread={thread} open={post.commentsEnabled !== false} tz={tz} />}
+        <PostPager older={adj.older ? byId.get(adj.older) : undefined} newer={adj.newer ? byId.get(adj.newer) : undefined} />
+        <RelatedPosts cards={related} />
+      </div>
+      <QuoteShare title={post.title || bn.library.untitled} url={absoluteUrl(safeSiteUrl(), blogPath(post.slug))} />
     </PublicShell>
   );
 }

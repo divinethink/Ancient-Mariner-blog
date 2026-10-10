@@ -56,7 +56,7 @@ export async function PublicShell({ children, sidebar = false, month }: { childr
   return (
     <div className={wrap}>
       <Analytics />
-      <header className="mb-6 border-b border-line pb-2">
+      <header className="zen-hide mb-6 border-b border-line pb-2">
         <nav aria-label={bn.public.navLabel} className="flex flex-wrap items-center gap-x-5">
           <Link href="/" prefetch={false} className={`${nav} gap-2 font-serif text-lg font-bold`}>
             {logo && logoSrc && (
@@ -131,7 +131,7 @@ export async function PublicShell({ children, sidebar = false, month }: { childr
       ) : (
         children
       )}
-      <footer className="mt-10 flex flex-wrap items-center justify-between gap-x-4 border-t border-line pt-4 text-sm text-muted">
+      <footer className="zen-hide mt-10 flex flex-wrap items-center justify-between gap-x-4 border-t border-line pt-4 text-sm text-muted">
         <span>{foot.text}</span>
         {foot.links ? (
           foot.links.map((l, i) => <NavLink key={`${i}-${l.href}`} l={l} className={footLink} />)

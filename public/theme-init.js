@@ -35,6 +35,13 @@
         rs = localStorage.getItem("readerSize");
       } catch (e) {}
       root.setAttribute("data-rsize", rs === "s" || rs === "l" ? rs : "m");
+      // P12-১: পাঠকের ফন্ট (allowlist = src/lib/fonts.ts-এর FONT_IDS; fonts.test.ts মেলায়); খালি/অবৈধ → সাইটের ফন্ট
+      var rf = null;
+      try {
+        rf = localStorage.getItem("readerFont");
+      } catch (e) {}
+      var RFONTS = ["serif", "sans", "hind", "solaiman", "kalpurush", "inter", "roboto"];
+      if (rf && RFONTS.indexOf(rf) > -1) root.setAttribute("data-rfont", rf);
     }
     var m = document.querySelector('meta[name="theme-color"]');
     if (m) m.setAttribute("content", BG[t]);

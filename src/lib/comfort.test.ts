@@ -26,13 +26,18 @@ describe("parseComfort", () => {
       width: 680,
     });
   });
+  it("নতুন ফন্ট-id (P12-১) বৈধ; অজানা → serif", () => {
+    expect(parseComfort({ font: "hind" }).font).toBe("hind");
+    expect(parseComfort({ font: "roboto" }).font).toBe("roboto");
+    expect(parseComfort({ font: "comic" }).font).toBe("serif");
+  });
   it("দশমিক size বাতিল", () => expect(parseComfort({ size: 18.5 }).size).toBe(19));
 });
 
 describe("comfortVars", () => {
   it("variable বানায়", () => {
     expect(comfortVars({ font: "sans", size: 20, line: 24, width: 560 })).toEqual({
-      "--ff": "var(--font-sans)",
+      "--ff": '"Noto Sans Bengali", system-ui, sans-serif',
       "--fs": "20px",
       "--lh": "2.4",
       "--mw": "560px",

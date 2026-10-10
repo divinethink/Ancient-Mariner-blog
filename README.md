@@ -80,6 +80,7 @@ ZIP আপলোড → `unzip.yml` commit → `ci` চলে। `deploy.yml` �
 - ফন্ট `next/font/google`-এর বদলে npm-এর `@fontsource` (Noto Sans/Serif Bengali, OFL) — একই ফন্ট, self-hosted, build-এ Google-এ নির্ভর নেই; `.woff`ও emit হয় (asset-সংখ্যা সীমার অনেক নিচে)। preload নেই (সব subset `unicode-range`-এ লোড)।
 - `theme-init.js` `src/theme/`-এর বদলে `public/`-এ (external script, CSP `script-src 'self'`-এ চলে; ESLint-এর ignore-এ `public/**`)। bg-মান `tokens.css`-এর সাথে হাতে মেলাতে হয়।
 - সাধারণ নাম `postRepo.client.ts`/`postRepo.server.ts` adapter P2a-তে (Firebase SDK/REST লাগে)।
+- ফন্ট-তালিকা (P12-১): Noto Serif/Sans Bengali, Hind Siliguri, Inter, Roboto = `@fontsource` (OFL); SolaimanLipi ও Kalpurush owner-দেওয়া TTF থেকে বাংলা+Latin subset করা `.woff` (`src/fonts/`) — লাইসেন্স owner-এর দায়িত্ব। Inter/Roboto শুধু Latin, বাংলা অক্ষর Noto Sans Bengali-তে fallback। তালিকা `src/lib/fonts.ts`; `globals.css`-এর `[data-rfont]` ও `public/theme-init.js`-এর allowlist হাতে মেলাতে হয় (`fonts.test.ts` drift ধরে)।
 - `public/icons/*` placeholder আইকন; owner-এর আসল আইকন পরে বদলাবে।
 - Public পেজের CSP `public/_headers`-এ (শুধু static asset-এ প্রযোজ্য); `/dashboard`/`/login`-এর nonce-CSP `src/middleware.ts` থেকে (`lib/csp.ts`)।
 - `allowIndexing` doc না থাকলে `false` (Arch §৬-এর 'শুরুর true'-এর বদলে; owner-অনুমোদিত)। APP_ENV/preview-noindex নেই — preview environment নেই।
