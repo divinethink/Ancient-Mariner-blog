@@ -75,12 +75,12 @@
   --ff-sans: "Noto Sans Bengali", system-ui, sans-serif;
   --ff-serif: "Noto Serif Bengali", serif;
 }
-[data-font="sans"] { --ff-serif: var(--ff-sans); }
-[data-font="serif"] { --ff-sans: var(--ff-serif); }
+[data-font="sans"] { --ff-serif: var(--ff-sans); --font-serif: var(--ff-sans); }
+[data-font="serif"] { --ff-sans: var(--ff-serif); --font-sans: var(--ff-serif); }
 
-/* card-ধরন (P9b-১): <html data-card="flat|shadow"> — শুধু পাবলিক <main>-এর rounded-2xl/3xl card (border+bg-surface); 'outline' = আজকের রূপ */
-[data-card="flat"] main :is(.rounded-2xl, .rounded-3xl).border.bg-surface { border-color: transparent; }
-[data-card="shadow"] main :is(.rounded-2xl, .rounded-3xl).border.bg-surface { border-color: transparent; box-shadow: 0 1px 3px rgb(0 0 0 / 0.12), 0 4px 12px rgb(0 0 0 / 0.06); }
+/* card-ধরন (P9b-১): <html data-card="flat|shadow"> — rounded-2xl/3xl card (border+bg-surface); html-এ শুধু পাবলিক পেজে বসে, Design-ট্যাবের preview-wrapper-এও; 'outline' = আজকের রূপ */
+[data-card="flat"] :is(.rounded-2xl, .rounded-3xl).border.bg-surface { border-color: transparent; }
+[data-card="shadow"] :is(.rounded-2xl, .rounded-3xl).border.bg-surface { border-color: transparent; box-shadow: 0 1px 3px rgb(0 0 0 / 0.12), 0 4px 12px rgb(0 0 0 / 0.06); }
 
 /* JS ছাড়া fallback: data-theme না থাকলে সিস্টেম dark অনুসরণ */
 @media (prefers-color-scheme: dark) {

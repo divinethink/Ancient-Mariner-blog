@@ -24,6 +24,15 @@ export function resolveDesign(raw: unknown): Design {
   };
 }
 
+/** logo/banner-এর media-id (P9b-২; খালি = নেই) — Design-এর enum-অংশের বাইরে, কিন্তু একই `siteSettings.design` map-এ */
+export type DesignMedia = { logoMediaId: string; bannerMediaId: string };
+export const MEDIA_ID_MAX = 128;
+
+/** build-এ আনার media-id (খালি বাদ, ডুপ্লিকেট ছাড়া) */
+export function designMediaIds(d: Partial<DesignMedia>): string[] {
+  return [...new Set([d.logoMediaId, d.bannerMediaId].filter((x): x is string => !!x))];
+}
+
 const DESIGN_MARK = /var DESIGN = \{[^}\n]*\};/;
 
 /**

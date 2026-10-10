@@ -3,8 +3,10 @@ import Link from "next/link";
 import { Analytics } from "@/components/public/Analytics";
 import { sidebarContent } from "@/components/public/Sidebar";
 import { getPublicScopes } from "@/data/publicLists";
-import { getPublicPages, getPublicSettings } from "@/data/publicSnapshot";
+import { getPublicMedia, getPublicPages, getPublicSettings } from "@/data/publicSnapshot";
 import { bn } from "@/i18n/bn";
+import { resolveCover } from "@/lib/cards";
+import { cldUrl } from "@/lib/cloudinary";
 import { resolveFooter, resolveMenu, type ResolvedLink } from "@/lib/menu";
 import { pagePath } from "@/lib/pages";
 import { BLOG_INDEX_PATH } from "@/lib/publicSite";
@@ -28,7 +30,10 @@ function NavLink({ l, className }: { l: ResolvedLink; className: string }) {
 
 /** পাবলিক পেজের header/footer (Arch §১৭ P4a, P9a)। `siteSettings.menu/footer` খালি হলে আগের default; নইলে owner-এর মেনু (draft/মোছা আইটেম লুকানো)। */
 export async function PublicShell({ children, sidebar = false }: { children: ReactNode; sidebar?: boolean }) {
-  const [settings, scopes, pages] = await Promise.all([getPublicSettings(), getPublicScopes(), getPublicPages()]);
+  const [settings, scopes, pages, media] = await Promise.all([getPublicSettings(), getPublicScopes(), getPublicPages(), getPublicMedia()]);
+  // P9b-২: লোগো (media না পেলে/অবৈধ হলে শুধু সাইটের নাম — আগের মতো)
+  const logo = resolveCover(settings.design.logoMediaId || undefined, media);
+  const logoSrc = logo ? cldUrl(logo.cloud, logo.publicId, { w: 96 }) : null;
   // default মেনু/footer: শুধু published system পেজের লিংক
   const about = pages.find((p) => p.slug === "about");
   const privacy = pages.find((p) => p.slug === "privacy");
@@ -49,7 +54,17 @@ export async function PublicShell({ children, sidebar = false }: { children: Rea
       <Analytics />
       <header className="mb-6 border-b border-line pb-2">
         <nav aria-label={bn.public.navLabel} className="flex flex-wrap items-center gap-x-5">
-          <Link href="/" prefetch={false} className={`${nav} font-serif text-lg font-bold`}>
+          <Link href="/" prefetch={false} className={`${nav} gap-2 font-serif text-lg font-bold`}>
+            {logo && logoSrc && (
+              // eslint-disable-next-line @next/next/no-img-element -- Cloudinary-ই optimizer (Arch §১২); alt খালি: পাশেই নাম আছে
+              <img
+                src={logoSrc}
+                alt=""
+                height={32}
+                {...(logo.w && logo.h ? { width: Math.max(1, Math.round((32 * logo.w) / logo.h)) } : {})}
+                className="h-8 w-auto"
+              />
+            )}
             {settings.siteTitle}
           </Link>
           {custom ? (

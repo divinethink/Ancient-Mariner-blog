@@ -139,3 +139,15 @@ describe("P9a-১ ফিল্ড: menu, footer", () => {
     expect(r.siteTitle).toBe("আমার ব্লগ");
   });
 });
+
+describe("design (P9b)", () => {
+  it("doc-এ না থাকলে ডিফল্ট; অজানা উপ-ফিল্ড শুধু নিজে ডিফল্টে — বাকি বৈধ মান থাকে", () => {
+    expect(parseSiteSettings({ siteTitle: "x" }).design).toEqual(DEFAULT_SETTINGS.design);
+    const r = parseSiteSettings({ design: { accent: "teal", fontPair: "comic", cardStyle: "flat", logoMediaId: "abc", bannerMediaId: 5 } });
+    expect(r.design).toEqual({ accent: "teal", fontPair: "serif-sans", cardStyle: "flat", logoMediaId: "abc", bannerMediaId: "" });
+  });
+  it("সেভ-যাচাই: logo/banner id ডিফল্ট খালি", () => {
+    const r = SiteSettingsInputSchema.safeParse({ ...valid, design: { ...DEFAULT_SETTINGS.design, logoMediaId: "blog-1" } });
+    expect(r.success && r.data.design.logoMediaId).toBe("blog-1");
+  });
+});

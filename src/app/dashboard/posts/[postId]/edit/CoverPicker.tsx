@@ -7,7 +7,13 @@ import { getMediaRepo } from "@/data/mediaRepo.wire";
 import { bn } from "@/i18n/bn";
 import { cldUrl, cloudFromUrl } from "@/lib/cloudinary";
 
-type Props = { value: string | null; onChange: (id: string | null) => void; disabled: boolean };
+type Props = {
+  value: string | null;
+  onChange: (id: string | null) => void;
+  disabled: boolean;
+  /** লেখা বদলানো (P9b-২: লোগো/ব্যানারেও একই picker); না দিলে আগের মতো 'কভার ছবি' */
+  labels?: { [K in keyof typeof bn.publishPanel.cover]?: string };
+};
 type Cur = { id: string; m: MediaWithId | null };
 
 const btn = "min-h-11 rounded-full border border-line px-4 disabled:opacity-50";
@@ -17,8 +23,8 @@ const thumb = (m: MediaWithId): string | null => {
   return cloud ? cldUrl(cloud, m.cloudinaryPublicId, { w: 320 }) : null;
 };
 
-export function CoverPicker({ value, onChange, disabled }: Props) {
-  const t = bn.publishPanel.cover;
+export function CoverPicker({ value, onChange, disabled, labels }: Props) {
+  const t = { ...bn.publishPanel.cover, ...labels };
   const [cur, setCur] = useState<Cur | null>(null);
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<MediaWithId[] | null>(null);

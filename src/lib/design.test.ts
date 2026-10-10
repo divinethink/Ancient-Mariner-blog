@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ACCENTS, CARD_STYLES, DEFAULT_DESIGN, FONT_PAIRS, applyDesign, resolveDesign } from "./design";
+import { ACCENTS, CARD_STYLES, DEFAULT_DESIGN, FONT_PAIRS, applyDesign, designMediaIds, resolveDesign } from "./design";
 
 describe("resolveDesign", () => {
   it("খালি/অবৈধ ইনপুট ⇒ ডিফল্ট; আংশিক বৈধ মান রাখে", () => {
@@ -26,5 +26,13 @@ describe("applyDesign", () => {
     const evil = { accent: '"};alert(1);//', fontPair: "sans", cardStyle: "flat" } as never;
     expect(applyDesign(src, evil)).not.toContain("alert");
     expect(() => applyDesign("var A = 1;", DEFAULT_DESIGN)).toThrow();
+  });
+});
+
+describe("designMediaIds", () => {
+  it("খালি বাদ, ডুপ্লিকেট ছাড়া", () => {
+    expect(designMediaIds({})).toEqual([]);
+    expect(designMediaIds({ logoMediaId: "", bannerMediaId: "b" })).toEqual(["b"]);
+    expect(designMediaIds({ logoMediaId: "a", bannerMediaId: "a" })).toEqual(["a"]);
   });
 });

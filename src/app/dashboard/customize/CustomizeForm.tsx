@@ -1,12 +1,12 @@
 "use client";
 
-// সাইট সাজান (P9a-২/৩): মেনু, footer, sidebar/Home (চালু-বন্ধ ও ক্রম), ফেসবুক URL, লিংক-তালিকা। সেভ = একটাই `siteSettings` write
+// সাইট সাজান (P9a-২/৩, P9b-২): মেনু, footer, sidebar/Home, design (রঙ/ফন্ট/card/লোগো/ব্যানার) (চালু-বন্ধ ও ক্রম), ফেসবুক URL, লিংক-তালিকা। সেভ = একটাই `siteSettings` write
 // (সর্বশেষ মান আবার পড়ে শুধু এই ফিল্ডগুলো বদলায় — Settings-ফর্মের অন্য ফিল্ড মুছে যায় না), তারপর rebuild। ক্রম-বদল ↑↓ বোতামে (অনুমোদিত সিদ্ধান্ত: @dnd-kit নয়)।
 import { useEffect, useMemo, useState } from "react";
 import type { PageWithId } from "@/data/pageRepo";
 import { getPageRepo } from "@/data/pageRepo.wire";
 import { triggerSiteRebuild } from "@/data/rebuildClient";
-import type { SiteSettings } from "@/data/siteSettingsRepo";
+import { DEFAULT_SETTINGS, type SiteSettings } from "@/data/siteSettingsRepo";
 import { getSiteSettingsRepo } from "@/data/siteSettingsRepo.wire";
 import { getTaxonomyRepo } from "@/data/taxonomyRepo.wire";
 import type { TermWithId } from "@/data/taxonomyRepo";
@@ -21,15 +21,17 @@ import {
   type MenuType,
 } from "@/lib/menu";
 import { footerLinkError, menuRowError, moveAt, removeAt, seedMenu, withType } from "@/lib/menuEdit";
+import { DEFAULT_DESIGN } from "@/lib/design";
 import { DEFAULT_HOME, DEFAULT_SIDEBAR, resolveLayout } from "@/lib/layout";
 import { LINK_LABEL_MAX, facebookError, siteLinkError, toggleAt, type SiteLink } from "@/lib/layoutEdit";
 import { LINKS_MAX, URL_MAX } from "@/lib/siteSettings";
 import { useSiteSettings } from "../SiteSettingsProvider";
 import { ConfirmButton } from "../ConfirmButton";
+import { DesignTab } from "./DesignTab";
 
 type Load = { kind: "loading" } | { kind: "error" } | { kind: "ready"; saved: SiteSettings };
 type Row<T> = T & { k: number }; // স্থির key — ক্রম বদলালে input-ফোকাস/মান গুলিয়ে না যাওয়ার জন্য
-type Tab = "menu" | "footer" | "sidebar" | "home";
+type Tab = "menu" | "footer" | "sidebar" | "home" | "design";
 type LayoutRow = { id: string; enabled: boolean };
 
 const t = bn.customize;
@@ -50,6 +52,7 @@ const rowsOf = (s: SiteSettings) => ({
   home: homeOf(s),
   fb: s.socialLinks.facebook,
   siteLinks: s.links.map((l) => withKey(l)),
+  design: s.design,
 });
 
 export function CustomizeForm() {
@@ -65,6 +68,7 @@ export function CustomizeForm() {
   const [home, setHome] = useState<LayoutRow[]>([]);
   const [fb, setFb] = useState("");
   const [siteLinks, setSiteLinks] = useState<Row<SiteLink>[]>([]);
+  const [design, setDesign] = useState<SiteSettings["design"]>(DEFAULT_SETTINGS.design);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [tick, setTick] = useState(0);
@@ -78,6 +82,7 @@ export function CustomizeForm() {
     setHome(r.home);
     setFb(r.fb);
     setSiteLinks(r.siteLinks);
+    setDesign(r.design);
   };
 
   // সেটিং লোড ব্যর্থ হলে ফর্ম দেখানো হয় না (ডিফল্ট দিয়ে আসল মেনু ভুলে মুছে না যাওয়ার জন্য); পেজ/ক্যাটাগরি ব্যর্থ হলে শুধু 'লিংক' ধরন চলে
@@ -102,6 +107,7 @@ export function CustomizeForm() {
         setHome(r.home);
         setFb(r.fb);
         setSiteLinks(r.siteLinks);
+        setDesign(r.design);
       } catch {
         if (!dead) setLoad({ kind: "error" });
       }
@@ -147,8 +153,8 @@ export function CustomizeForm() {
   const saved = load.saved;
   const fbOut = fb.trim();
   const dirty =
-    JSON.stringify({ m: saved.menu, f: saved.footer, s: sidebarOf(saved), h: homeOf(saved), b: saved.socialLinks.facebook, l: saved.links }) !==
-    JSON.stringify({ m: menuOut, f: footOut, s: sidebar, h: home, b: fbOut, l: linksOut });
+    JSON.stringify({ m: saved.menu, f: saved.footer, s: sidebarOf(saved), h: homeOf(saved), b: saved.socialLinks.facebook, l: saved.links, d: saved.design }) !==
+    JSON.stringify({ m: menuOut, f: footOut, s: sidebar, h: home, b: fbOut, l: linksOut, d: design });
   const hasErr =
     menu.some((m) => menuRowError(m)) ||
     footLinks.some((l) => footerLinkError(l)) ||
@@ -159,7 +165,10 @@ export function CustomizeForm() {
     footText === "" &&
     footLinks.length === 0 &&
     JSON.stringify(sidebar) === JSON.stringify(resolveLayout([], DEFAULT_SIDEBAR)) &&
-    JSON.stringify(home) === JSON.stringify(resolveLayout([], DEFAULT_HOME));
+    JSON.stringify(home) === JSON.stringify(resolveLayout([], DEFAULT_HOME)) &&
+    design.accent === DEFAULT_DESIGN.accent &&
+    design.fontPair === DEFAULT_DESIGN.fontPair &&
+    design.cardStyle === DEFAULT_DESIGN.cardStyle;
   const edit = () => setMsg(null);
 
   async function save() {
@@ -176,6 +185,7 @@ export function CustomizeForm() {
         layout: { sidebar, home },
         socialLinks: { ...latest.socialLinks, facebook: fbOut },
         links: linksOut,
+        design,
       });
       setSettings(next);
       apply(next);
@@ -296,7 +306,7 @@ export function CustomizeForm() {
   return (
     <div className="space-y-6">
       <div role="tablist" aria-label={t.tabsLabel} className="flex flex-wrap gap-2">
-        {(["menu", "footer", "sidebar", "home"] as const).map((k) => (
+        {(["menu", "footer", "sidebar", "home", "design"] as const).map((k) => (
           <button
             key={k}
             type="button"
@@ -305,7 +315,7 @@ export function CustomizeForm() {
             className={`min-h-11 rounded-full border px-4 ${tab === k ? "border-accent bg-surface font-semibold" : "border-line"}`}
             onClick={() => setTab(k)}
           >
-            {{ menu: t.tabMenu, footer: t.tabFooter, sidebar: t.tabSidebar, home: t.tabHome }[k]}
+            {{ menu: t.tabMenu, footer: t.tabFooter, sidebar: t.tabSidebar, home: t.tabHome, design: t.tabDesign }[k]}
           </button>
         ))}
       </div>
@@ -588,6 +598,8 @@ export function CustomizeForm() {
         </section>
       )}
 
+      {tab === "design" && <DesignTab value={design} onChange={(d) => { edit(); setDesign(d); }} />}
+
       <div className="sticky bottom-16 flex flex-wrap items-center gap-3 border-t border-line bg-bg py-3 min-[1024px]:bottom-0">
         <button
           type="button"
@@ -609,6 +621,7 @@ export function CustomizeForm() {
             setFootLinks([]);
             setSidebar(resolveLayout([], DEFAULT_SIDEBAR));
             setHome(resolveLayout([], DEFAULT_HOME));
+            setDesign((d) => ({ ...d, ...DEFAULT_DESIGN })); // লোগো/ব্যানার অক্ষত
           }}
         />
         {dirty && !msg && <span className="text-sm text-muted">{t.unsaved}</span>}

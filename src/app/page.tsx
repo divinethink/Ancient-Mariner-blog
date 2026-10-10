@@ -6,7 +6,9 @@ import { PublicShell } from "@/components/public/PublicShell";
 import { getSiteUrl } from "@/config/env";
 import { hasDefaultOgImage } from "@/data/publicAssets";
 import { getPublicScopes } from "@/data/publicLists";
-import { getPublicSettings, listPublicPosts } from "@/data/publicSnapshot";
+import { getPublicMedia, getPublicSettings, listPublicPosts } from "@/data/publicSnapshot";
+import { Cover } from "@/components/public/Cover";
+import { resolveCover } from "@/lib/cards";
 import { bn } from "@/i18n/bn";
 import { pickFeatured } from "@/lib/featured";
 import { DEFAULT_HOME, resolveLayout } from "@/lib/layout";
@@ -36,7 +38,8 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function Home() {
-  const [scopes, settings, posts] = await Promise.all([getPublicScopes(), getPublicSettings(), listPublicPosts()]);
+  const [scopes, settings, posts, media] = await Promise.all([getPublicScopes(), getPublicSettings(), listPublicPosts(), getPublicMedia()]);
+  const banner = resolveCover(settings.design.bannerMediaId || undefined, media); // P9b-২; না থাকলে/অবৈধ হলে কিছু দেখায় না
   const all = scopes.find((s) => s.kind === "blog")?.cards ?? [];
   const sections = resolveLayout(settings.layout.home, DEFAULT_HOME).filter((x) => x.enabled);
   const featuredId = sections.some((x) => x.id === "featured") ? pickFeatured(posts) : undefined;
@@ -45,6 +48,11 @@ export default async function Home() {
   const recent = all.filter((c) => c.id !== featured?.id).slice(0, settings.postsPerPage);
   return (
     <PublicShell sidebar>
+      {banner && (
+        <div className="relative mb-6 aspect-[3/1] overflow-hidden rounded-2xl bg-line">
+          <Cover cover={banner} sizes="(min-width: 900px) 700px, 100vw" priority />
+        </div>
+      )}
       {sections.map(({ id }) => {
         if (id === "hero")
           return (
