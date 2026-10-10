@@ -3,6 +3,7 @@ import { bn } from "@/i18n/bn";
 import { BuildStatus } from "../BuildStatus";
 import { DefaultCategoryField } from "./DefaultCategoryField";
 import { HomeCardPrefs } from "./HomeCardPrefs";
+import { SearchIndexPanel } from "./SearchIndexPanel";
 import { SettingsForm } from "./SettingsForm";
 
 export default function SettingsPage() {
@@ -15,6 +16,7 @@ export default function SettingsPage() {
       <SettingsForm />
       <DefaultCategoryField />
       <HomeCardPrefs />
+      <SearchIndexPanel />
       <div className="mt-10">
         <BuildStatus />
       </div>

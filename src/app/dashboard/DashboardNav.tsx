@@ -60,6 +60,7 @@ export function SidePanel({
     { href: "/dashboard", icon: "📚", label: bn.nav.library },
     { href: "/dashboard/posts/new", icon: "✏️", label: bn.nav.newPost },
     { href: "/dashboard/diary", icon: "📔", label: bn.nav.diary },
+    { href: "/dashboard/search", icon: "🔎", label: bn.search.navLabel },
     { href: "/dashboard/menu", icon: "☰", label: bn.nav.menu },
   ];
   return (

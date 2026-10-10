@@ -511,7 +511,13 @@ export function LibraryHome() {
           </button>
         ))}
       </div>
-      <div className="mb-4">
+      <div className="mb-4 flex flex-wrap gap-2">
+        <Link
+          href="/dashboard/search"
+          className="flex min-h-11 items-center rounded-full border border-line px-4 text-sm"
+        >
+          🔎 {bn.search.navLabel}
+        </Link>
         <button
           type="button"
           aria-pressed={selecting}

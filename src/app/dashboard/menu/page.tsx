@@ -13,6 +13,14 @@ export default function MenuPage() {
           <IdeaInboxMenuItem />
         </li>
         <li>
+          <Link href="/dashboard/search" className="flex min-h-12 items-center justify-between px-4">
+            <span>🔎 {bn.search.navLabel}</span>
+            <span aria-hidden className="text-muted">
+              ›
+            </span>
+          </Link>
+        </li>
+        <li>
           <Link href="/dashboard/pages" className="flex min-h-12 items-center justify-between px-4">
             <span>📄 {bn.dashboard.pages}</span>
             <span aria-hidden className="text-muted">

@@ -34,6 +34,13 @@ const COMMANDS: (PaletteItem & { href?: string })[] = [
   },
   { id: "menu", kind: "command", label: P.menu, keywords: "menu", href: "/dashboard/menu" },
   {
+    id: "search",
+    kind: "command",
+    label: P.fullSearch,
+    keywords: "search find full text খোঁজ",
+    href: "/dashboard/search",
+  },
+  {
     id: "settings",
     kind: "command",
     label: P.settings,
@@ -98,16 +105,22 @@ export default function CommandPalette({ onClose }: { onClose: () => void }) {
     };
   }, [dq]);
 
-  const results = useMemo(
-    () => matchItems(q, mergePalette(COMMANDS, loaded, dq ? remote : []), PALETTE_LIMIT),
-    [q, loaded, remote, dq],
-  );
+  const results = useMemo(() => {
+    const base = matchItems(q, mergePalette(COMMANDS, loaded, dq ? remote : []), PALETTE_LIMIT);
+    // শব্দ থাকলে সবসময় শেষে 'পূর্ণ-লেখায় খুঁজুন' (P8b) — শিরোনামে না মিললেও লেখার ভেতরে খোঁজা যায়
+    const t = q.trim();
+    return t
+      ? [...base, { id: "full-search", kind: "command" as const, label: bn.search.paletteFull(t) }]
+      : base;
+  }, [q, loaded, remote, dq]);
   const idx = results.length === 0 ? -1 : Math.min(cur, results.length - 1);
 
   function run(it: PaletteItem) {
     onClose();
     if (it.kind === "post") return router.push(`/dashboard/posts/${it.id}/edit`);
     if (it.id === "new-idea") return openIdea();
+    if (it.id === "full-search")
+      return router.push(`/dashboard/search?q=${encodeURIComponent(q.trim().slice(0, 200))}`);
     const href = COMMANDS.find((c) => c.id === it.id)?.href;
     if (href) router.push(href);
   }

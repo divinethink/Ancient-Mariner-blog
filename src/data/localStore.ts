@@ -31,7 +31,50 @@ async function run<T>(
   }
 }
 
+/** একটাই transaction-এ একাধিক কাজ (খোঁজ-index: অনেক ছোট entry একসাথে লেখা/পড়া/মোছা) */
+async function batch<T>(
+  mode: IDBTransactionMode,
+  fn: (s: IDBObjectStore, done: (v: T) => void) => void,
+): Promise<T> {
+  const db = await open();
+  try {
+    return await new Promise<T>((resolve, reject) => {
+      const tx = db.transaction(STORE, mode);
+      let out: T | undefined;
+      fn(tx.objectStore(STORE), (v) => {
+        out = v;
+      });
+      tx.oncomplete = () => resolve(out as T);
+      tx.onerror = () => reject(tx.error ?? new Error("IndexedDB লেখা/পড়া ব্যর্থ"));
+      tx.onabort = () => reject(tx.error ?? new Error("IndexedDB abort"));
+    });
+  } finally {
+    db.close();
+  }
+}
+
+const prefixRange = (prefix: string) => IDBKeyRange.bound(prefix, `${prefix}￿`);
+
 export const localStore = {
+  /** prefix-যুক্ত সব (key, value) — একটাই transaction */
+  entries: <T>(prefix: string) =>
+    batch<[string, T][]>("readonly", (s, done) => {
+      const out: [string, T][] = [];
+      const req = s.openCursor(prefixRange(prefix));
+      req.onsuccess = () => {
+        const c = req.result;
+        if (c) {
+          out.push([String(c.key), c.value as T]);
+          c.continue();
+        } else done(out);
+      };
+    }),
+  /** একাধিক put/delete একটাই transaction-এ (সব-অথবা-কিছুই-না) */
+  writeMany: (puts: [string, unknown][], deletes: string[] = []) =>
+    batch<void>("readwrite", (s) => {
+      for (const [k, v] of puts) s.put(v, k);
+      for (const k of deletes) s.delete(k);
+    }),
   get: <T>(key: string) => run<T | undefined>("readonly", (s) => s.get(key)),
   set: (key: string, value: unknown) =>
     run("readwrite", (s) => s.put(value, key)).then(() => undefined),
