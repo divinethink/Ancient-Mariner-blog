@@ -18,11 +18,11 @@ describe("parseSiteSettings (defensive read)", () => {
     expect(parseSiteSettings(null)).toEqual(DEFAULT_SETTINGS);
     expect(parseSiteSettings("x")).toEqual(DEFAULT_SETTINGS);
   });
-  it("বৈধ মান থাকে, অজানা ফিল্ড (menu…) বাদ", () => {
-    const r = parseSiteSettings({ ...valid, menu: [{ label: "x" }], allowIndexing: true });
+  it("বৈধ মান থাকে, অজানা ফিল্ড বাদ", () => {
+    const r = parseSiteSettings({ ...valid, notAField: [{ label: "x" }], allowIndexing: true });
     expect(r.siteTitle).toBe("আমার ব্লগ");
     expect(r.allowIndexing).toBe(true);
-    expect(r).not.toHaveProperty("menu");
+    expect(r).not.toHaveProperty("notAField");
   });
   it("শুধু অবৈধ ফিল্ড default-এ ফেরে, বাকি অক্ষত", () => {
     const r = parseSiteSettings({ ...valid, timezone: "Mars/Base", postsPerPage: 999, defaultTheme: "neon" });
