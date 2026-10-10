@@ -1,0 +1,31 @@
+name: fix-revisioncron-test
+# একবারের workflow: revisionCron.test.ts-এর fake AdminDb-এ setCommentStatus stub বসায় ও commit করে।
+on: workflow_dispatch
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch test file
+        run: |
+          cat > /tmp/patch.mjs <<'JS'
+          import fs from "node:fs";
+          const f = "src/data/privileged/revisionCron.test.ts";
+          let s = fs.readFileSync(f, "utf8");
+          const cnt = (s.match(/^\s*createComment\b/gm) || []).length;
+          const have = (s.match(/setCommentStatus/g) || []).length;
+          if (have >= cnt && have > 0) { console.log("already patched"); process.exit(0); }
+          if (cnt === 0) { console.error("createComment line not found"); process.exit(1); }
+          s = s.replace(/^(\s*)createComment\b/gm, (m, ind) => `${ind}setCommentStatus: async () => "ok" as const,\n${m}`);
+          fs.writeFileSync(f, s);
+          console.log("patched " + cnt + " object(s)");
+          JS
+          node /tmp/patch.mjs
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/data/privileged/revisionCron.test.ts
+          git diff --cached --quiet && echo "no change" || (git commit -m "fix: revisionCron.test fake AdminDb-এ setCommentStatus stub" && git push)
