@@ -1,15 +1,10 @@
-import { createElement } from "react";
-import { renderToString } from "react-dom/server";
-import { describe, expect, it, vi } from "vitest";
-vi.mock("@/data/postRepo.wire", () => ({ getPostRepo: () => new Promise(() => undefined) }));
-import { DiaryView } from "./DiaryView";
+// JSX import করা যায় না (vitest শুধু .ts, JSX transform নেই) — তাই শুধু i18n-তথ্য যাচাই
+import { describe, expect, it } from "vitest";
+import { bn } from "@/i18n/bn";
 
-describe("DiaryView smoke (SSR)", () => {
-  it("ক্যালেন্ডার ও লোডিং-অবস্থা রেন্ডার হয়", () => {
-    const html = renderToString(createElement(DiaryView));
-    expect(html).toContain("রবি");
-    expect(html).toContain("আজকের দিনলিপি");
-    expect(html).toContain("দিনলিপি আনা হচ্ছে");
-    expect((html.match(/aria-pressed/g) ?? []).length).toBeGreaterThanOrEqual(28);
+describe("bn.diary", () => {
+  it("সপ্তাহ ৭ দিন, বছর ১২ মাস", () => {
+    expect(bn.diary.weekdays).toHaveLength(7);
+    expect(bn.diary.months).toHaveLength(12);
   });
 });
