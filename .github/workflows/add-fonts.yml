@@ -1,0 +1,38 @@
+name: add-fonts
+
+# একবারের workflow (P12-১): Hind Siliguri/Inter/Roboto-র @fontsource প্যাকেজ exact-pin করে package.json ও lock commit করে।
+# Actions → add-fonts → Run workflow। শেষ হলে (সবুজ) তারপর কোড-ZIP আপলোড করুন — আগে নয়, নইলে build এই প্যাকেজ পাবে না।
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: add-fonts
+  cancel-in-progress: false
+
+jobs:
+  install:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install fonts (exact pin)
+        run: npm install --save-exact @fontsource/hind-siliguri @fontsource/inter @fontsource/roboto
+      - name: Verify weight files exist
+        run: |
+          set -e
+          for f in hind-siliguri inter roboto; do
+            for w in 400 700; do test -f "node_modules/@fontsource/$f/$w.css" || { echo "missing $f/$w.css"; exit 1; }
+          done; done
+          grep -E '"@fontsource/(hind-siliguri|inter|roboto)"' package.json
+      - name: Commit package.json and lock
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json package-lock.json
+          git diff --cached --quiet && echo "nothing to commit" || git commit -m "chore: add hind-siliguri, inter, roboto fonts (exact pin)"
+          git push
