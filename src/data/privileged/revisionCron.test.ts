@@ -30,7 +30,7 @@ function fakeDb(s: Script) {
     async commitPublish() {
       return "ok";
     },
-    async createComment() {
+    async setCommentStatus: async () => "ok" as const, createComment() {
       return "created";
     },
   };
