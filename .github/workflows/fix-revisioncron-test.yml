@@ -1,5 +1,5 @@
 name: fix-revisioncron-test
-# একবারের workflow: revisionCron.test.ts-এর fake AdminDb-এ setCommentStatus stub বসায় ও commit করে।
+# একবারের workflow (v2): revisionCron.test.ts-এর fake AdminDb-এ setCommentStatus stub বসায় ও commit করে।
 on: workflow_dispatch
 permissions:
   contents: write
@@ -13,14 +13,32 @@ jobs:
           cat > /tmp/patch.mjs <<'JS'
           import fs from "node:fs";
           const f = "src/data/privileged/revisionCron.test.ts";
-          let s = fs.readFileSync(f, "utf8");
-          const cnt = (s.match(/^\s*createComment\b/gm) || []).length;
-          const have = (s.match(/setCommentStatus/g) || []).length;
-          if (have >= cnt && have > 0) { console.log("already patched"); process.exit(0); }
-          if (cnt === 0) { console.error("createComment line not found"); process.exit(1); }
-          s = s.replace(/^(\s*)createComment\b/gm, (m, ind) => `${ind}setCommentStatus: async () => "ok" as const,\n${m}`);
-          fs.writeFileSync(f, s);
-          console.log("patched " + cnt + " object(s)");
+          const src = fs.readFileSync(f, "utf8");
+          if (src.includes("setCommentStatus")) { console.log("already patched"); process.exit(0); }
+          const lines = src.split("\n");
+          const skip = /^\s*(import|function|export|type|interface)\b|expect\(/;
+          const anchors = ["createComment", "commitPublish", "commitDeletes", "batchGet", "runQuery"];
+          let done = false;
+          for (const a of anchors) {
+            const re = new RegExp("(?<![.\\w\"']|(?:const|let|var)\\s+)" + a + "(?=\\s*[:,(}])");
+            let n = 0;
+            const out = lines.map((l) => {
+              if (skip.test(l) || !re.test(l)) return l;
+              n++;
+              return l.replace(re, 'setCommentStatus: async () => "ok" as const, ' + a);
+            });
+            if (n > 0) {
+              fs.writeFileSync(f, out.join("\n"));
+              console.log("patched " + n + " line(s) via anchor " + a);
+              done = true;
+              break;
+            }
+          }
+          if (!done) {
+            console.error("NO ANCHOR FOUND. File head:");
+            console.error(lines.slice(0, 40).map((l, i) => (i + 1) + ": " + l).join("\n"));
+            process.exit(1);
+          }
           JS
           node /tmp/patch.mjs
       - name: Commit
