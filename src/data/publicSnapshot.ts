@@ -14,7 +14,10 @@ export const SNAPSHOT_PATH = join(".build-data", "posts.json");
 
 export type Snapshot = {
   fetchedAt: Date;
+  /** published+public, দিনলিপি (contentType=diary) বাদে — দিনলিপি কখনো মূল লেখার তালিকায় আসে না */
   posts: PostWithId[];
+  /** দিনলিপি-পঞ্জিকা: published+public diary লেখা (শুধু /diary রুটে) */
+  diary: PostWithId[];
   /** P11c-১: published+unlisted — শুধু নিজের URL-এ পেজ; posts-এর কোনো তালিকা/সূচি/sitemap-এ নয় */
   unlisted: PostWithId[];
   settings: SiteSettings;
@@ -51,14 +54,16 @@ export async function readSnapshot(path = SNAPSHOT_PATH): Promise<Snapshot | nul
   if (typeof json.fetchedAt !== "string" || !Array.isArray(json.posts)) {
     throw new Error("build snapshot বিকৃত");
   }
-  const posts = (json.posts as Record<string, unknown>[])
+  const all = (json.posts as Record<string, unknown>[])
     .map((p) => parsePost(String(p.id), p)) // defensive read + ISO→Date
     .filter((p) => p.status === "published" && p.visibility === "public"); // defense-in-depth
+  const posts = all.filter((p) => p.contentType !== "diary");
+  const diary = all.filter((p) => p.contentType === "diary");
   // P11c-১: পুরনো snapshot-এ নেই = খালি; বিকৃত/অন্য-অবস্থা বাদ
   const unlisted = (Array.isArray(json.unlisted) ? (json.unlisted as Record<string, unknown>[]) : []).flatMap((p) => {
     try {
       const x = parsePost(String(p.id), p);
-      return x.status === "published" && x.visibility === "unlisted" ? [x] : [];
+      return x.status === "published" && x.visibility === "unlisted" && x.contentType !== "diary" ? [x] : [];
     } catch {
       return [];
     }
@@ -88,7 +93,7 @@ export async function readSnapshot(path = SNAPSHOT_PATH): Promise<Snapshot | nul
     const x = PublicMediaSchema.safeParse(r);
     return x.success ? [x.data] : [];
   });
-  return { fetchedAt: new Date(json.fetchedAt), posts, unlisted, settings: parseSiteSettings(json.settings), terms, pages, media };
+  return { fetchedAt: new Date(json.fetchedAt), posts, diary, unlisted, settings: parseSiteSettings(json.settings), terms, pages, media };
 }
 
 let memo: Promise<PostWithId[]> | undefined;
@@ -103,6 +108,14 @@ export function listPublicPosts(): Promise<PostWithId[]> {
     return s.posts;
   });
   return memo;
+}
+
+let diaryMemo: Promise<PostWithId[]> | undefined;
+
+/** দিনলিপি-পঞ্জিকার জন্য published+public diary লেখা (snapshot থেকে); snapshot না থাকলে খালি */
+export function listPublicDiary(): Promise<PostWithId[]> {
+  diaryMemo ??= readSnapshot().then((s) => s?.diary ?? []);
+  return diaryMemo;
 }
 
 let unlistedMemo: Promise<PostWithId[]> | undefined;

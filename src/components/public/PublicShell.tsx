@@ -5,13 +5,14 @@ import { sidebarContent } from "@/components/public/Sidebar";
 import { MobileMenu } from "@/components/public/MobileMenu";
 import { ThemeToggle } from "@/components/public/ThemeToggle";
 import { getPopular } from "@/data/popularSnapshot";
+import { getPublicDiary } from "@/data/publicDiary";
 import { getPublicScopes } from "@/data/publicLists";
 import { getPublicMedia, getPublicPages, getPublicSettings } from "@/data/publicSnapshot";
 import { bn } from "@/i18n/bn";
-import type { MonthRef } from "@/lib/archive";
 import { resolveCover } from "@/lib/cards";
 import { cldUrl } from "@/lib/cloudinary";
 import { resolveFooter, resolveMenu, type ResolvedLink } from "@/lib/menu";
+import { DIARY_PATH } from "@/lib/diaryCalendar";
 import { pagePath } from "@/lib/pages";
 import { BLOG_INDEX_PATH } from "@/lib/publicSite";
 import { SEARCH_PATH } from "@/lib/publicSearch";
@@ -35,15 +36,15 @@ function NavLink({ l, className }: { l: ResolvedLink; className: string }) {
 }
 
 /** পাবলিক পেজের header/footer (Arch §১৭ P4a, P9a)। `siteSettings.menu/footer` খালি হলে আগের default; নইলে owner-এর মেনু (draft/মোছা আইটেম লুকানো)। */
-export async function PublicShell({ children, sidebar = false, month }: { children: ReactNode; sidebar?: boolean; month?: MonthRef }) {
-  const [settings, scopes, pages, media, popular] = await Promise.all([getPublicSettings(), getPublicScopes(), getPublicPages(), getPublicMedia(), getPopular()]);
+export async function PublicShell({ children, sidebar = false }: { children: ReactNode; sidebar?: boolean }) {
+  const [settings, scopes, pages, media, popular, diary] = await Promise.all([getPublicSettings(), getPublicScopes(), getPublicPages(), getPublicMedia(), getPopular(), getPublicDiary()]);
   // P9b-২: লোগো (media না পেলে/অবৈধ হলে শুধু সাইটের নাম — আগের মতো)
   const logo = resolveCover(settings.design.logoMediaId || undefined, media);
   const logoSrc = logo ? cldUrl(logo.cloud, logo.publicId, { w: 96 }) : null;
   // default মেনু/footer: শুধু published system পেজের লিংক
   const about = pages.find((p) => p.slug === "about");
   const privacy = pages.find((p) => p.slug === "privacy");
-  const side = sidebar ? sidebarContent(settings, scopes, popular, month) : null;
+  const side = sidebar ? sidebarContent(settings, scopes, popular, diary) : null;
   const cats = scopes.filter((s) => s.kind === "category" && s.term);
   const top = cats.filter((s) => !s.term?.parentCategoryId);
   const custom = resolveMenu(
@@ -89,6 +90,11 @@ export async function PublicShell({ children, sidebar = false, month }: { childr
                     ))}
                   </ul>
                 </details>
+              )}
+              {diary.byDay.size > 0 && (
+                <Link href={DIARY_PATH} prefetch={false} className={cls}>
+                  {bn.public.diaryNav}
+                </Link>
               )}
               {about && (
                 <Link href={pagePath(about.slug)} prefetch={false} className={cls}>

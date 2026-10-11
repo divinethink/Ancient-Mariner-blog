@@ -6,6 +6,7 @@ import { renderRss } from "../src/lib/rss";
 import { pagePath } from "../src/lib/pages";
 import { renderRobots, renderSitemap } from "../src/lib/seo";
 import { buildPublicSearchIndex, SEARCH_INDEX_PATH } from "../src/lib/publicSearch";
+import { DIARY_PATH, diaryDayPath, groupByDay } from "../src/lib/diaryCalendar";
 import { postExcerpt } from "../src/lib/publicSite";
 import { writeCardChunks } from "./cardChunks";
 import { readWorks } from "../src/data/worksSnapshot";
@@ -27,6 +28,12 @@ function worksEntries(works: Awaited<ReturnType<typeof readWorks>>): { path: str
   ];
 }
 
+/** দিনলিপি-পঞ্জিকা: /diary ও লেখা-আছে এমন প্রতিটি দিন (দিনলিপি না থাকলে কিছু নয়) */
+function diaryPaths(snap: NonNullable<Awaited<ReturnType<typeof readSnapshot>>>): string[] {
+  const days = [...groupByDay(snap.diary, snap.settings.timezone).keys()].sort();
+  return days.length ? [DIARY_PATH, ...days.map(diaryDayPath)] : [];
+}
+
 async function main() {
   const snap = await readSnapshot();
   if (!snap) throw new Error("build snapshot নেই");
@@ -44,7 +51,7 @@ async function main() {
   await writeFile(`${DIR}${SEARCH_INDEX_PATH}`, JSON.stringify(searchIndex), "utf8");
   await writeFile(`${DIR}/robots.txt`, renderRobots({ siteUrl, allowIndexing, blockAiCrawlers }), "utf8");
   if (allowIndexing) {
-    await writeFile(`${DIR}/sitemap.xml`, renderSitemap(siteUrl, snap.posts, [...scopes.filter((x) => x.kind !== "archive").map((x) => x.path), ...snap.pages.map((pg) => pagePath(pg.slug))], worksEntries(works)), "utf8");
+    await writeFile(`${DIR}/sitemap.xml`, renderSitemap(siteUrl, snap.posts, [...scopes.filter((x) => x.kind !== "archive").map((x) => x.path), ...snap.pages.map((pg) => pagePath(pg.slug)), ...diaryPaths(snap)], worksEntries(works)), "utf8");
   }
   console.log(`✅ search-index.json (${searchIndex.items.length} লেখা)`);
   console.log(`✅ rss.xml (${Math.min(feedItems, feedAll.length)} আইটেম (অধ্যায় সহ), ${feedMode}) + robots.txt (ইনডেক্স ${allowIndexing ? "চালু" : "বন্ধ"}, AI-ব্লক ${blockAiCrawlers ? "চালু" : "বন্ধ"})${allowIndexing ? ` + sitemap.xml (${snap.posts.length + snap.pages.length + worksEntries(works).length + 1} URL)` : "; sitemap নেই"}`);

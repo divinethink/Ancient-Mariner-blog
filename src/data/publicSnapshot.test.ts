@@ -147,3 +147,24 @@ describe("publicSnapshot — media (P6-৩ক)", () => {
     expect((await readSnapshot(path))?.media).toEqual([]);
   });
 });
+
+describe("publicSnapshot — দিনলিপি আলাদা", () => {
+  it("diary লেখা posts/unlisted-এ আসে না, শুধু diary-তে", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "snap-diary-"));
+    const path = join(dir, "posts.json");
+    await writeSnapshot(
+      [post("a"), post("d", { contentType: "diary", date: "2026-10-10" })],
+      new Date(),
+      path,
+      DEFAULT_SETTINGS,
+      undefined,
+      [],
+      [],
+      [post("u", { visibility: "unlisted" }), post("ud", { contentType: "diary", visibility: "unlisted" })],
+    );
+    const s = await readSnapshot(path);
+    expect(s?.posts.map((p) => p.id)).toEqual(["a"]);
+    expect(s?.diary.map((p) => p.id)).toEqual(["d"]);
+    expect(s?.unlisted.map((p) => p.id)).toEqual(["u"]);
+  });
+});

@@ -2,20 +2,22 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import type { SiteSettings } from "@/data/siteSettingsRepo";
 import { bn } from "@/i18n/bn";
-import { archiveMonths, buildCalendar, type MonthRef } from "@/lib/archive";
+import { archiveMonths } from "@/lib/archive";
+import { buildDiaryMonth, DIARY_PATH, latestDay } from "@/lib/diaryCalendar";
 import { DEFAULT_SIDEBAR, resolveLayout, type SidebarWidget } from "@/lib/layout";
 import type { PopularRow } from "@/lib/popular";
 import { SEARCH_PATH } from "@/lib/publicSearch";
 import type { Scope } from "@/lib/publicLists";
 import { FEED_PATH } from "@/lib/rss";
+import type { PublicDiary } from "@/data/publicDiary";
 import { AuthorBox } from "./AuthorBox";
+import { DiaryCalendar } from "./DiaryCalendar";
 
 const RECENT_COUNT = 5;
 const box = "rounded-2xl border border-line bg-surface p-4";
 const row = "inline-flex min-h-11 w-full items-center justify-between gap-2";
 const cta = "inline-flex min-h-11 items-center rounded-full bg-btn-bg px-4 font-semibold text-btn-tx";
 const ghost = "inline-flex min-h-11 items-center rounded-full border border-line px-4";
-type CalCell = { day: number; href?: string };
 const ext = { rel: "noopener noreferrer", target: "_blank" } as const;
 
 function Box({ title, children }: { title: string; children: ReactNode }) {
@@ -28,7 +30,7 @@ function Box({ title, children }: { title: string; children: ReactNode }) {
 }
 
 /** একটা widget; দেখানোর মতো কিছু না থাকলে null (খালি ফেসবুক/লিংক/ক্যাটাগরি লুকানো — Mockup §৫) */
-function widget(id: SidebarWidget, s: SiteSettings, scopes: readonly Scope[], popular: readonly PopularRow[], month?: MonthRef): ReactNode {
+function widget(id: SidebarWidget, s: SiteSettings, scopes: readonly Scope[], popular: readonly PopularRow[], diary?: PublicDiary): ReactNode {
   const blogCards = () => scopes.find((x) => x.kind === "blog")?.cards ?? [];
   switch (id) {
     case "search":
@@ -68,67 +70,15 @@ function widget(id: SidebarWidget, s: SiteSettings, scopes: readonly Scope[], po
       ) : null;
     }
     case "calendar": {
-      // দেখানো মাস = archive পেজে সেই মাস, নইলে সর্বশেষ লেখা-আছে এমন মাস; ‹ › = কাছের লেখা-আছে এমন মাসের static লিংক
-      const target = month ?? archiveMonths(blogCards(), s.timezone)[0];
-      if (!target) return null;
-      const cal = buildCalendar(blogCards(), s.timezone, target.y, target.m);
-      const slots: (CalCell | null)[] = [...Array<null>(cal.lead).fill(null), ...cal.cells];
-      while (slots.length % 7 !== 0) slots.push(null);
-      const weeks = Array.from({ length: slots.length / 7 }, (_, i) => slots.slice(i * 7, i * 7 + 7));
-      const nav = "inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg";
+      // দিনলিপি পঞ্জিকা: সর্বশেষ লেখা-আছে এমন মাস, হিটম্যাপ; দিনে ক্লিক → /diary/তারিখ। দিনলিপি না থাকলে লুকানো
+      const last = diary ? latestDay(diary.byDay.keys()) : undefined;
+      if (!diary || !last) return null;
       return (
         <Box title={bn.public.calendarTitle}>
-          <div className="mb-1 flex items-center justify-between font-semibold">
-            {cal.prev ? (
-              <Link href={cal.prev} prefetch={false} aria-label={bn.public.prevMonth} className={nav}>
-                ‹
-              </Link>
-            ) : (
-              <span aria-hidden="true" className={`${nav} text-muted`}>
-                ‹
-              </span>
-            )}
-            <span>{cal.label}</span>
-            {cal.next ? (
-              <Link href={cal.next} prefetch={false} aria-label={bn.public.nextMonth} className={nav}>
-                ›
-              </Link>
-            ) : (
-              <span aria-hidden="true" className={`${nav} text-muted`}>
-                ›
-              </span>
-            )}
-          </div>
-          <table className="w-full table-fixed text-center text-sm">
-            <caption className="sr-only">{cal.label}</caption>
-            <thead>
-              <tr>
-                {bn.public.weekdays.map((d, i) => (
-                  <th key={d} scope="col" abbr={bn.public.weekdaysFull[i]} className="font-medium text-muted">
-                    {d}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {weeks.map((w, wi) => (
-                <tr key={wi}>
-                  {w.map((c, ci) => (
-                    <td key={ci} className="p-0">
-                      {c &&
-                        (c.href ? (
-                          <Link href={c.href} prefetch={false} className="flex min-h-11 items-center justify-center rounded-lg bg-accent/15 font-semibold text-accent-text">
-                            {c.day.toLocaleString("bn-BD")}
-                          </Link>
-                        ) : (
-                          <span className="flex min-h-11 items-center justify-center text-muted">{c.day.toLocaleString("bn-BD")}</span>
-                        ))}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <DiaryCalendar view={buildDiaryMonth(diary.words, last.slice(0, 7))} timeZone={diary.tz} />
+          <Link href={DIARY_PATH} prefetch={false} className="mt-2 inline-flex min-h-11 items-center text-accent-text underline">
+            {bn.public.diaryLatest} →
+          </Link>
         </Box>
       );
     }
@@ -229,11 +179,11 @@ function widget(id: SidebarWidget, s: SiteSettings, scopes: readonly Scope[], po
 }
 
 /** `layout.sidebar` অনুযায়ী চালু widget-গুলো; কিছুই না থাকলে null (কলার গ্রিড বানায় না) */
-export function sidebarContent(s: SiteSettings, scopes: readonly Scope[], popular: readonly PopularRow[], month?: MonthRef): ReactNode {
+export function sidebarContent(s: SiteSettings, scopes: readonly Scope[], popular: readonly PopularRow[], diary?: PublicDiary): ReactNode {
   const blocks = resolveLayout(s.layout.sidebar, DEFAULT_SIDEBAR)
     .filter((w) => w.enabled)
     .flatMap((w) => {
-      const b = widget(w.id, s, scopes, popular, month);
+      const b = widget(w.id, s, scopes, popular, diary);
       return b ? [<div key={w.id}>{b}</div>] : [];
     });
   return blocks.length ? <aside aria-label={bn.public.sidebarLabel} className="space-y-4">{blocks}</aside> : null;
