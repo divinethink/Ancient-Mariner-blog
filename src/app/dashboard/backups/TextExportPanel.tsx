@@ -4,10 +4,21 @@
 import { useEffect, useRef, useState } from "react";
 import { getBackupSource } from "@/data/backupRepo";
 import { bn } from "@/i18n/bn";
-import { buildHtml, buildMarkdown, exportFileName, readAllPosts, selectPosts, type ExportMode } from "@/lib/exportBundle";
+import {
+  buildHtml,
+  buildMarkdown,
+  exportFileName,
+  readAllPosts,
+  selectPosts,
+  type BundleMeta,
+  type ExportMode,
+  type ExportPost,
+} from "@/lib/exportBundle";
+import { DOCX_MIME } from "@/lib/exportDocx"; // শুধু ধ্রুবক — `docx` প্যাকেজ বোতাম চাপলে lazy লোড হয়
 import { useSiteTimezone } from "../SiteSettingsProvider";
 
 type Phase = "idle" | "running" | "done" | "empty" | "error";
+type DocxPhase = "idle" | "building" | "error";
 type Files = { md: { url: string; name: string }; html: { url: string; name: string }; count: number };
 
 const btn = "min-h-11 rounded-full bg-btn-bg px-5 text-btn-tx disabled:opacity-50";
@@ -20,6 +31,9 @@ export function TextExportPanel() {
   const [read, setRead] = useState(0);
   const [files, setFiles] = useState<Files | null>(null);
   const abort = useRef<AbortController | null>(null);
+  const src = useRef<{ posts: ExportPost[]; meta: BundleMeta; now: Date } | null>(null);
+  const [docx, setDocx] = useState<DocxPhase>("idle");
+  const [docxFile, setDocxFile] = useState<{ url: string; name: string } | null>(null);
 
   useEffect(() => () => abort.current?.abort(), []);
   useEffect(
@@ -32,6 +46,28 @@ export function TextExportPanel() {
     [files],
   );
 
+  useEffect(
+    () => () => {
+      if (docxFile) URL.revokeObjectURL(docxFile.url);
+    },
+    [docxFile],
+  );
+
+  async function makeDocx() {
+    if (!src.current || docx === "building") return;
+    setDocx("building");
+    try {
+      const { posts, meta, now } = src.current;
+      const { buildDocx } = await import("@/lib/exportDocx");
+      const buf = await buildDocx(posts, meta);
+      const url = URL.createObjectURL(new Blob([buf], { type: DOCX_MIME }));
+      setDocxFile({ url, name: exportFileName(now, "docx") });
+      setDocx("idle");
+    } catch {
+      setDocx("error"); // Markdown/HTML অক্ষত থাকে
+    }
+  }
+
   async function run() {
     if (phase === "running") return;
     const ac = new AbortController();
@@ -39,6 +75,9 @@ export function TextExportPanel() {
     setPhase("running");
     setRead(0);
     setFiles(null);
+    setDocxFile(null);
+    setDocx("idle");
+    src.current = null;
     try {
       const mode: ExportMode = all ? "all" : "published";
       const docs = await readAllPosts(await getBackupSource(), { signal: ac.signal, onProgress: setRead });
@@ -50,6 +89,7 @@ export function TextExportPanel() {
       const now = new Date();
       const meta = { heading: T.heading, exportedAt: now, timeZone: tz, mode };
       const url = (text: string, type: string) => URL.createObjectURL(new Blob([text], { type: `${type};charset=utf-8` }));
+      src.current = { posts, meta, now };
       setFiles({
         md: { url: url(buildMarkdown(posts, meta), "text/markdown"), name: exportFileName(now, "md") },
         html: { url: url(buildHtml(posts, meta), "text/html"), name: exportFileName(now, "html") },
@@ -106,6 +146,30 @@ export function TextExportPanel() {
           <a href={files.html.url} download={files.html.name} className={`${btn} inline-flex items-center`}>
             ⬇ {T.htmlLabel}
           </a>
+          {docxFile ? (
+            <p>
+              <a href={docxFile.url} download={docxFile.name} className={`${btn} inline-flex items-center`}>
+                ⬇ {T.docxLabel}
+              </a>
+            </p>
+          ) : (
+            <p>
+              <button
+                type="button"
+                onClick={() => void makeDocx()}
+                disabled={docx === "building"}
+                className="min-h-11 rounded-full border border-line px-5 disabled:opacity-50"
+              >
+                {docx === "building" ? T.docxBuilding : T.docxBtn}
+              </button>
+            </p>
+          )}
+          {docx === "error" && (
+            <p role="alert" className="text-accent-text">
+              {T.docxFailed}
+            </p>
+          )}
+          {docxFile && <p className="text-sm text-muted">{T.docxHint}</p>}
           <p className="text-sm text-muted">{bn.backup.keepSafe}</p>
         </div>
       )}

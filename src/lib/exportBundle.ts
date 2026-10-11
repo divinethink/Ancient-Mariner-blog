@@ -61,11 +61,11 @@ const postTitle = (p: ExportPost) => p.title || "(শিরোনামহীন
 const dateOf = (p: ExportPost, tz: string) => (p.whenMs === null ? "" : formatDate(p.whenMs, tz));
 
 export type BundleMeta = { heading: string; exportedAt: Date; timeZone: string; mode: ExportMode };
-const note = (m: BundleMeta, n: number) =>
+export const bundleNote = (m: BundleMeta, n: number) =>
   `${formatDate(m.exportedAt, m.timeZone)} · ${n}টি লেখা · ${m.mode === "all" ? "সব লেখা (ট্র্যাশ বাদে)" : "শুধু প্রকাশিত"}`;
 
 export function buildMarkdown(posts: ExportPost[], meta: BundleMeta): string {
-  const lines = [`# ${mdEscape(meta.heading)}`, "", `*${note(meta, posts.length)}*`, ""];
+  const lines = [`# ${mdEscape(meta.heading)}`, "", `*${bundleNote(meta, posts.length)}*`, ""];
   for (const g of groupByCategory(posts)) {
     lines.push(`## ${mdEscape(g.category)}`, "");
     for (const p of g.posts) {
@@ -112,12 +112,12 @@ export function buildHtml(posts: ExportPost[], meta: BundleMeta): string {
   const h = escapeHtml(meta.heading);
   return (
     `<!doctype html><html lang="bn"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">` +
-    `<title>${h}</title><style>${CSS}</style></head><body><main><h1>${h}</h1><p class="meta">${escapeHtml(note(meta, posts.length))}</p>` +
+    `<title>${h}</title><style>${CSS}</style></head><body><main><h1>${h}</h1><p class="meta">${escapeHtml(bundleNote(meta, posts.length))}</p>` +
     `<nav aria-label="সূচি"><ul>${toc}</ul></nav>${sections}</main></body></html>\n`
   );
 }
 
-export function exportFileName(now: Date, ext: "md" | "html"): string {
+export function exportFileName(now: Date, ext: "md" | "html" | "docx"): string {
   const p = (n: number) => String(n).padStart(2, "0");
   return `ancient-mariner-lekha-${now.getUTCFullYear()}${p(now.getUTCMonth() + 1)}${p(now.getUTCDate())}-${p(now.getUTCHours())}${p(now.getUTCMinutes())}.${ext}`;
 }
