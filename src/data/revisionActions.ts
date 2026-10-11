@@ -7,7 +7,7 @@ import { countWords, docToText, makeExcerpt, parseBody } from "@/lib/editorDoc";
 import type { RevisionTrigger } from "@/lib/enums";
 import { intervalDue, revisionKey } from "@/lib/revision";
 
-const textOf = (body: string) => docToText(parseBody(body));
+export const textOf = (body: string) => docToText(parseBody(body));
 export const bodyWords = (body: string): number => countWords(textOf(body));
 
 /** সর্বশেষ snapshot-এর সাথে হুবহু এক হলে কিছু বানায় না (null); নইলে নতুনটা */

@@ -1,5 +1,6 @@
 // Cron-এর (P5a-৩) pure সিদ্ধান্ত-যুক্তি — SDK/UI/network-মুক্ত। কী মোছা হবে তার সংকীর্ণ filter এখানেই; privileged কোড শুধু এর ফল চালায়।
 // নীতি: সন্দেহ হলে মোছা নয় (fail-safe)। Arch §৬ Trash, §১৫ Revision retention।
+import type { RevisionTargetType } from "@/lib/enums";
 import { REVISION_RETAIN } from "@/lib/revision";
 import { TRASH_DAYS } from "@/lib/trash";
 
@@ -127,10 +128,11 @@ export function candidateTargets(
   recent: readonly RevisionStub[],
   max: number = PRUNE_MAX_TARGETS,
   shuffle: <T>(a: T[]) => T[] = (a) => a,
+  type: RevisionTargetType = "post",
 ): string[] {
   const set = new Set<string>();
   for (const r of recent)
-    if (r.targetType === "post" && isSafeDocId(r.targetId)) set.add(r.targetId);
+    if (r.targetType === type && isSafeDocId(r.targetId)) set.add(r.targetId);
   return shuffle([...set]).slice(0, Math.max(0, max));
 }
 
@@ -142,9 +144,10 @@ export function planRevisionPrune(
   revs: readonly RevisionStub[],
   targetId: string,
   keep: number = REVISION_RETAIN,
+  type: RevisionTargetType = "post",
 ): string[] {
   const mine = revs.filter(
-    (r) => r.targetType === "post" && r.targetId === targetId && isSafeDocId(r.id),
+    (r) => r.targetType === type && r.targetId === targetId && isSafeDocId(r.id),
   );
   if (keep <= 0) return mine.map((r) => r.id);
   const ranked = mine

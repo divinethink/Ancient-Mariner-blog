@@ -187,6 +187,39 @@ describe("pruneRevisions", () => {
     expect(f.commits.flat()).toHaveLength(3);
   });
 
+  it("chapter-target: 'chapters'-এ অস্তিত্ব দেখে, chapter-filter-এ query করে, ২২টা থাকলে ২টা মোছে (post-এ হাত দেয় না)", async () => {
+    const seen: string[] = [];
+    const f = fakeDb({
+      queries: (q) => {
+        if ((q.orderBy as unknown) === undefined) return { docs: [{ id: "x", data: { targetType: "chapter", targetId: "CH" } }] };
+        const filters = (q.where as { compositeFilter: { filters: { fieldFilter: { value: { stringValue: string } } }[] } }).compositeFilter.filters;
+        expect(filters[0].fieldFilter.value.stringValue).toBe("chapter");
+        return { docs: Array.from({ length: 22 }, (_, i) => ({ id: `CH-${i + 1}`, data: { targetType: "chapter", targetId: "CH", versionNumber: i + 1 } })).reverse() };
+      },
+      batchGet: (c) => {
+        seen.push(c);
+        return { found: [{ id: "CH", data: {}, updateTime: "t" }] as QueryDoc[], missing: [] };
+      },
+    });
+    const r = await pruneRevisions(f.db, NOW, log);
+    expect(seen).toEqual(["chapters"]);
+    expect(r.deletedRevisions).toBe(2);
+    expect(f.commits.flat().map((o) => o.id).sort()).toEqual(["CH-1", "CH-2"]);
+  });
+
+  it("chapter আর নেই (missing) ⇒ তার সব revision মোছে (orphan)", async () => {
+    const f = fakeDb({
+      queries: (q) =>
+        (q.orderBy as unknown) === undefined
+          ? { docs: [{ id: "x", data: { targetType: "chapter", targetId: "GONE" } }] }
+          : { docs: [1, 2, 3].map((n) => ({ id: `G-${n}`, data: { targetType: "chapter", targetId: "GONE", versionNumber: n } })) },
+      batchGet: () => ({ found: [], missing: ["GONE"] }),
+    });
+    const r = await pruneRevisions(f.db, NOW, log);
+    expect(r.orphanTargets).toBe(1);
+    expect(f.commits.flat()).toHaveLength(3);
+  });
+
   it("সাম্প্রতিক revision না থাকলে কিছুই নয়", async () => {
     const f = fakeDb({ queries: () => ({ docs: [] }) });
     const r = await pruneRevisions(f.db, NOW, log);

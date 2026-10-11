@@ -152,45 +152,48 @@ export async function pruneRevisions(
     select: select("targetType", "targetId"),
     limit: REVISION_SCAN_LIMIT,
   });
-  const targets = candidateTargets(
-    recent.docs.map((d) => ({ id: d.id, ...d.data })),
-    PRUNE_MAX_TARGETS,
-    shuffle,
-  );
-  if (targets.length === 0) return out;
+  // post ও chapter আলাদা করে (target-টাইপ অনুযায়ী অস্তিত্ব-collection ও filter) — chapter-এর ইতিহাসও সর্বশেষ ২০টায় ছাঁটা (P14a-৩)
+  const stubs = recent.docs.map((d) => ({ id: d.id, ...d.data }));
+  let budget = PRUNE_MAX_TARGETS; // দুই টাইপ মিলিয়ে এক run-এ সর্বোচ্চ (Workers Free subrequest-সীমা অপরিবর্তিত)
+  for (const type of ["post", "chapter"] as const) {
+    const targets = candidateTargets(stubs, budget, shuffle, type);
+    if (targets.length === 0) continue;
+    budget -= targets.length;
 
-  // অস্তিত্ব: শুধু স্পষ্ট `missing` মানেই orphan (ত্রুটি হলে throw — কিছু মোছা হয় না)
-  const posts = await db.batchGet("posts", targets, ["status"]);
-  const missing = new Set(posts.missing);
+    // অস্তিত্ব: শুধু স্পষ্ট `missing` মানেই orphan (ত্রুটি হলে throw — কিছু মোছা হয় না)
+    const owners = await db.batchGet(type === "post" ? "posts" : "chapters", targets, ["status"]);
+    const missing = new Set(owners.missing);
 
-  for (const t of targets) {
-    const orphan = missing.has(t);
-    const { docs } = await db.runQuery({
-      from: [{ collectionId: "revisions" }],
-      where: {
-        compositeFilter: {
-          op: "AND",
-          filters: [fieldEq("targetType", "post"), fieldEq("targetId", t)],
+    for (const t of targets) {
+      const orphan = missing.has(t);
+      const { docs } = await db.runQuery({
+        from: [{ collectionId: "revisions" }],
+        where: {
+          compositeFilter: {
+            op: "AND",
+            filters: [fieldEq("targetType", type), fieldEq("targetId", t)],
+          },
         },
-      },
-      // composite index: targetType+targetId+versionNumber desc — সর্বশেষগুলো আগে, তাই limit-truncation নিরাপদ
-      orderBy: [{ field: { fieldPath: "versionNumber" }, direction: "DESCENDING" }],
-      select: select("targetType", "targetId", "versionNumber"),
-      limit: REVISION_LIST_LIMIT,
-    });
-    const del = planRevisionPrune(
-      docs.map((d) => ({ id: d.id, ...d.data })),
-      t,
-      orphan ? 0 : REVISION_RETAIN,
-    );
-    if (del.length === 0) continue;
-    for (const part of chunk(del, COMMIT_MAX_WRITES)) {
-      const ops: DeleteOp[] = part.map((id) => ({ collection: "revisions", id }));
-      await db.commitDeletes(ops);
-      out.deletedRevisions += ops.length;
+        // composite index: targetType+targetId+versionNumber desc — সর্বশেষগুলো আগে, তাই limit-truncation নিরাপদ
+        orderBy: [{ field: { fieldPath: "versionNumber" }, direction: "DESCENDING" }],
+        select: select("targetType", "targetId", "versionNumber"),
+        limit: REVISION_LIST_LIMIT,
+      });
+      const del = planRevisionPrune(
+        docs.map((d) => ({ id: d.id, ...d.data })),
+        t,
+        orphan ? 0 : REVISION_RETAIN,
+        type,
+      );
+      if (del.length === 0) continue;
+      for (const part of chunk(del, COMMIT_MAX_WRITES)) {
+        const ops: DeleteOp[] = part.map((id) => ({ collection: "revisions", id }));
+        await db.commitDeletes(ops);
+        out.deletedRevisions += ops.length;
+      }
+      out.targets++;
+      if (orphan) out.orphanTargets++;
     }
-    out.targets++;
-    if (orphan) out.orphanTargets++;
   }
   log.info("prune সম্পন্ন", { ...out });
   return out;

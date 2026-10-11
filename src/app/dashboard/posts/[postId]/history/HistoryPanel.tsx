@@ -2,8 +2,11 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
+import { restoreChapterRevision, snapshotChapterCurrent } from "@/data/chapterRevisionActions";
 import { draftStore } from "@/data/draftStore";
+import { localStore } from "@/data/localStore";
 import { getPostRepo } from "@/data/postRepo.wire";
+import { getProjectRepo } from "@/data/projectRepo.wire";
 import { bodyWords, restoreRevision, snapshotCurrent } from "@/data/revisionActions";
 import type { RevisionWithId } from "@/data/revisionRepo";
 import { getRevisionRepo } from "@/data/revisionRepo.wire";
@@ -19,9 +22,13 @@ type State =
   | { kind: "missing" }
   | { kind: "ready"; title: string; items: RevisionWithId[]; blocked: boolean };
 
+/** অধ্যায়ের অসংরক্ষিত লোকাল কপির key (ChapterEditor-এর সাথে একই) */
+const chapterLocalKey = (id: string) => `chapterdraft:${id}`;
 const ghost = "min-h-11 rounded-full border border-line px-4 disabled:opacity-50";
 
-export function HistoryPanel({ postId }: { postId: string }) {
+/** `chapterOf` (প্রজেক্ট-id) থাকলে `postId` আসলে অধ্যায়ের id — একই কম্পোনেন্ট, ডেটা-পথ আলাদা (P14a-৩) */
+export function HistoryPanel({ postId, chapterOf }: { postId: string; chapterOf?: string }) {
+  const editHref = chapterOf ? `/dashboard/projects/${chapterOf}/chapters/${postId}` : `/dashboard/posts/${postId}/edit`;
   const h = bn.history;
   const tz = useSiteTimezone();
   const [state, setState] = useState<State>({ kind: "loading" });
@@ -31,6 +38,16 @@ export function HistoryPanel({ postId }: { postId: string }) {
 
   const load = useCallback(async (): Promise<State> => {
     try {
+      if (chapterOf) {
+        const [projects, revs] = await Promise.all([getProjectRepo(), getRevisionRepo()]);
+        const [ch, items, local] = await Promise.all([
+          projects.getChapter(postId),
+          revs.list(postId, { targetType: "chapter" }),
+          localStore.get(chapterLocalKey(postId)).catch(() => undefined),
+        ]);
+        if (!ch || ch.projectId !== chapterOf || ch.status === "trashed") return { kind: "missing" };
+        return { kind: "ready", title: ch.title, items, blocked: !!local }; // লোকাল কপি = সংরক্ষণহীন লেখা; Restore তা মুছে দিত
+      }
       const [posts, revs] = await Promise.all([getPostRepo(), getRevisionRepo()]);
       // Restore-এর আগে এই ডিভাইসের সংরক্ষণহীন লেখা sync (নইলে Restore সেটা মুছে দিত)
       await syncAllDirty(posts, draftStore).catch(() => 0);
@@ -44,7 +61,7 @@ export function HistoryPanel({ postId }: { postId: string }) {
     } catch {
       return { kind: "error" };
     }
-  }, [postId]);
+  }, [postId, chapterOf]);
 
   useEffect(() => {
     let dead = false;
@@ -62,8 +79,10 @@ export function HistoryPanel({ postId }: { postId: string }) {
     setBusy(true);
     setMsg(null);
     try {
-      const [posts, revs] = await Promise.all([getPostRepo(), getRevisionRepo()]);
-      const made = await snapshotCurrent(posts, revs, postId, "manual");
+      const revs = await getRevisionRepo();
+      const made = chapterOf
+        ? await snapshotChapterCurrent(await getProjectRepo(), revs, postId, "manual")
+        : await snapshotCurrent(await getPostRepo(), revs, postId, "manual");
       setMsg({ ok: true, text: made ? h.saved : h.unchanged });
       await refresh();
     } catch {
@@ -77,11 +96,14 @@ export function HistoryPanel({ postId }: { postId: string }) {
     setBusy(true);
     setMsg(null);
     try {
-      const [posts, revs] = await Promise.all([getPostRepo(), getRevisionRepo()]);
-      const res = await restoreRevision(posts, revs, id);
+      const revs = await getRevisionRepo();
+      const res = chapterOf
+        ? await restoreChapterRevision(await getProjectRepo(), revs, id)
+        : await restoreRevision(await getPostRepo(), revs, id);
       if (res.kind === "restored") {
         // লোকাল কপি বাদ — editor খুলে রিমোটের (restore-করা) লেখা পাবে; sync-base editor-ই বসায়
-        await draftStore.deleteDraft(postId).catch(() => undefined);
+        if (chapterOf) await localStore.delete(chapterLocalKey(postId)).catch(() => undefined);
+        else await draftStore.deleteDraft(postId).catch(() => undefined);
         setMsg({ ok: true, text: res.published ? h.restoredPublished : h.restoredDraft });
         await refresh();
       } else {
@@ -95,7 +117,7 @@ export function HistoryPanel({ postId }: { postId: string }) {
   }
 
   const back = (
-    <Link href={`/dashboard/posts/${postId}/edit`} className="mb-3 inline-flex min-h-11 items-center text-accent-text">
+    <Link href={editHref} className="mb-3 inline-flex min-h-11 items-center text-accent-text">
       {h.back}
     </Link>
   );
@@ -147,14 +169,14 @@ export function HistoryPanel({ postId }: { postId: string }) {
       </div>
       {state.blocked && (
         <p role="alert" className="mb-4 rounded-xl border border-line bg-surface p-3 text-sm">
-          {h.unsynced}
+          {chapterOf ? h.unsyncedChapter : h.unsynced}
         </p>
       )}
       {msg && (
         <p role={msg.ok ? "status" : "alert"} aria-live="polite" className={`mb-4 text-sm ${msg.ok ? "" : "text-accent-text"}`}>
           {msg.text}{" "}
           {msg.ok && msg.text !== h.saved && msg.text !== h.unchanged && msg.text !== h.same && (
-            <Link href={`/dashboard/posts/${postId}/edit`} className="text-accent-text underline">
+            <Link href={editHref} className="text-accent-text underline">
               {h.openEditor}
             </Link>
           )}

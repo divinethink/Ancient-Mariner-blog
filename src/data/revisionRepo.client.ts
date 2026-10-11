@@ -22,7 +22,7 @@ import {
   type RevisionRepo,
   type RevisionWithId,
 } from "@/data/revisionRepo";
-import { RevisionTrigger } from "@/lib/enums";
+import { RevisionTargetType, RevisionTrigger } from "@/lib/enums";
 import { isValidPostId, newId } from "@/lib/id";
 import { nextVersionNumber } from "@/lib/revision";
 
@@ -34,11 +34,11 @@ export function createRevisionRepoClient(db: Firestore, ownerUid: string): Revis
     return snap.exists() ? parseRevision(id, snap.data()) : null;
   }
 
-  async function list(targetId: string, opts?: { limit?: number }): Promise<RevisionWithId[]> {
+  async function list(targetId: string, opts?: { limit?: number; targetType?: RevisionTargetType }): Promise<RevisionWithId[]> {
     // composite index: revisions (targetType ASC, targetId ASC, versionNumber DESC) — firestore.indexes.json
     const q = query(
       collection(db, "revisions"),
-      where("targetType", "==", "post"),
+      where("targetType", "==", opts?.targetType ?? "post"),
       where("targetId", "==", targetId),
       orderBy("versionNumber", "desc"),
       limit(opts?.limit ?? REVISION_RETAIN),
@@ -61,9 +61,10 @@ export function createRevisionRepoClient(db: Firestore, ownerUid: string): Revis
     if (existing) return existing;
     const snapshot = SnapshotSchema.parse(input.snapshot);
     const trigger = RevisionTrigger.parse(input.trigger);
-    const latest = (await list(input.targetId, { limit: 1 }))[0]?.versionNumber;
+    const targetType = RevisionTargetType.parse(input.targetType ?? "post");
+    const latest = (await list(input.targetId, { limit: 1, targetType }))[0]?.versionNumber;
     await setDoc(ref(id), {
-      targetType: "post",
+      targetType,
       targetId: input.targetId,
       snapshot,
       versionNumber: nextVersionNumber(latest),

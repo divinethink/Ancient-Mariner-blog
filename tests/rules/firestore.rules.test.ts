@@ -491,3 +491,30 @@ describe("writingProjects / chapters (P14a-১)", () => {
     await assertSucceeds(deleteDoc(doc(owner(), "writingProjects", "d")));
   });
 });
+
+// P14a-৩: প্রকাশিত অধ্যায়ের অপ্রকাশিত সম্পাদনা (drafts) ও ইতিহাস (revisions) পাবলিকে কখনো ফাঁস নয় — অধ্যায় ও প্রজেক্ট published+public হলেও
+describe("chapter drafts/revisions গোপনীয়তা (P14a-৩)", () => {
+  const cdraft = { targetType: "chapter", title: "অপ্রকাশিত", body: "{}", wordCount: 0, ownerUid: OWNER };
+  const crev = { targetType: "chapter", targetId: "c1", snapshot: "{}", versionNumber: 1, trigger: "manual", ownerUid: OWNER };
+  beforeEach(async () => {
+    await seed("writingProjects", "p1", { title: "প", slug: "প", type: "novel", status: "published", visibility: "public", ownerUid: OWNER });
+    await seed("chapters", "c1", { projectId: "p1", title: "অ", slug: "অ", body: "{}", order: 0, status: "published", visibility: "public", ownerUid: OWNER });
+  });
+  it("অধ্যায় পাবলিক-readable হলেও তার drafts/revisions anonymous ও non-owner পড়তে/লিখতে পারে না", async () => {
+    await assertSucceeds(getDoc(doc(anon(), "chapters", "c1")));
+    await seed("drafts", "c1", cdraft);
+    await seed("revisions", "r1", crev);
+    await assertFails(getDoc(doc(anon(), "drafts", "c1")));
+    await assertFails(getDoc(doc(other(), "drafts", "c1")));
+    await assertFails(getDoc(doc(anon(), "revisions", "r1")));
+    await assertFails(getDoc(doc(other(), "revisions", "r1")));
+    await assertFails(setDoc(doc(other(), "drafts", "c1"), cdraft));
+    await assertFails(setDoc(doc(anon(), "revisions", "r2"), crev));
+  });
+  it("owner chapter-draft লিখতে/মুছতে, chapter-revision বানাতে পারে (update/delete নয়)", async () => {
+    await assertSucceeds(setDoc(doc(owner(), "drafts", "c1"), cdraft));
+    await assertSucceeds(deleteDoc(doc(owner(), "drafts", "c1")));
+    await assertSucceeds(setDoc(doc(owner(), "revisions", "r1"), crev));
+    await assertFails(deleteDoc(doc(owner(), "revisions", "r1")));
+  });
+});

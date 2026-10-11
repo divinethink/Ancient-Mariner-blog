@@ -1,7 +1,7 @@
 // projectRepo.client-কে আসল rules-এর নিচে Emulator-এ চালানো (Checklist P14a-১)
 import { readFileSync } from "node:fs";
 import { initializeTestEnvironment, type RulesTestEnvironment } from "@firebase/rules-unit-testing";
-import { doc, getDoc, updateDoc, type Firestore } from "firebase/firestore";
+import { doc, getDoc, setDoc, updateDoc, type Firestore } from "firebase/firestore";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { ChapterNotFoundError, ProjectHasChaptersError, ProjectNotFoundError, ProjectRuleError } from "../../src/data/projectRepo";
 import { createProjectRepoClient } from "../../src/data/projectRepo.client";
@@ -194,5 +194,78 @@ describe("projectRepo.client — অধ্যায় (Emulator)", () => {
     const c = await repo().createChapter({ projectId: p.id, title: "এক" });
     await expect(updateDoc(doc(ownerDb(), "chapters", c.id), { projectId: "otherProj0000000001" })).rejects.toThrow();
     expect((await getDoc(doc(ownerDb(), "chapters", c.id))).data()?.projectId).toBe(p.id);
+  });
+});
+
+// P14a-৩: প্রকাশিত অধ্যায়ের সম্পাদনা `drafts`-এ; প্রকাশ/বাতিল/ট্র্যাশ/unpublish-এ কিছু হারায় না
+describe("projectRepo.client — অধ্যায়ের drafts (Emulator, P14a-৩)", () => {
+  const published = async () => {
+    const p = await newProject();
+    const c = await repo().createChapter({ projectId: p.id, title: "এক", body: "{\"v\":1}", wordCount: 1 });
+    await repo().updateChapter(c.id, { status: "published" });
+    return c;
+  };
+  const draftDoc = (id: string) => getDoc(doc(ownerDb(), "drafts", id));
+
+  it("saveChapterEdit: drafts-এ targetType='chapter'; অধ্যায়-doc অপরিবর্তিত; idempotent; draft-অধ্যায়ে নিষিদ্ধ", async () => {
+    const c = await published();
+    await repo().saveChapterEdit(c.id, { title: "এক-নতুন", body: "{\"v\":2}", wordCount: 2 });
+    await repo().saveChapterEdit(c.id, { title: "এক-নতুন", body: "{\"v\":2}", wordCount: 2 });
+    const d = await repo().getChapterDraft(c.id);
+    expect(d).toMatchObject({ targetType: "chapter", title: "এক-নতুন", body: "{\"v\":2}", wordCount: 2, ownerUid: OWNER });
+    expect(await repo().getChapter(c.id)).toMatchObject({ title: "এক", body: "{\"v\":1}", wordCount: 1 });
+    const q = await repo().createChapter({ projectId: c.projectId, title: "খসড়া" });
+    await expect(repo().saveChapterEdit(q.id, { title: "x", body: "", wordCount: 0 })).rejects.toBeInstanceOf(ProjectRuleError);
+  });
+
+  it("applyChapterDraft: drafts → chapters এক batch-এ, draft মোছে; draft না থাকলে null", async () => {
+    const c = await published();
+    expect(await repo().applyChapterDraft(c.id)).toBeNull();
+    await repo().saveChapterEdit(c.id, { title: "এক-নতুন", body: "{\"v\":2}", wordCount: 2 });
+    const u = await repo().applyChapterDraft(c.id);
+    expect(u).toMatchObject({ title: "এক-নতুন", body: "{\"v\":2}", wordCount: 2, status: "published", slug: c.slug, order: c.order });
+    expect((await draftDoc(c.id)).exists()).toBe(false);
+  });
+
+  it("discardChapterDraft: অধ্যায় অক্ষত, draft নেই; না থাকলেও সফল", async () => {
+    const c = await published();
+    await repo().saveChapterEdit(c.id, { title: "বাতিল হবে", body: "{}", wordCount: 0 });
+    await repo().discardChapterDraft(c.id);
+    await repo().discardChapterDraft(c.id);
+    expect(await repo().getChapterDraft(c.id)).toBeNull();
+    expect((await repo().getChapter(c.id))?.title).toBe("এক");
+  });
+
+  it("trash: থাকা draft আগে অধ্যায়ে মেশে (লুকানো সম্পাদনা হারায় না); drafts মোছে", async () => {
+    const c = await published();
+    await repo().saveChapterEdit(c.id, { title: "এক-নতুন", body: "{\"v\":2}", wordCount: 2 });
+    const t = await repo().trashChapter(c.id);
+    expect(t).toMatchObject({ status: "trashed", title: "এক-নতুন", body: "{\"v\":2}", wordCount: 2 });
+    expect((await draftDoc(c.id)).exists()).toBe(false);
+  });
+
+  it("প্রকাশিত → draft: থাকা সম্পাদনা অধ্যায়ে মেশে; শুধু visibility বদলালে draft থাকে", async () => {
+    const c = await published();
+    await repo().saveChapterEdit(c.id, { title: "এক-নতুন", body: "{\"v\":2}", wordCount: 2 });
+    await repo().updateChapter(c.id, { visibility: "private" });
+    expect(await repo().getChapterDraft(c.id)).not.toBeNull();
+    const u = await repo().updateChapter(c.id, { status: "draft" });
+    expect(u).toMatchObject({ status: "draft", title: "এক-নতুন", body: "{\"v\":2}" });
+    expect((await draftDoc(c.id)).exists()).toBe(false);
+  });
+
+  it("স্থায়ী মোছা: পড়ে-থাকা draft-ও যায়", async () => {
+    const c = await published();
+    await repo().trashChapter(c.id);
+    await setDoc(doc(ownerDb(), "drafts", c.id), { targetType: "chapter", title: "stray", body: "{}", wordCount: 0, ownerUid: OWNER, updatedAt: new Date() });
+    await repo().deleteChapter(c.id);
+    expect((await draftDoc(c.id)).exists()).toBe(false);
+    expect(await repo().getChapter(c.id)).toBeNull();
+  });
+
+  it("post-ধরনের draft অধ্যায়ের draft হিসেবে পড়া হয় না", async () => {
+    const c = await published();
+    await setDoc(doc(ownerDb(), "drafts", c.id), { targetType: "post", title: "p", body: "{}", excerpt: "", ownerUid: OWNER, updatedAt: new Date() });
+    expect(await repo().getChapterDraft(c.id)).toBeNull();
   });
 });

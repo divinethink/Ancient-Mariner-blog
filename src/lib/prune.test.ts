@@ -132,6 +132,7 @@ describe("candidateTargets", () => {
     { id: "5", targetType: "post", targetId: "C" },
   ];
   it("শুধু post ও নিরাপদ id, অনন্য", () => expect(candidateTargets(recent)).toEqual(["A", "C"]));
+  it("type=chapter হলে শুধু chapter-target", () => expect(candidateTargets(recent, 12, (a) => a, "chapter")).toEqual(["B"]));
   it("max মানে", () => expect(candidateTargets(recent, 1)).toHaveLength(1));
   it("shuffle ফাংশন প্রয়োগ হয়", () =>
     expect(candidateTargets(recent, 5, (a) => [...a].reverse())).toEqual(["C", "A"]));
@@ -187,4 +188,17 @@ describe("planRevisionPrune", () => {
 
 describe("chunk", () => {
   it("ভাগ করে", () => expect(chunk([1, 2, 3, 4, 5], 2)).toEqual([[1, 2], [3, 4], [5]]));
+});
+
+describe("planRevisionPrune — chapter (P14a-৩)", () => {
+  const mk = (type: string, t: string, n: number) => ({ id: `${type}-${t}-${n}`, targetType: type, targetId: t, versionNumber: n });
+  const revs = [...Array.from({ length: 22 }, (_, i) => mk("chapter", "C1", i + 1)), mk("post", "C1", 1)];
+  it("chapter-এর সর্বশেষ ২০টা রাখে; একই id-র post-revision কখনো মোছে না", () => {
+    const del = planRevisionPrune(revs, "C1", 20, "chapter");
+    expect(del.sort()).toEqual(["chapter-C1-1", "chapter-C1-2"]);
+    expect(planRevisionPrune(revs, "C1", 0, "chapter")).not.toContain("post-C1-1");
+  });
+  it("ডিফল্ট (post) আচরণ অপরিবর্তিত — chapter-revision ছোঁয় না", () => {
+    expect(planRevisionPrune(revs, "C1")).toEqual([]);
+  });
 });

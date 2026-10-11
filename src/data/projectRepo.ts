@@ -65,6 +65,19 @@ export const ChapterSchema = z.object({
 export type Chapter = z.infer<typeof ChapterSchema>;
 export type ChapterWithId = Chapter & { id: string };
 
+/** প্রকাশিত অধ্যায়ের অপ্রকাশিত সম্পাদনা (`drafts/{chapterId}`, `targetType='chapter'`; P14a-৩) — পাবলিক-read কখনো নেই */
+export const ChapterDraftSchema = z.object({
+  targetType: z.literal("chapter").default("chapter"),
+  title: ChapterTitleSchema,
+  body: ChapterBodySchema,
+  wordCount: z.number().int().min(0).default(0),
+  ownerUid: z.string().min(1),
+  updatedAt: z.date(),
+  schemaVersion: z.number().int().default(CHAPTER_SCHEMA_VERSION),
+});
+export type ChapterDraft = z.infer<typeof ChapterDraftSchema>;
+export const parseChapterDraft = (raw: Record<string, unknown>): ChapterDraft => ChapterDraftSchema.parse(normalizeRaw(raw));
+
 export const parseProject = (id: string, raw: Record<string, unknown>): WritingProjectWithId => ({
   ...WritingProjectSchema.parse(normalizeRaw(raw)),
   id,
@@ -107,6 +120,8 @@ export type UpdateChapterInput = {
   status?: Exclude<ChapterStatus, "trashed">;
   visibility?: ChapterVisibility;
 };
+
+export type SaveChapterEditInput = { title: string; body: string; wordCount: number };
 
 export class ProjectNotFoundError extends Error {
   constructor(public readonly id: string) {
@@ -151,17 +166,24 @@ export interface ProjectRepo {
   getChapter(id: string): Promise<ChapterWithId | null>;
   /** idempotent; নতুন অধ্যায় `draft`+`private`, order = সর্বোচ্চ+১; slug ওই প্রজেক্টের ভেতরে অনন্য; সীমা MAX_CHAPTERS_PER_PROJECT */
   createChapter(input: CreateChapterInput): Promise<ChapterWithId>;
-  /** slug/projectId/order অপরিবর্তিত; প্রথম `published`-এ `publishedAt`; ট্র্যাশ-করা অধ্যায়ে ProjectRuleError (আগে পুনরুদ্ধার) */
+  /** slug/projectId/order অপরিবর্তিত; প্রথম `published`-এ `publishedAt`; ট্র্যাশ-করা অধ্যায়ে ProjectRuleError (আগে পুনরুদ্ধার); `published → draft`-এ থাকা `drafts` আগে অধ্যায়ে মেশে (এক batch) */
   updateChapter(id: string, patch: UpdateChapterInput): Promise<ChapterWithId>;
   /**
    * ক্রম বসানো = `orderedIds` (ট্র্যাশ বাদে বর্তমান সব অধ্যায়ের permutation) — একটা writeBatch, শুধু বদলানো order লেখা।
    * idempotent; তালিকা ইতোমধ্যে বদলে গেলে ProjectRuleError (UI রিফ্রেশ করবে)। ফেরত: আপডেট-হওয়া তালিকা।
    */
   reorderChapters(projectId: string, orderedIds: readonly string[]): Promise<ChapterWithId[]>;
-  /** `status='trashed'` + `trashedAt`; Cron-purge নেই (স্থায়ী মোছা শুধু হাতে); আগে থেকে ট্র্যাশ হলে বদল নেই */
+  /** `status='trashed'` + `trashedAt`; থাকা `drafts` আগে অধ্যায়ে মেশে (এক batch — লুকানো সম্পাদনা হারায় না); Cron-purge নেই (স্থায়ী মোছা শুধু হাতে); আগে থেকে ট্র্যাশ হলে বদল নেই */
   trashChapter(id: string): Promise<ChapterWithId>;
   /** `draft` হিসেবে ফেরে (স্বয়ংক্রিয় republish নয়); ট্র্যাশে না থাকলে বদল নেই */
   restoreChapter(id: string): Promise<ChapterWithId>;
-  /** শুধু ট্র্যাশ-করা অধ্যায় (rules-ও আটকায়); না থাকলেও সফল */
+  /** শুধু ট্র্যাশ-করা অধ্যায় (rules-ও আটকায়); না থাকলেও সফল; পড়ে-থাকা `drafts` একই batch-এ মোছে */
   deleteChapter(id: string): Promise<void>;
+
+  /** (P14a-৩) প্রকাশিত অধ্যায়ের সম্পাদনা: `drafts/{id}` (idempotent set; পাবলিক অপরিবর্তিত)। অধ্যায় `published` না হলে ProjectRuleError। ফেরত: `updatedAt` */
+  saveChapterEdit(id: string, edit: SaveChapterEditInput): Promise<Date>;
+  getChapterDraft(id: string): Promise<ChapterDraft | null>;
+  /** drafts → chapters কপি + drafts মোছা (এক batch); draft না থাকলে null, নইলে হালনাগাদ অধ্যায় */
+  applyChapterDraft(id: string): Promise<ChapterWithId | null>;
+  discardChapterDraft(id: string): Promise<void>;
 }

@@ -22,6 +22,7 @@ import {
   ChapterTitleSchema,
   IdSchema,
   parseChapter,
+  parseChapterDraft,
   parseProject,
   ProjectDescSchema,
   ProjectHasChaptersError,
@@ -30,10 +31,12 @@ import {
   ProjectTitleSchema,
   TargetWordsSchema,
   WordCountSchema,
+  type ChapterDraft,
   type ChapterWithId,
   type CreateChapterInput,
   type CreateProjectInput,
   type ProjectRepo,
+  type SaveChapterEditInput,
   type UpdateChapterInput,
   type UpdateProjectInput,
   type WritingProjectWithId,
@@ -54,12 +57,14 @@ import {
 
 const PROJECTS = "writingProjects";
 const CHAPTERS = "chapters";
+const DRAFTS = "drafts"; // প্রকাশিত অধ্যায়ের সম্পাদনা (targetType='chapter'); doc-ID = chapterId
 
 type RawChapter = { id: string; slug: string; order: number; status: string };
 
 export function createProjectRepoClient(db: Firestore, ownerUid: string): ProjectRepo {
   const pRef = (id: string) => doc(db, PROJECTS, id);
   const cRef = (id: string) => doc(db, CHAPTERS, id);
+  const dRef = (id: string) => doc(db, DRAFTS, id);
 
   async function getProject(id: string): Promise<WritingProjectWithId | null> {
     const snap = await getDoc(pRef(IdSchema.parse(id)));
@@ -69,6 +74,13 @@ export function createProjectRepoClient(db: Firestore, ownerUid: string): Projec
     const snap = await getDoc(cRef(IdSchema.parse(id)));
     return snap.exists() ? parseChapter(snap.id, snap.data()) : null;
   }
+  async function getChapterDraft(id: string): Promise<ChapterDraft | null> {
+    const snap = await getDoc(dRef(IdSchema.parse(id)));
+    if (!snap.exists() || snap.data().targetType !== "chapter") return null; // অন্য ধরনের draft কখনো অধ্যায়ের নয়
+    return parseChapterDraft(snap.data());
+  }
+  /** draft-এর title/body/wordCount — অধ্যায়ে মেশানোর ক্ষেত্র */
+  const foldFields = (d: ChapterDraft) => ({ title: d.title, body: d.body, wordCount: d.wordCount });
   async function mustChapter(id: string): Promise<ChapterWithId> {
     const c = await getChapter(id);
     if (!c) throw new ChapterNotFoundError(id);
@@ -217,7 +229,16 @@ export function createProjectRepoClient(db: Firestore, ownerUid: string): Projec
         data.status = st;
         if (st === "published" && !cur.publishedAt) data.publishedAt = serverTimestamp();
       }
-      await updateDoc(cRef(id), data); // slug/projectId/order অপরিবর্তিত
+      // প্রকাশিত → draft: থাকা সম্পাদনা (drafts) আগে অধ্যায়ে মেশে, নইলে লুকিয়ে থাকত (patch-এর স্পষ্ট মান জেতে)
+      const fold = cur.status === "published" && patch.status === "draft" ? await getChapterDraft(id) : null;
+      if (fold) {
+        const batch = writeBatch(db);
+        batch.update(cRef(id), { ...foldFields(fold), ...data });
+        batch.delete(dRef(id));
+        await batch.commit();
+      } else {
+        await updateDoc(cRef(id), data); // slug/projectId/order অপরিবর্তিত
+      }
       return mustChapter(id);
     },
 
@@ -237,7 +258,16 @@ export function createProjectRepoClient(db: Firestore, ownerUid: string): Projec
     async trashChapter(id: string) {
       const cur = await mustChapter(id);
       if (cur.status === "trashed") return cur;
-      await updateDoc(cRef(id), { status: "trashed", trashedAt: serverTimestamp(), updatedAt: serverTimestamp() });
+      const fold = await getChapterDraft(id); // থাকা সম্পাদনা আগে অধ্যায়ে (পুনরুদ্ধারে হারায় না), এক batch
+      const trashed = { status: "trashed", trashedAt: serverTimestamp(), updatedAt: serverTimestamp() };
+      if (fold) {
+        const batch = writeBatch(db);
+        batch.update(cRef(id), { ...foldFields(fold), ...trashed });
+        batch.delete(dRef(id));
+        await batch.commit();
+      } else {
+        await updateDoc(cRef(id), trashed);
+      }
       return mustChapter(id);
     },
 
@@ -252,7 +282,41 @@ export function createProjectRepoClient(db: Firestore, ownerUid: string): Projec
       const snap = await getDoc(cRef(IdSchema.parse(id)));
       if (!snap.exists()) return;
       if (snap.data().status !== "trashed") throw new ProjectRuleError("স্থায়ী মোছা শুধু ট্র্যাশের অধ্যায়");
-      await deleteDoc(cRef(id));
+      const batch = writeBatch(db);
+      batch.delete(cRef(id));
+      batch.delete(dRef(id)); // পড়ে-থাকা draft সাফ (না থাকলেও নিরাপদ); ইতিহাস-snapshot মোছে Cron (orphan)
+      await batch.commit();
     },
+
+    async saveChapterEdit(id: string, edit: SaveChapterEditInput) {
+      const cur = await mustChapter(id);
+      if (cur.status !== "published") throw new ProjectRuleError("সম্পাদনা-draft শুধু প্রকাশিত অধ্যায়ে");
+      const updatedAt = new Date();
+      const d = {
+        targetType: "chapter" as const,
+        title: ChapterTitleSchema.parse(edit.title),
+        body: ChapterBodySchema.parse(edit.body),
+        wordCount: WordCountSchema.parse(edit.wordCount),
+        ownerUid,
+        updatedAt,
+        schemaVersion: CHAPTER_SCHEMA_VERSION,
+      };
+      await setDoc(dRef(id), d); // idempotent — doc-ID = chapterId
+      return updatedAt;
+    },
+    getChapterDraft,
+
+    async applyChapterDraft(id: string) {
+      const cur = await mustChapter(id);
+      if (cur.status === "trashed") throw new ProjectRuleError("ট্র্যাশের অধ্যায়ে প্রকাশ নয়");
+      const d = await getChapterDraft(id);
+      if (!d) return null;
+      const batch = writeBatch(db);
+      batch.update(cRef(id), { ...foldFields(d), updatedAt: serverTimestamp() });
+      batch.delete(dRef(id));
+      await batch.commit();
+      return mustChapter(id);
+    },
+    discardChapterDraft: (id: string) => deleteDoc(dRef(IdSchema.parse(id))),
   };
 }

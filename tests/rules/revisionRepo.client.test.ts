@@ -62,3 +62,15 @@ describe("revisionRepo.client (Emulator)", () => {
     expect((await repo().list("post1")).length).toBe(0);
   });
 });
+
+describe("revisionRepo.client — chapter (Emulator, P14a-৩)", () => {
+  it("targetType='chapter': নিজস্ব versionNumber ও list; একই id-র post-ইতিহাস মেশে না", async () => {
+    await repo().create({ targetId: "same", snapshot: snap("পোস্ট"), trigger: "manual" });
+    const a = await repo().create({ targetId: "same", targetType: "chapter", snapshot: snap("অধ্যায়-১"), trigger: "publish" });
+    const b = await repo().create({ targetId: "same", targetType: "chapter", snapshot: snap("অধ্যায়-২"), trigger: "interval" });
+    expect([a.targetType, a.versionNumber, b.versionNumber]).toEqual(["chapter", 1, 2]);
+    expect((await repo().list("same", { targetType: "chapter" })).map((r) => r.snapshot)).toEqual([snap("অধ্যায়-২"), snap("অধ্যায়-১")]);
+    expect((await repo().list("same")).map((r) => r.snapshot)).toEqual([snap("পোস্ট")]);
+    expect((await repo().get(a.id))?.targetType).toBe("chapter");
+  });
+});

@@ -26,7 +26,7 @@ export const IDEA_TYPE = ["quick", "dialogue", "character", "concept"] as const;
 // P3b: notes — Inbox = `organized==false`; P7b-তে ফোন-শেয়ার `shared` ব্যবহার করবে
 export const NOTE_KIND = ["note", "shared"] as const;
 // P5a: revisions (Arch §৬) — chapter P14a-তে যোগ হবে; rules-এ enum-তালিকা লাগে না (owner-only, Zod boundary-তে যাচাই)
-export const REVISION_TARGET_TYPE = ["post"] as const;
+export const REVISION_TARGET_TYPE = ["post", "chapter"] as const;
 export const REVISION_TRIGGER = ["publish", "manual", "interval"] as const;
 // P5b: backups (Arch §৬) — doc লেখা হয় শুধু সম্পূর্ণ সফল backup-এ; rules-এ enum-তালিকা লাগে না (client write নেই, Zod boundary-তে যাচাই)
 export const BACKUP_TYPE = ["auto", "manual"] as const;

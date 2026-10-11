@@ -1,5 +1,5 @@
 // revisionRepo = interface + Zod boundary; adapter: revisionRepo.client.ts (পথ ক, owner create/read — rules-এ update/delete নিষিদ্ধ)।
-// prune/মোছা শুধু Cron (পথ গ, P5a-৩)। snapshot = Tiptap JSON string (Arch §৬)। শুধু post (chapter P14a)।
+// prune/মোছা শুধু Cron (পথ গ, P5a-৩)। snapshot = Tiptap JSON string (Arch §৬)। targetType: post | chapter (P14a-৩)।
 import { z } from "zod";
 import { normalizeRaw } from "@/data/postRepo";
 import { RevisionTargetType, RevisionTrigger } from "@/lib/enums";
@@ -33,6 +33,8 @@ export const parseRevision = (id: string, raw: Record<string, unknown>): Revisio
 export type CreateRevisionInput = {
   /** retry/double-submit-নিরাপত্তা (একই id-তে দ্বিতীয় create = বিদ্যমান ফেরত) */
   id?: string;
+  /** অনুপস্থিত = "post" (পুরনো caller অপরিবর্তিত) */
+  targetType?: RevisionTargetType;
   targetId: string;
   snapshot: string;
   trigger: RevisionTrigger;
@@ -41,10 +43,19 @@ export type CreateRevisionInput = {
 /** পথ ক (owner-CSR) */
 export interface RevisionRepo {
   /** `versionNumber` অবরোহী (নতুন আগে); `limit` default = REVISION_RETAIN */
-  list(targetId: string, opts?: { limit?: number }): Promise<RevisionWithId[]>;
+  list(targetId: string, opts?: { limit?: number; targetType?: RevisionTargetType }): Promise<RevisionWithId[]>;
   get(id: string): Promise<RevisionWithId | null>;
   /** versionNumber = সর্বশেষ + ১; একই `id`-তে দ্বিতীয়বার = বিদ্যমান ফেরত (নতুন doc নয়) */
   create(input: CreateRevisionInput): Promise<RevisionWithId>;
+}
+
+/** একই repo, কিন্তু list/create-এ target-টাইপ বাঁধা (chapter-এর জন্য `revisionActions`-এর পুরনো যুক্তি অপরিবর্তিত reuse; P14a-৩) */
+export function scopedRevisionRepo(repo: RevisionRepo, targetType: RevisionTargetType): RevisionRepo {
+  return {
+    get: (id) => repo.get(id),
+    list: (targetId, opts) => repo.list(targetId, { ...opts, targetType }),
+    create: (input) => repo.create({ ...input, targetType }),
+  };
 }
 
 export { REVISION_RETAIN };
