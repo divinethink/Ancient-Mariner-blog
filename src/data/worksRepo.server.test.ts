@@ -41,7 +41,7 @@ describe("worksRepo.server", () => {
   });
   it("defense-in-depth: draft/private/অন্য-প্রজেক্ট/বিকৃত বাদ; প্রজেক্ট ছাড়া অধ্যায় query-ই হয় না", async () => {
     const r = await src({
-      writingProjects: [proj("a"), proj("d", { status: { stringValue: "draft" } }), proj("bad", { type: { stringValue: "poem" } })],
+      writingProjects: [proj("a"), proj("d", { status: { stringValue: "draft" } }), proj("bad", { type: { stringValue: "  " } })],
       chapters: [chap("ok", "a"), chap("dr", "a", { status: { stringValue: "draft" } }), chap("pv", "a", { visibility: { stringValue: "private" } }), chap("other", "zzz"), chap("bad", "a", { order: { stringValue: "x" } })],
     }).listPublic();
     expect(r.projects.map((p) => p.id)).toEqual(["a"]);
