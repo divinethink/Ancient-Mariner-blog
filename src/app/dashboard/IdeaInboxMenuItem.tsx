@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { Icon } from "@/components/icons";
 import { getNoteRepo } from "@/data/noteRepo.wire";
 import { bn } from "@/i18n/bn";
 
@@ -21,14 +22,13 @@ export function IdeaInboxMenuItem() {
     };
   }, []);
   return (
-    <Link href="/dashboard/ideas" className="flex min-h-12 items-center justify-between px-4">
-      <span>
-        💡 {bn.dashboard.ideasInbox}
+    <Link href="/dashboard/ideas" className="flex min-h-12 items-center gap-3 px-4">
+      <Icon name="inbox" size={20} className="shrink-0 text-muted" />
+      <span className="flex-1">
+        {bn.dashboard.ideasInbox}
         {count !== null && count > 0 ? ` ${bn.ideas.menuCount(count)}` : ""}
       </span>
-      <span aria-hidden className="text-muted">
-        ›
-      </span>
+      <Icon name="chevron" size={18} className="shrink-0 text-muted" />
     </Link>
   );
 }

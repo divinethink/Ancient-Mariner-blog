@@ -1,122 +1,38 @@
-import Link from "next/link";
 import { bn } from "@/i18n/bn";
 import { IdeaInboxMenuItem } from "../IdeaInboxMenuItem";
 import { LogoutButton } from "../LogoutButton";
+import { MenuGroup, MenuRow } from "./MenuRow";
+import { ThemePicker } from "./ThemePicker";
 
-// P2a-৩: list-style মেনু (Mockup §৭.৭), phase-gated — এখন শুধু সেটিংস; বাকি আইটেম সংশ্লিষ্ট phase-এ
+// ধাপ ১: মেনু ৪ গ্রুপে (লেখা · সাইট · অন্তর্দৃষ্টি · সিস্টেম); থিম-গ্রিড শীর্ষে; "প্রজেক্ট" এখন নেভে (Mockup §৭.৭)
 export default function MenuPage() {
   return (
     <>
       <h1 className="mb-4 font-serif text-3xl font-bold">{bn.dashboard.menu}</h1>
-      <ul className="mb-6 divide-y divide-line rounded-2xl border border-line bg-surface">
+      <ThemePicker />
+      <MenuGroup title={bn.dashboard.groupWrite}>
         <li>
           <IdeaInboxMenuItem />
         </li>
-        <li>
-          <Link href="/dashboard/search" className="flex min-h-12 items-center justify-between px-4">
-            <span>🔎 {bn.search.navLabel}</span>
-            <span aria-hidden className="text-muted">
-              ›
-            </span>
-          </Link>
-        </li>
-        <li>
-          <Link href="/dashboard/bookmarks" className="flex min-h-12 items-center justify-between px-4">
-            <span>🔖 {bn.dashboard.bookmarks}</span>
-            <span aria-hidden className="text-muted">
-              ›
-            </span>
-          </Link>
-        </li>
-        <li>
-          <Link href="/dashboard/projects" className="flex min-h-12 items-center justify-between px-4">
-            <span>📖 {bn.dashboard.projects}</span>
-            <span aria-hidden className="text-muted">
-              ›
-            </span>
-          </Link>
-        </li>
-        <li>
-          <Link href="/dashboard/pages" className="flex min-h-12 items-center justify-between px-4">
-            <span>📄 {bn.dashboard.pages}</span>
-            <span aria-hidden className="text-muted">
-              ›
-            </span>
-          </Link>
-        </li>
-        <li>
-          <Link href="/dashboard/customize" className="flex min-h-12 items-center justify-between px-4">
-            <span>🎨 {bn.customize.menuLink}</span>
-            <span aria-hidden className="text-muted">
-              ›
-            </span>
-          </Link>
-        </li>
-        <li>
-          <Link href="/dashboard/media" className="flex min-h-12 items-center justify-between px-4">
-            <span>🖼️ {bn.dashboard.media}</span>
-            <span aria-hidden className="text-muted">
-              ›
-            </span>
-          </Link>
-        </li>
-        <li>
-          <Link href="/dashboard/import" className="flex min-h-12 items-center justify-between px-4">
-            <span>📥 {bn.dashboard.importWp}</span>
-            <span aria-hidden className="text-muted">
-              ›
-            </span>
-          </Link>
-        </li>
-        <li>
-          <Link href="/dashboard/library" className="flex min-h-12 items-center justify-between px-4">
-            <span>🗂️ {bn.dashboard.organize}</span>
-            <span aria-hidden className="text-muted">
-              ›
-            </span>
-          </Link>
-        </li>
-        <li>
-          <Link href="/dashboard/settings" className="flex min-h-12 items-center justify-between px-4">
-            <span>⚙️ {bn.dashboard.settings}</span>
-            <span aria-hidden className="text-muted">
-              ›
-            </span>
-          </Link>
-        </li>
-        <li>
-          <Link href="/dashboard/stats" className="flex min-h-12 items-center justify-between px-4">
-            <span>📊 {bn.dashboard.stats}</span>
-            <span aria-hidden className="text-muted">
-              ›
-            </span>
-          </Link>
-        </li>
-        <li>
-          <Link href="/dashboard/shares" className="flex min-h-12 items-center justify-between px-4">
-            <span>🔗 {bn.shareLink.menu}</span>
-            <span aria-hidden className="text-muted">
-              ›
-            </span>
-          </Link>
-        </li>
-        <li>
-          <Link href="/dashboard/comments" className="flex min-h-12 items-center justify-between px-4">
-            <span>💬 {bn.comments.menu}</span>
-            <span aria-hidden className="text-muted">
-              ›
-            </span>
-          </Link>
-        </li>
-        <li>
-          <Link href="/dashboard/backups" className="flex min-h-12 items-center justify-between px-4">
-            <span>☁️ {bn.backup.title}</span>
-            <span aria-hidden className="text-muted">
-              ›
-            </span>
-          </Link>
-        </li>
-      </ul>
+        <MenuRow href="/dashboard/search" icon="search" label={bn.search.navLabel} />
+        <MenuRow href="/dashboard/bookmarks" icon="bookmark" label={bn.dashboard.bookmarks} />
+        <MenuRow href="/dashboard/import" icon="import" label={bn.dashboard.importWp} />
+        <MenuRow href="/dashboard/library" icon="organize" label={bn.dashboard.organize} />
+      </MenuGroup>
+      <MenuGroup title={bn.dashboard.groupSite}>
+        <MenuRow href="/dashboard/pages" icon="page" label={bn.dashboard.pages} />
+        <MenuRow href="/dashboard/customize" icon="palette" label={bn.customize.menuLink} />
+        <MenuRow href="/dashboard/media" icon="image" label={bn.dashboard.media} />
+      </MenuGroup>
+      <MenuGroup title={bn.dashboard.groupInsight}>
+        <MenuRow href="/dashboard/stats" icon="chart" label={bn.dashboard.stats} />
+        <MenuRow href="/dashboard/shares" icon="link" label={bn.shareLink.menu} />
+        <MenuRow href="/dashboard/comments" icon="comment" label={bn.comments.menu} />
+      </MenuGroup>
+      <MenuGroup title={bn.dashboard.groupSystem}>
+        <MenuRow href="/dashboard/backups" icon="backup" label={bn.backup.title} />
+        <MenuRow href="/dashboard/settings" icon="settings" label={bn.dashboard.settings} />
+      </MenuGroup>
       <LogoutButton />
     </>
   );

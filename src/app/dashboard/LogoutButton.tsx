@@ -34,7 +34,7 @@ export function LogoutButton() {
       <button
         type="button"
         onClick={onClick}
-        className="mt-4 min-h-11 rounded-lg bg-btn-bg px-4 text-btn-tx"
+        className="mt-2 min-h-12 px-2 text-muted underline"
       >
         {bn.auth.signOut}
       </button>
