@@ -2,6 +2,7 @@
 import type { Auth } from "firebase/auth";
 import { localStore } from "@/data/localStore";
 import { getFirebaseConfig } from "@/firebaseConfig";
+import { setOwnerHint } from "@/lib/ownerHint";
 
 let authPromise: Promise<Auth> | undefined;
 function getAuthInstance(): Promise<Auth> {
@@ -39,7 +40,10 @@ export async function signInWithGoogle(): Promise<SignInResult> {
     provider.setCustomParameters({ prompt: "select_account" });
     const cred = await fb.signInWithPopup(auth, provider);
     const res = await post("/api/auth/session", { idToken: await cred.user.getIdToken() });
-    if (res.ok) return { status: "ok" };
+    if (res.ok) {
+      setOwnerHint(true);
+      return { status: "ok" };
+    }
     await fb.signOut(auth); // ভুল অ্যাকাউন্ট/ব্যর্থ — Firebase-সেশনও রাখা হয় না
     if (res.status === 403) return { status: "not-owner" };
     // নির্ণয়ের জন্য শুধু HTTP-কোড ও সার্ভারের reason-কোড (গোপন কিছু নয়)
@@ -74,6 +78,7 @@ export async function logout(opts: LogoutOptions = {}): Promise<"done" | "aborte
     if ((await opts.hasUnsynced()) && !(opts.confirmDiscard?.() ?? false)) return "aborted";
   }
   await clearServerSession(); // ব্যর্থ হলে এখানেই throw — লোকাল ডেটা অক্ষত
+  setOwnerHint(false);
   try {
     const [auth, fb] = await Promise.all([getAuthInstance(), import("firebase/auth")]);
     await fb.signOut(auth);

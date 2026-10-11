@@ -239,6 +239,7 @@ export const bn = {
     // মেনুর গ্রুপ-হেডিং (ধাপ ১) ও থিম-গ্রিড
     groupWrite: "লেখা",
     groupSite: "সাইট",
+    viewSite: "পাবলিক সাইট দেখুন",
     groupInsight: "অন্তর্দৃষ্টি",
     groupSystem: "সিস্টেম",
     themeTitle: "থিম",
@@ -675,6 +676,7 @@ export const bn = {
     archivePick: "মাস বাছুন",
     calendarTitle: "দিনলিপি পঞ্জিকা",
     diaryNav: "দিনলিপি",
+    ownerDashboard: "ড্যাশবোর্ড",
     diaryLess: "কম",
     diaryMore: "বেশি",
     diaryToday: "আজ",

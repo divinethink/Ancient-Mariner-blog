@@ -237,6 +237,9 @@ function LibraryHeader({
                   {findOpen ? bn.org.find.close : bn.org.find.open}
                 </button>
               )}
+              <a href="/" target="_blank" rel="noopener noreferrer" role="menuitem" onClick={() => setMenu(false)} className={item}>
+                {bn.dashboard.viewSite} ↗
+              </a>
               <Link href="/dashboard/library" role="menuitem" className={item}>
                 {bn.dashboard.organize}
               </Link>

@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { Analytics } from "@/components/public/Analytics";
 import { sidebarContent } from "@/components/public/Sidebar";
+import { OwnerLink } from "@/components/public/OwnerLink";
 import { MobileMenu } from "@/components/public/MobileMenu";
 import { ThemeToggle } from "@/components/public/ThemeToggle";
 import { getPopular } from "@/data/popularSnapshot";
@@ -141,6 +142,7 @@ export async function PublicShell({ children, sidebar = false }: { children: Rea
           <MobileMenu>
             {links(menuRow)}
             <ThemeToggle inMenu />
+            <OwnerLink className={menuRow} />
           </MobileMenu>
         </nav>
       </header>
@@ -163,6 +165,7 @@ export async function PublicShell({ children, sidebar = false }: { children: Rea
             </Link>
           )
         )}
+        <OwnerLink className={footLink} />
         {/* static ফাইল — Next <Link> নয়, সরাসরি <a> (build-seo `rss.xml` লেখে) */}
         <a href={FEED_PATH} className={footLink}>
           {bn.public.rss}

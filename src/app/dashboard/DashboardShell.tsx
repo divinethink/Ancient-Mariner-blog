@@ -6,6 +6,7 @@ import dynamic from "next/dynamic";
 import { usePathname } from "next/navigation";
 import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { readNavCollapsed, saveNavCollapsed } from "@/data/comfortStore";
+import { setOwnerHint } from "@/lib/ownerHint";
 import { AddProvider } from "./AddSheet";
 import { SidePanel, TopNav } from "./DashboardNav";
 import { useMinWidth } from "./useMinWidth";
@@ -20,6 +21,8 @@ export function DashboardShell({ children }: { children: ReactNode }) {
   const inEditor = path.startsWith("/dashboard/posts/");
   const desktop = useMinWidth(1024);
   const [paletteOpen, setPaletteOpen] = useState(false);
+  // AuthGate পেরিয়ে এসেছি = owner লগইন-করা; আগে থেকে লগইন থাকলেও পাবলিক পেজের "ড্যাশবোর্ড" লিংক চালু হয়
+  useEffect(() => setOwnerHint(true), []);
   // Ctrl/⌘+K — editor-এ নয় (editor-এর নিজস্ব শর্টকাটের সাথে সংঘাত এড়াতে; সেখানে 🔍 বোতাম আছে)
   useEffect(() => {
     if (!desktop || inEditor) return;

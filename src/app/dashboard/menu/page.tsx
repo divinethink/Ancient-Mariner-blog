@@ -20,6 +20,7 @@ export default function MenuPage() {
         <MenuRow href="/dashboard/library" icon="organize" label={bn.dashboard.organize} />
       </MenuGroup>
       <MenuGroup title={bn.dashboard.groupSite}>
+        <MenuRow href="/" icon="globe" label={bn.dashboard.viewSite} external />
         <MenuRow href="/dashboard/pages" icon="page" label={bn.dashboard.pages} />
         <MenuRow href="/dashboard/customize" icon="palette" label={bn.customize.menuLink} />
         <MenuRow href="/dashboard/media" icon="image" label={bn.dashboard.media} />
