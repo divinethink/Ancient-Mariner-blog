@@ -4,7 +4,7 @@
 //  • draft অধ্যায়ে idle ~৫s-এ শুধু শিরোনাম+লেখা (অবস্থা/দৃশ্যমানতা কখনো নয়) — সরাসরি `chapters`-এ;
 //  • প্রকাশিত অধ্যায়ে idle ~৫s-এ সম্পাদনা যায় `drafts`-এ (পাবলিক/অধ্যায়-doc অপরিবর্তিত); [আপডেট প্রকাশ করুন] = drafts → chapters, [বাতিল] = drafts মোছা;
 //  • [সংরক্ষণ করুন]-এ সবকিছু (অবস্থা/দৃশ্যমানতা সহ); প্রকাশিত → draft করলে থাকা সম্পাদনা অধ্যায়ে মেশে (repo)।
-// ইতিহাস (revisions): সংরক্ষণের পর ১০ মিনিটে ≤১টা, প্রকাশে একটা — সবই best-effort। পাবলিক পাতা না থাকায় rebuild-ট্রিগার নেই (P14c)।
+// ইতিহাস (revisions): সংরক্ষণের পর ১০ মিনিটে ≤১টা, প্রকাশে একটা — সবই best-effort। সাইটে দৃশ্যমান বদলে (published+public; আপডেট-প্রকাশ, প্রথম প্রকাশ, Draft/Private/ট্র্যাশ) rebuild-অনুরোধ যায় (P14c-২)।
 // create idempotent: id আগে বানানো (URL-এ); multi-tab: লেখার আগে remote `updatedAt` মিলিয়ে নতুন হলে সতর্কতা (merge নেই, Arch §১২ ঙ)।
 import dynamic from "next/dynamic";
 import Link from "next/link";
@@ -15,11 +15,13 @@ import { chapterSnapshotAfterSync, chapterSnapshotOnPublish } from "@/data/chapt
 import { localStore } from "@/data/localStore";
 import type { ChapterWithId, WritingProjectWithId } from "@/data/projectRepo";
 import { getProjectRepo } from "@/data/projectRepo.wire";
+import { triggerSiteRebuild } from "@/data/rebuildClient";
 import { bn } from "@/i18n/bn";
 import { docToText, EMPTY_BODY, parseBody, sanitizeDoc, type DocNode } from "@/lib/editorDoc";
 import { CHAPTER_STATUS, CHAPTER_VISIBILITY, type ChapterVisibility } from "@/lib/enums";
 import { CHAPTER_TITLE_MAX, chapterWordCount } from "@/lib/projects";
 import { canChapterBePublic, chapterPath, projectPath } from "@/lib/projectsUi";
+import { chapterAffectsSite } from "@/lib/works";
 import { ConfirmButton } from "../../../../ConfirmButton";
 
 const TiptapEditor = dynamic(() => import("../../../../posts/[postId]/edit/TiptapEditor"), {
@@ -206,6 +208,7 @@ export function ChapterEditor({ projectId, chapterId, isNew }: { projectId: stri
             becamePublished = full && saved.status === "published";
           }
         }
+        const affectsSite = chapterAffectsSite(project, cur, saved);
         remoteRef.current = saved;
         setRemote(saved);
         setHasDraft(draftNow);
@@ -215,7 +218,12 @@ export function ChapterEditor({ projectId, chapterId, isNew }: { projectId: stri
           setDirty(false);
         }
         setSynced(true);
-        if (full) setMsg({ kind: "ok", text: mode === "publish" ? t.chPublishedOk : t.saved });
+        const rebuilt = affectsSite ? await triggerSiteRebuild() : null;
+        if (full || rebuilt === false) {
+          const base = full ? (mode === "publish" ? t.chPublishedOk : t.saved) : "";
+          const tail = rebuilt === null ? "" : rebuilt ? bn.build.liveIn : bn.build.triggerFailed;
+          setMsg({ kind: rebuilt === false ? "err" : "ok", text: [base, tail].filter(Boolean).join(" ") });
+        }
         // ইতিহাস (best-effort — ব্যর্থ হলে মূল কাজ আটকায় না)
         if (becamePublished) void chapterSnapshotOnPublish(chapterId).catch(noop);
         else void chapterSnapshotAfterSync(chapterId, snap.body).catch(noop);
@@ -226,7 +234,7 @@ export function ChapterEditor({ projectId, chapterId, isNew }: { projectId: stri
         setBusy(false);
       }
     },
-    [bump, chapterId, projectId, setDirty, snapshot, t.chConflict, t.chPublishedOk, t.chTooBig, t.nameNeeded, t.saveFailed, t.saved],
+    [bump, chapterId, project, projectId, setDirty, snapshot, t.chConflict, t.chPublishedOk, t.chTooBig, t.nameNeeded, t.saveFailed, t.saved],
   );
 
   /** অপ্রকাশিত সম্পাদনা বাতিল: drafts মোছা, লোকাল কপি বাদ, editor প্রকাশিত রূপে ফেরে */

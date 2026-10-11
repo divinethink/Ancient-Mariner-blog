@@ -7,7 +7,7 @@ import { hasDefaultOgImage } from "@/data/publicAssets";
 import { getPublicSettings } from "@/data/publicSnapshot";
 import { getPublicWorks } from "@/data/worksSnapshot";
 import { bn } from "@/i18n/bn";
-import { worksPath } from "@/lib/projects";
+import { bookPath, worksPath } from "@/lib/projects";
 import { buildSeo } from "@/lib/seo";
 import { projectExcerpt, worksWordTotal } from "@/lib/works";
 
@@ -57,6 +57,9 @@ export default async function WorkPage({ params }: Props) {
           </p>
           <Link href={worksPath(project.slug, chapters[0].slug)} prefetch={false} className="mt-4 inline-flex min-h-11 items-center rounded-xl border border-line bg-surface px-4 py-2 text-accent-text">
             {bn.works.startReading}
+          </Link>
+          <Link href={bookPath(project.slug)} prefetch={false} className="ml-2 mt-4 inline-flex min-h-11 items-center rounded-xl border border-line bg-surface px-4 py-2 text-accent-text">
+            {bn.works.bookRead}
           </Link>
           <h2 className="mt-8 font-serif text-xl font-bold">{bn.works.chapterList}</h2>
           <ol className="mt-3 flex flex-col">

@@ -697,6 +697,10 @@ export const bn = {
     prev: "← আগের অধ্যায়",
     next: "পরের অধ্যায় →",
     toProject: "সূচিতে ফিরুন",
+    bookRead: "টানা পড়ুন (Book Mode)",
+    bookTitle: (t: string) => `${t} — টানা পাঠ`,
+    bookToc: "সূচি",
+    bookOpenChapter: "এই অধ্যায়ের আলাদা পাতা",
   },
   build: {
     label: "পাবলিক সাইট",
@@ -1200,6 +1204,7 @@ export const bn = {
     all: "সব",
     typeIdea: "আইডিয়া",
     typeNote: "নোট",
+    typeChapter: "অধ্যায়",
     hint: "শিরোনাম, সারাংশ ও লেখার ভেতরের বাক্য — সবই খোঁজা হয়। একাধিক শব্দ দিলে সবকটা থাকা লেখা আসে। নেট না থাকলেও চলে।",
     none: "কিছু মেলেনি।",
     count: (shown: number, total: number) =>
@@ -1221,6 +1226,7 @@ export const bn = {
     untitled: "(শিরোনামহীন)",
     kindIdea: "আইডিয়া",
     kindNote: "নোট",
+    kindChapter: "অধ্যায়",
     rebuildTitle: "খোঁজ-index",
     rebuildHint:
       "খোঁজ এই ডিভাইসের index-এ চলে। স্থায়ীভাবে মোছা লেখা index-এ রয়ে গেলে বা খোঁজ ঠিক না মিললে নতুন করে বানান।",

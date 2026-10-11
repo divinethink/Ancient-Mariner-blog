@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
+  chapterEntry,
+  passesFilter,
   ideaEntry,
   postEntry,
   SEARCH_INDEX_VERSION,
@@ -159,5 +161,37 @@ describe("verifyEntry", () => {
     };
     expect(await verifyEntry(src, st, { kind: "post", id: "z" })).toBeNull();
     expect(st.map.has("post:z")).toBe(true);
+  });
+});
+
+describe("chapter (P14c-২)", () => {
+  const CH = (id: string, text: string, updatedAt: number, status = "draft") =>
+    chapterEntry({ id, projectId: "p1", projectTitle: "প্রাচীন নাবিক", title: `অ-${id}`, body: body(text), status, updatedAt });
+  it("entry: key/projectId/excerpt=প্রজেক্ট-নাম/text; 'chapter' type-filter শুধু অধ্যায় ধরে", () => {
+    const e = CH("c1", "ঝড়ের রাত", T0);
+    expect(e).toMatchObject({ key: "chapter:c1", kind: "chapter", projectId: "p1", excerpt: "প্রাচীন নাবিক" });
+    expect(e.text).toContain("ঝড়ের রাত");
+    expect(passesFilter(e, { type: "chapter" })).toBe(true);
+    expect(passesFilter(P("a", "x", T0), { type: "chapter" })).toBe(false);
+    expect(passesFilter(e, { type: "idea" })).toBe(false);
+  });
+  it("sync: অধ্যায় আসে; ট্র্যাশ হলে index থেকে যায়; পুরনো index-এ chapter-cursor না থাকলে শুধু অধ্যায় পূর্ণ আসে (post অক্ষত, delta)", async () => {
+    const st = memStore();
+    const src = fakeSource([P("a", "এক", T0), CH("c1", "ঝড়", T0), CH("c2", "ঢেউ", T0)]);
+    await syncIndex(src, st, { now: () => 1 });
+    expect(st.map.has("chapter:c1")).toBe(true);
+    src.docs[1] = CH("c1", "ঝড়", T0 + SYNC_OVERLAP_MS * 3, "trashed");
+    await syncIndex(src, st);
+    expect(st.map.has("chapter:c1")).toBe(false);
+    expect(st.map.has("chapter:c2")).toBe(true);
+    // পুরনো meta: chapter-cursor নেই (আপগ্রেডের আগের index)
+    const old = memStore();
+    await old.write([P("a", "এক", T0)], []);
+    await old.setMeta({ v: SEARCH_INDEX_VERSION, cursors: { post: T0, idea: T0, note: T0 }, syncedAt: 1 });
+    const src2 = fakeSource([P("a", "এক", T0), CH("c9", "নতুন", T0)]);
+    await syncIndex(src2, old);
+    expect(src2.calls.find((c) => c.kind === "chapter")?.since).toBeNull();
+    expect(src2.calls.find((c) => c.kind === "post")?.since).not.toBeNull();
+    expect(old.map.has("chapter:c9")).toBe(true);
   });
 });

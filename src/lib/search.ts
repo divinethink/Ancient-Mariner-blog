@@ -14,7 +14,7 @@ export const MAX_ENTRY_TEXT = 400_000;
 /** delta-sync-এ শেষ-দেখা `updatedAt`-এর আগে এত ms পিছিয়ে পড়া (clock/commit-ক্রম নিরাপত্তা; upsert idempotent) */
 export const SYNC_OVERLAP_MS = 5 * 60 * 1000;
 
-export type SearchKind = "post" | "idea" | "note";
+export type SearchKind = "post" | "idea" | "note" | "chapter";
 
 export type SearchEntry = {
   /** `${kind}:${id}` */
@@ -30,6 +30,8 @@ export type SearchEntry = {
   status?: string;
   categoryId?: string;
   categoryName?: string;
+  /** শুধু chapter (P14c-২): খোলার পথ বানাতে */
+  projectId?: string;
   /** epoch ms */
   updatedAt: number;
 };
@@ -107,6 +109,29 @@ export function noteEntry(n: {
   };
 }
 
+/** অধ্যায় (P14c-২): ব্যক্তিগত পূর্ণ-লেখা খোঁজে; `excerpt` = প্রজেক্টের নাম (প্রজেক্ট-নামেও খোঁজা যায়); `status` ট্র্যাশ হলে index থেকে বাদ */
+export function chapterEntry(c: {
+  id: string;
+  projectId: string;
+  projectTitle: string;
+  title: string;
+  body: string;
+  status: string;
+  updatedAt: Date | number;
+}): SearchEntry {
+  return {
+    key: entryKey("chapter", c.id),
+    kind: "chapter",
+    id: c.id,
+    title: nfc(c.title),
+    excerpt: nfc(c.projectTitle),
+    text: cap(nfc(serializeDoc(parseBody(c.body), "plain"))),
+    status: c.status,
+    projectId: c.projectId,
+    updatedAt: ms(c.updatedAt),
+  };
+}
+
 /** ট্র্যাশের লেখা index-এ থাকে না (Arch §১৭ P8b) */
 export const isIndexablePost = (status: string): boolean => status !== "trashed";
 
@@ -142,7 +167,7 @@ export type SearchFilter = {
 
 export function passesFilter(e: SearchEntry, f: SearchFilter): boolean {
   if (f.type) {
-    if (f.type === "idea" || f.type === "note") {
+    if (f.type === "idea" || f.type === "note" || f.type === "chapter") {
       if (e.kind !== f.type) return false;
     } else if (e.kind !== "post" || e.contentType !== f.type) return false;
   }

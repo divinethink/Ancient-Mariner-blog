@@ -12,7 +12,7 @@ import {
   type SearchKind,
 } from "@/lib/search";
 
-export const KINDS: readonly SearchKind[] = ["post", "idea", "note"];
+export const KINDS: readonly SearchKind[] = ["post", "idea", "note", "chapter"];
 
 export type IndexMeta = {
   v: number;
@@ -83,7 +83,7 @@ async function run(
     const puts: SearchEntry[] = [];
     const dels = new Set<string>();
     for (const it of items) {
-      if (it.kind === "post" && !isIndexablePost(it.status ?? "")) dels.add(it.key);
+      if ((it.kind === "post" || it.kind === "chapter") && !isIndexablePost(it.status ?? "")) dels.add(it.key);
       else puts.push(it);
     }
     if (since === null) {

@@ -1,6 +1,6 @@
 "use client";
 
-// প্রজেক্ট-detail (Mockup §৭.২৪): অগ্রগতি, প্রজেক্ট-সেটিং, অধ্যায়-তালিকা (↑↓ ক্রম), ট্র্যাশ। পাবলিক /works P14c-তে — এখানে rebuild-ট্রিগার নেই।
+// প্রজেক্ট-detail (Mockup §৭.২৪): অগ্রগতি, প্রজেক্ট-সেটিং, অধ্যায়-তালিকা (↑↓ ক্রম), ট্র্যাশ। সাইটে দৃশ্যমান বদল হলে (published+public) সাইট rebuild-এর অনুরোধ যায় (P14c-২; `lib/works`-এর `*AffectsSite`)।
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -11,11 +11,13 @@ import {
   type WritingProjectWithId,
 } from "@/data/projectRepo";
 import { getProjectRepo } from "@/data/projectRepo.wire";
+import { triggerSiteRebuild } from "@/data/rebuildClient";
 import { bn } from "@/i18n/bn";
 import { PROJECT_STATUS, PROJECT_TYPE, PROJECT_VISIBILITY, type ProjectStatus, type ProjectType, type ProjectVisibility } from "@/lib/enums";
 import { newId } from "@/lib/id";
 import { MAX_CHAPTERS_PER_PROJECT, moveId, projectProgress } from "@/lib/projects";
 import { chapterPath, newChapterPath } from "@/lib/projectsUi";
+import { chapterAffectsSite, projectAffectsSite, visibleOrderChanged } from "@/lib/works";
 import { ConfirmButton } from "../../ConfirmButton";
 
 type Load = { kind: "loading" } | { kind: "notfound" } | { kind: "error" } | { kind: "ready" };
@@ -75,14 +77,17 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
   }, [projectId, tick, fill]);
 
   /** একটাই কাজ একসাথে (double-tap/overlap নয়); ব্যর্থ হলে বার্তা */
-  async function run(fn: () => Promise<void>, okText?: string) {
+  /** fn `true` ফেরালে (সাইটে দৃশ্যমান বদল) কাজের পর rebuild-অনুরোধ যায় */
+  async function run(fn: () => Promise<boolean | void>, okText?: string) {
     if (busyRef.current) return;
     busyRef.current = true;
     setBusy(true);
     setMsg(null);
     try {
-      await fn();
-      if (okText) setMsg({ kind: "ok", text: okText });
+      const affects = await fn();
+      const rebuilt = affects ? await triggerSiteRebuild() : null;
+      const text = [okText, rebuilt === null ? "" : rebuilt ? bn.build.liveIn : bn.build.triggerFailed].filter(Boolean).join(" ");
+      if (text) setMsg({ kind: rebuilt === false ? "err" : "ok", text });
     } catch (e) {
       if (e instanceof ProjectHasChaptersError) setMsg({ kind: "err", text: `${e.count}টি ${t.hasChapters}` });
       else if (e instanceof ProjectRuleError) {
@@ -102,24 +107,32 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
     run(async () => {
       const tw = target.trim() === "" ? null : Number(target);
       if (tw !== null && (!Number.isInteger(tw) || tw < 0)) throw new Error("bad target");
-      fill(await (await getProjectRepo()).updateProject(projectId, { title, type, description: desc, status, visibility: vis, targetWords: tw }));
+      const before = project;
+      const after = await (await getProjectRepo()).updateProject(projectId, { title, type, description: desc, status, visibility: vis, targetWords: tw });
+      fill(after);
+      return projectAffectsSite(before, after);
     }, t.saved);
 
   const onMove = (id: string, dir: "up" | "down") =>
     run(async () => {
       const next = await (await getProjectRepo()).reorderChapters(projectId, moveId(live.map((c) => c.id), id, dir));
       setAll([...next, ...trashed]);
+      return visibleOrderChanged(project, live, next);
     });
 
   const onTrash = (id: string) =>
     run(async () => {
+      const before = all.find((x) => x.id === id) ?? null;
       const c = await (await getProjectRepo()).trashChapter(id);
       setAll((cur) => cur.map((x) => (x.id === id ? c : x)));
+      return chapterAffectsSite(project, before, c);
     });
   const onRestore = (id: string) =>
     run(async () => {
+      const before = all.find((x) => x.id === id) ?? null;
       const c = await (await getProjectRepo()).restoreChapter(id);
       setAll((cur) => cur.map((x) => (x.id === id ? c : x)));
+      return chapterAffectsSite(project, before, c);
     });
   const onDeleteChapter = (id: string) =>
     run(async () => {
@@ -129,6 +142,7 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
   const onDeleteProject = () =>
     run(async () => {
       await (await getProjectRepo()).deleteProject(projectId);
+      if (projectAffectsSite(project, null)) await triggerSiteRebuild(); // অনুরোধ ব্যর্থ হলেও মোছা সম্পন্ন — build-status সতর্কতা দেখাবে
       router.push("/dashboard/projects");
     });
 

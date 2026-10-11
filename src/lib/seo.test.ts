@@ -35,6 +35,16 @@ describe("buildSeo", () => {
   });
 });
 
+describe("renderSitemap extraEntries (P14c-২)", () => {
+  it("নিজের lastmod-সহ এন্ট্রি আসে; মোট-সীমায় গণনা হয়", () => {
+    const x = renderSitemap("https://ex.dev", [], [], [{ path: "/works/a/b", lastmod: new Date("2026-03-01T00:00:00Z") }, { path: "/works" }]);
+    expect(x).toContain("<loc>https://ex.dev/works/a/b</loc><lastmod>2026-03-01T00:00:00.000Z</lastmod>");
+    expect(x).toContain("<loc>https://ex.dev/works</loc></url>");
+    const many = Array.from({ length: MAX_SITEMAP_URLS }, (_, i) => ({ path: `/w/${i}` }));
+    expect(() => renderSitemap("https://ex.dev", [], [], many)).toThrow();
+  });
+});
+
 describe("renderSitemap", () => {
   it("extraPaths (/blog, category…) home-এর পরে আসে; সীমায় গোনা হয়", () => {
     const x = renderSitemap("https://ex.dev", [{ slug: "a", updatedAt: new Date("2026-02-01T00:00:00Z") }], ["/blog", "/category/x"]);

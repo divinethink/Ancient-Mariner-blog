@@ -134,7 +134,9 @@ export function SearchView({ initialQuery }: { initialQuery: string }) {
       ? bn.search.kindIdea
       : e.kind === "note"
         ? bn.search.kindNote
-        : (bn.org.types[e.contentType ?? "post"] ?? bn.org.types.post);
+        : e.kind === "chapter"
+          ? bn.search.kindChapter
+          : (bn.org.types[e.contentType ?? "post"] ?? bn.org.types.post);
 
   async function openHit(h: SearchHit) {
     const e = h.entry;
@@ -147,6 +149,7 @@ export function SearchView({ initialQuery }: { initialQuery: string }) {
       return;
     }
     if (e.kind === "post") router.push(`/dashboard/posts/${e.id}/edit`);
+    else if (e.kind === "chapter" && e.projectId) router.push(`/dashboard/projects/${e.projectId}/chapters/${e.id}`);
     else setOpen((k) => (k === e.key ? null : e.key));
   }
 
@@ -187,6 +190,7 @@ export function SearchView({ initialQuery }: { initialQuery: string }) {
             ))}
             <option value="idea">{bn.search.typeIdea}</option>
             <option value="note">{bn.search.typeNote}</option>
+            <option value="chapter">{bn.search.typeChapter}</option>
           </select>
         </label>
         <label className="text-sm text-muted">
@@ -258,7 +262,7 @@ export function SearchView({ initialQuery }: { initialQuery: string }) {
               <button
                 type="button"
                 onClick={() => void openHit(h)}
-                aria-expanded={e.kind === "post" ? undefined : expanded}
+                aria-expanded={e.kind === "post" || e.kind === "chapter" ? undefined : expanded}
                 className="block min-h-11 w-full text-left"
               >
                 <span className="block font-serif text-lg font-semibold">
@@ -267,7 +271,7 @@ export function SearchView({ initialQuery }: { initialQuery: string }) {
                 <span className="mt-0.5 block text-xs text-muted">
                   {[
                     kindLabel(e),
-                    e.categoryName,
+                    e.categoryName ?? (e.kind === "chapter" ? e.excerpt : undefined),
                     e.kind === "post" ? STATUS_LABEL[e.status ?? ""] : undefined,
                     formatDateTime(e.updatedAt, tz),
                   ]
@@ -302,7 +306,7 @@ export function SearchView({ initialQuery }: { initialQuery: string }) {
                   </div>
                 </div>
               )}
-              {!expanded && e.kind !== "post" && (
+              {!expanded && e.kind !== "post" && e.kind !== "chapter" && (
                 <p className="mt-1 text-xs text-muted">{bn.search.expand} ›</p>
               )}
             </li>

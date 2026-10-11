@@ -10,7 +10,7 @@ export const PAGE_TITLE_MAX = 120;
  * নতুন পাবলিক ফোল্ডার/রুট যোগ হলে এই তালিকা হালনাগাদ বাধ্যতামূলক। `.`-যুক্ত slug `isValidSlug`-ই আটকায় (rss.xml, sitemap.xml…)।
  */
 export const RESERVED_SLUGS: ReadonlySet<string> = new Set([
-  "blog", "category", "tag", "series", "search", "works", "login", "dashboard", "api", "offline", "archive",
+  "blog", "category", "tag", "series", "search", "works", "book", "login", "dashboard", "api", "offline", "archive",
   "data", "icons", "_next", "404", "rss", "sitemap", "robots", "build", "manifest", "sw",
 ]);
 

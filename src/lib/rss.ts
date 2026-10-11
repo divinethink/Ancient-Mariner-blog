@@ -5,7 +5,8 @@ import type { FeedMode } from "./enums";
 import { postExcerpt, blogPath } from "./publicSite";
 import { trimSlash } from "./seo";
 
-export type FeedPost = { slug: string; title: string; excerpt: string; body: string; publishedAt?: Date; updatedAt: Date };
+/** `path` না থাকলে `/blog/<slug>`; অধ্যায় ইত্যাদির জন্য নিজের পথ (P14c-২) */
+export type FeedPost = { slug: string; title: string; excerpt: string; body: string; publishedAt?: Date; updatedAt: Date; path?: string };
 
 export const FEED_PATH = "/rss.xml";
 
@@ -37,7 +38,7 @@ export function renderRss(opts: {
   const newest = list.map((p) => (validDate(p.publishedAt) ? p.publishedAt : p.updatedAt)).filter(validDate);
   const last = newest.reduce<Date | undefined>((m, d) => (!m || d > m ? d : m), undefined);
   const item = (p: FeedPost): string => {
-    const url = `${base}${blogPath(p.slug)}`;
+    const url = `${base}${p.path ?? blogPath(p.slug)}`;
     const when = validDate(p.publishedAt) ? p.publishedAt : p.updatedAt;
     const full = opts.mode === "full" ? bodyToHtml(p.body) : "";
     return (

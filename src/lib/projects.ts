@@ -93,6 +93,9 @@ export function projectProgress(chapters: readonly ChapterLite[], targetWords?: 
 /** সাধারণ-লেখা থেকে শব্দ (editor-এর `countWords` reuse) */
 export const chapterWordCount = (plainText: string): number => countWords(plainText);
 
+/** Book Mode: `/book/<প্রজেক্ট>` — `/works/<p>/<x>`-এ নয়, কারণ অধ্যায়-slug-এর সাথে সংঘাত হতো (P14c-২) */
+export const bookPath = (projectSlug: string): string => `/book/${encodeURIComponent(projectSlug)}`;
+
 /** পাবলিক পথ `/works/<প্রজেক্ট>[/<অধ্যায়>]` (বাংলা slug percent-encode) */
 export const worksPath = (projectSlug?: string, chapterSlug?: string): string =>
   ["/works", projectSlug, projectSlug ? chapterSlug : undefined]
