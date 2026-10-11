@@ -18,6 +18,54 @@ const dayLabel = (k: string) => `${bnNum(Number(k.slice(8, 10)))} ${ymLabel(k.sl
 
 type Load = { ym: string; list: PostWithId[] | null }; // list=null ⇒ ব্যর্থ
 
+type DayCellProps = { day: number; k: string; selected: boolean; isToday: boolean; dayEntries: PostWithId[] | undefined; onPick: (k: string) => void };
+
+/** পঞ্জিকার একটি দিন: আজ = পটভূমি; নির্বাচিত = ভরাট বাটন (আজও হলে + ring); ডট ভরাট = প্রকাশিত, ফাঁপা = শুধু খসড়া */
+function DayCell({ day, k, selected, isToday, dayEntries, onPick }: DayCellProps) {
+  const has = !!dayEntries?.length;
+  const published = !!dayEntries?.some((p) => p.status === "published");
+  const state = published ? bn.diary.statusPublished : bn.diary.statusDraft;
+  const tone = selected ? "bg-btn-bg text-btn-tx" : isToday ? "bg-line font-semibold" : "hover:bg-line";
+  const ring = selected && isToday ? "ring-2 ring-accent-text ring-offset-2 ring-offset-surface" : "";
+  const dot = selected ? "border-btn-tx" : "border-accent-text";
+  return (
+    <button
+      type="button"
+      aria-pressed={selected}
+      aria-current={isToday ? "date" : undefined}
+      aria-label={`${dayLabel(k)}${has ? ` — ${bn.diary.hasEntry} (${state})` : ""}`}
+      onClick={() => onPick(k)}
+      className={`relative mx-auto flex size-11 items-center justify-center rounded-full text-sm ${tone} ${ring}`}
+    >
+      {bnNum(day)}
+      {has && <span aria-hidden className={`absolute bottom-1 size-2 rounded-full border-[1.5px] ${dot} ${published ? (selected ? "bg-btn-tx" : "bg-accent-text") : ""}`} />}
+    </button>
+  );
+}
+
+/** এন্ট্রি-কার্ড তালিকা: ≤৮ লাইন প্রিভিউ; excerpt কাটা ("…") হলে 'আরও পড়ুন →'; খসড়া-ব্যাজ */
+function EntryList({ items }: { items: PostWithId[] }) {
+  return (
+    <ul className="divide-y divide-line rounded-2xl border border-line bg-surface">
+      {items.map((p) => {
+        const text = p.excerpt || p.title || bn.diary.untitled;
+        return (
+          <li key={p.id}>
+            <Link href={`/dashboard/posts/${p.id}/edit`} className="block min-h-12 px-4 py-3">
+              <span className="line-clamp-8 block whitespace-pre-line font-serif text-base">{text}</span>
+              <span className="mt-1 flex flex-wrap items-center gap-x-2 text-sm text-muted">
+                <span className="whitespace-nowrap">{bn.diary.words(bnNum(p.wordCount))}</span>
+                {p.status !== "published" && <span className="rounded-full border border-line px-2 text-xs">{bn.library.draft}</span>}
+                {text.endsWith("…") && <span className="ms-auto font-semibold text-accent-text">{bn.diary.readMore}</span>}
+              </span>
+            </Link>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
 /** দিনলিপি: মাসের Calendar (এন্ট্রি-আছে এমন দিনে ●) + নির্বাচিত দিনের এন্ট্রি + 'এই দিনে' (P8a-১) */
 export function DiaryView() {
   const tz = useSiteTimezone();
@@ -53,6 +101,13 @@ export function DiaryView() {
   }, [ready]);
   const grid = useMemo(() => monthGrid(ym), [ym]);
   const entries = (byDay.get(sel) ?? []).slice().sort(byNewest);
+  // সর্বশেষ দিনলিপি: আজ ফাঁকা হলে এই মাসের (লোড-হওয়া) সবচেয়ে নতুন দিনের এন্ট্রি
+  const latest = useMemo(() => {
+    if (sel !== today || entries.length > 0) return [];
+    const days = [...byDay.keys()].sort();
+    const d = days[days.length - 1];
+    return d ? (byDay.get(d) ?? []).slice().sort(byNewest) : [];
+  }, [byDay, sel, today, entries.length]);
   const move = (d: number) => {
     const n = shiftMonth(ym, d);
     setYm(n);
@@ -86,21 +141,7 @@ export function DiaryView() {
             c === null ? (
               <span key={`e${i}`} />
             ) : (
-              <button
-                key={c.key}
-                type="button"
-                aria-pressed={c.key === sel}
-                aria-label={`${dayLabel(c.key)}${byDay.has(c.key) ? ` — ${bn.diary.hasEntry}` : ""}`}
-                onClick={() => setSel(c.key)}
-                className={`relative mx-auto flex size-11 items-center justify-center rounded-full text-sm ${
-                  c.key === sel ? "bg-btn-bg text-btn-tx" : c.key === today ? "border border-accent-text" : "hover:bg-line"
-                }`}
-              >
-                {bnNum(c.day)}
-                {byDay.has(c.key) && (
-                  <span aria-hidden className={`absolute bottom-1 size-1.5 rounded-full ${c.key === sel ? "bg-btn-tx" : "bg-accent-text"}`} />
-                )}
-              </button>
+              <DayCell key={c.key} day={c.day} k={c.key} selected={c.key === sel} isToday={c.key === today} dayEntries={byDay.get(c.key)} onPick={setSel} />
             ),
           )}
         </div>
@@ -125,21 +166,19 @@ export function DiaryView() {
             </button>
           </p>
         ) : entries.length === 0 ? (
-          <p className="text-sm text-muted">{bn.diary.noEntries}</p>
+          <>
+            <p className="text-sm text-muted">{bn.diary.noEntries}</p>
+            {latest.length > 0 && (
+              <div className="mt-4">
+                <h3 className="mb-2 text-sm font-semibold text-muted">
+                  {bn.diary.latest} · {dayLabel(latest[0]!.date ?? sel)}
+                </h3>
+                <EntryList items={latest} />
+              </div>
+            )}
+          </>
         ) : (
-          <ul className="divide-y divide-line rounded-2xl border border-line bg-surface">
-            {entries.map((p) => (
-              <li key={p.id}>
-                <Link href={`/dashboard/posts/${p.id}/edit`} className="block min-h-12 px-4 py-3">
-                  <span className="line-clamp-3 block whitespace-pre-line font-serif text-base">{p.excerpt || p.title || bn.diary.untitled}</span>
-                  <span className="text-sm text-muted">
-                    {bn.diary.words(p.wordCount)}
-                    {p.status === "draft" ? ` · ${bn.library.draft}` : ""}
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
+          <EntryList items={entries} />
         )}
       </section>
 

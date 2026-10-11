@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { Analytics } from "@/components/public/Analytics";
 import { sidebarContent } from "@/components/public/Sidebar";
+import { MobileMenu } from "@/components/public/MobileMenu";
 import { ThemeToggle } from "@/components/public/ThemeToggle";
 import { getPopular } from "@/data/popularSnapshot";
 import { getPublicScopes } from "@/data/publicLists";
@@ -17,6 +18,7 @@ import { SEARCH_PATH } from "@/lib/publicSearch";
 import { FEED_PATH } from "@/lib/rss";
 
 const nav = "inline-flex min-h-11 items-center";
+const menuRow = "inline-flex min-h-11 w-full items-center rounded-lg px-2";
 const footLink = "inline-flex min-h-11 items-center text-accent-text underline";
 
 /** মেনু/footer-লিংক: ভেতরের পথ = Next Link (prefetch বন্ধ); বাইরের = নতুন ট্যাবে, noopener */
@@ -51,13 +53,57 @@ export async function PublicShell({ children, sidebar = false, month }: { childr
   );
   const foot = resolveFooter(settings.footer, `© ${settings.siteTitle}`);
   const childrenOf = (id: string) => cats.filter((s) => s.term?.parentCategoryId === id);
+  // header-মেনু: ≥৭৬০px-এ ইনলাইন, <৭৬০px-এ ☰ মেনুর ভেতরে (একই লিংক-তালিকা)
+  const links = (cls: string) =>
+    custom ? (
+      custom.map((l, i) => <NavLink key={`${i}-${l.href}`} l={l} className={cls} />)
+    ) : (
+      <>
+              <Link href="/" prefetch={false} className={cls}>
+                {bn.public.home}
+              </Link>
+              <Link href={BLOG_INDEX_PATH} prefetch={false} className={cls}>
+                {bn.public.blog}
+              </Link>
+              {top.length > 0 && (
+                <details className="relative">
+                  <summary className={`${cls} cursor-pointer`}>{bn.public.categories} ▾</summary>
+                  <ul className="z-10 min-[760px]:absolute min-[760px]:mt-1 min-[760px]:min-w-48 min-[760px]:rounded-xl min-[760px]:border min-[760px]:border-line min-[760px]:bg-surface min-[760px]:p-2 min-[760px]:shadow">
+                    {top.map((s) => (
+                      <li key={s.key}>
+                        <Link href={s.path} prefetch={false} className={cls}>
+                          {s.term?.name}
+                        </Link>
+                        {childrenOf(s.term!.id).length > 0 && (
+                          <ul className="ps-4">
+                            {childrenOf(s.term!.id).map((c) => (
+                              <li key={c.key}>
+                                <Link href={c.path} prefetch={false} className={cls}>
+                                  {c.term?.name}
+                                </Link>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </details>
+              )}
+              {about && (
+                <Link href={pagePath(about.slug)} prefetch={false} className={cls}>
+                  {about.title}
+                </Link>
+              )}
+                  </>
+    );
   // ≥৯০০px-এ sidebar ডানে (root `<main>`-এর max-w-3xl থেকে কেন্দ্রে-বের-করা চওড়া কন্টেইনার); নিচে লেখার তালিকার নিচে stack (Mockup §৫)
   const wrap = side ? "min-[900px]:relative min-[900px]:left-1/2 min-[900px]:w-[min(70rem,calc(100vw-3rem))] min-[900px]:-translate-x-1/2" : "";
   return (
     <div className={wrap}>
       <Analytics />
       <header className="zen-hide mb-6 border-b border-line pb-2">
-        <nav aria-label={bn.public.navLabel} className="flex flex-wrap items-center gap-x-5">
+        <nav aria-label={bn.public.navLabel} className="flex items-center gap-x-2 min-[760px]:flex-wrap min-[760px]:gap-x-5">
           <Link href="/" prefetch={false} className={`${nav} gap-2 font-serif text-lg font-bold`}>
             {logo && logoSrc && (
               // eslint-disable-next-line @next/next/no-img-element -- Cloudinary-ই optimizer (Arch §১২); alt খালি: পাশেই নাম আছে
@@ -71,56 +117,25 @@ export async function PublicShell({ children, sidebar = false, month }: { childr
             )}
             {settings.siteTitle}
           </Link>
-          {custom ? (
-            custom.map((l, i) => <NavLink key={`${i}-${l.href}`} l={l} className={nav} />)
-          ) : (
-            <>
-              <Link href="/" prefetch={false} className={nav}>
-                {bn.public.home}
-              </Link>
-              <Link href={BLOG_INDEX_PATH} prefetch={false} className={nav}>
-                {bn.public.blog}
-              </Link>
-              {top.length > 0 && (
-                <details className="relative">
-                  <summary className={`${nav} cursor-pointer`}>{bn.public.categories} ▾</summary>
-                  <ul className="absolute z-10 mt-1 min-w-48 rounded-xl border border-line bg-surface p-2 shadow">
-                    {top.map((s) => (
-                      <li key={s.key}>
-                        <Link href={s.path} prefetch={false} className={nav}>
-                          {s.term?.name}
-                        </Link>
-                        {childrenOf(s.term!.id).length > 0 && (
-                          <ul className="ps-4">
-                            {childrenOf(s.term!.id).map((c) => (
-                              <li key={c.key}>
-                                <Link href={c.path} prefetch={false} className={nav}>
-                                  {c.term?.name}
-                                </Link>
-                              </li>
-                            ))}
-                          </ul>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                </details>
-              )}
-              {about && (
-                <Link href={pagePath(about.slug)} prefetch={false} className={nav}>
-                  {about.title}
-                </Link>
-              )}
-            </>
-          )}
+          <div className="hidden items-center gap-x-5 min-[760px]:flex min-[760px]:flex-wrap">{links(nav)}</div>
           {/* JS ছাড়াই চলা GET ফর্ম → /search?q= (P10a-২) */}
-          <form role="search" action={SEARCH_PATH} method="get" className="ms-auto flex items-center gap-1">
+          <form role="search" action={SEARCH_PATH} method="get" className="ms-auto hidden items-center gap-1 min-[760px]:flex">
             <input type="search" name="q" aria-label={bn.publicSearch.headerLabel} placeholder={bn.publicSearch.headerLabel} autoComplete="off" className="min-h-11 w-32 rounded-lg border border-line bg-surface px-3 text-base min-[760px]:w-56" />
             <button type="submit" aria-label={bn.publicSearch.button} className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-line bg-surface">
               🔍
             </button>
           </form>
-          <ThemeToggle />
+          <div className="hidden min-[760px]:block">
+            <ThemeToggle />
+          </div>
+          {/* <760px: নাম · ⌕ · ☰ — এক সারি */}
+          <Link href={SEARCH_PATH} prefetch={false} aria-label={bn.publicSearch.button} className="ms-auto inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-line bg-surface text-xl min-[760px]:hidden">
+            ⌕
+          </Link>
+          <MobileMenu>
+            {links(menuRow)}
+            <ThemeToggle inMenu />
+          </MobileMenu>
         </nav>
       </header>
       {side ? (

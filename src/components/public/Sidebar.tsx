@@ -33,7 +33,9 @@ function widget(id: SidebarWidget, s: SiteSettings, scopes: readonly Scope[], po
   switch (id) {
     case "search":
       // JS ছাড়াই চলা GET ফর্ম → /search?q= (header-এর মতোই)
+      // <760px-এ লুকানো: header-এ ⌕ আছে
       return (
+        <div className="max-[759px]:hidden">
         <Box title={bn.public.searchTitle}>
           <form action={SEARCH_PATH} method="get" className="flex items-center gap-1">
             <input type="search" name="q" aria-label={bn.publicSearch.headerLabel} placeholder={bn.publicSearch.headerLabel} autoComplete="off" className="min-h-11 w-full min-w-0 rounded-lg border border-line bg-bg px-3 text-base" />
@@ -42,6 +44,7 @@ function widget(id: SidebarWidget, s: SiteSettings, scopes: readonly Scope[], po
             </button>
           </form>
         </Box>
+        </div>
       );
     case "archive": {
       // মাস-বাছাই: <details> তালিকা (JS লাগে না) → /archive/[y]/[m]
