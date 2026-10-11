@@ -32,6 +32,8 @@ export function renderRss(opts: {
   posts: readonly FeedPost[];
   items: number;
   mode: FeedMode;
+  /** self-লিংকের পথ (ডিফল্ট `/rss.xml`; দিনলিপির আলাদা feed-এ `/diary/feed.xml`) */
+  feedPath?: string;
 }): string {
   const base = trimSlash(opts.siteUrl);
   const list = opts.posts.slice(0, Math.max(0, opts.items));
@@ -61,7 +63,7 @@ export function renderRss(opts: {
     `    <description>${x(opts.description.trim() || opts.title)}</description>\n` +
     `    <language>bn</language>\n` +
     (last ? `    <lastBuildDate>${rfc822(last)}</lastBuildDate>\n` : "") +
-    `    <atom:link href="${x(`${base}${FEED_PATH}`)}" rel="self" type="application/rss+xml"/>\n` +
+    `    <atom:link href="${x(`${base}${opts.feedPath ?? FEED_PATH}`)}" rel="self" type="application/rss+xml"/>\n` +
     list.map(item).join("") +
     `  </channel>\n</rss>\n`
   );

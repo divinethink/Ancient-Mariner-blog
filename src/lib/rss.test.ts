@@ -70,3 +70,11 @@ describe("renderRss", () => {
     expect(e).not.toContain("lastBuildDate");
   });
 });
+
+describe("renderRss — feedPath", () => {
+  it("self-লিংকে দেওয়া পথ বসে; না দিলে /rss.xml", () => {
+    const o = { siteUrl: "https://x.test", title: "t", description: "d", posts: [], items: 5, mode: "excerpt" as const };
+    expect(renderRss({ ...o, feedPath: "/diary/feed.xml" })).toContain('href="https://x.test/diary/feed.xml"');
+    expect(renderRss(o)).toContain('href="https://x.test/rss.xml"');
+  });
+});

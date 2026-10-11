@@ -80,3 +80,45 @@ describe("diaryPreview", () => {
   });
   it("বিকৃত body নিরাপদ", () => expect(diaryPreview("not json").truncated).toBe(false));
 });
+
+import { adjacentDays, buildYearView, diaryYears, sameDayEarlier, streakStats } from "./diaryCalendar";
+
+describe("streakStats", () => {
+  it("মোট/সর্বোচ্চ/সর্বশেষ টানা", () => {
+    const s = streakStats(["2026-10-01", "2026-10-02", "2026-10-03", "2026-10-10", "2026-10-11", "2026-10-11"]);
+    expect(s).toEqual({ total: 5, longest: 3, latest: 2 });
+  });
+  it("মাস/বছর পেরোলেও টানা", () => expect(streakStats(["2025-12-31", "2026-01-01"]).longest).toBe(2));
+  it("খালি", () => expect(streakStats([])).toEqual({ total: 0, longest: 0, latest: 0 }));
+});
+
+describe("adjacentDays / diaryYears / sameDayEarlier", () => {
+  const days = ["2024-10-11", "2025-10-11", "2026-10-02", "2026-10-10"];
+  it("adjacent", () => {
+    expect(adjacentDays(days, "2026-10-02")).toEqual({ prev: "2025-10-11", next: "2026-10-10" });
+    expect(adjacentDays(days, "2024-10-11").prev).toBeUndefined();
+    expect(adjacentDays(days, "2026-10-10").next).toBeUndefined();
+  });
+  it("years", () => expect(diaryYears(days)).toEqual([2026, 2025, 2024]));
+  it("এই দিনে: শুধু আগের বছর, নতুন আগে", () => {
+    expect(sameDayEarlier(days, "2026-10-11")).toEqual(["2025-10-11", "2024-10-11"]);
+    expect(sameDayEarlier(days, "2025-10-11")).toEqual(["2024-10-11"]);
+  });
+});
+
+describe("buildYearView", () => {
+  const v = buildYearView(new Map([["2026-01-01", 10], ["2026-10-10", 400]]), 2026);
+  it("৩৬৫ দিন, ৭-ঘরের সপ্তাহ, ১ জানুয়ারি ২০২৬ = বৃহস্পতিবার", () => {
+    expect(v.weeks.every((w) => w.length === 7)).toBe(true);
+    expect(v.weeks.flat().filter(Boolean)).toHaveLength(365);
+    expect(v.weeks[0][4]).toEqual({ key: "2026-01-01", level: 1 });
+    expect(v.writtenDays).toBe(2);
+  });
+  it("১২ মাস; লেখা-আছে এমন মাসে লিংক", () => {
+    expect(v.months).toHaveLength(12);
+    expect(v.months[0].href).toBe("/diary/2026-01-01");
+    expect(v.months[1].href).toBeUndefined();
+    expect(v.months[9].href).toBe("/diary/2026-10-10");
+  });
+  it("লিপ বছরে ৩৬৬", () => expect(buildYearView(new Map(), 2024).weeks.flat().filter(Boolean)).toHaveLength(366));
+});

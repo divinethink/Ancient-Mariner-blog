@@ -1,12 +1,13 @@
 // sitemap.xml ও robots.txt → assets-এ সরাসরি (build-redirects.ts-এর ধাঁচ; Worker চলে না)। snapshot থেকে পড়ে — আলাদা Firestore read নেই।
-import { writeFile } from "node:fs/promises";
+import { mkdir, writeFile } from "node:fs/promises";
 import { readSnapshot } from "../src/data/publicSnapshot";
 import { getSiteUrl } from "../src/config/env";
 import { renderRss } from "../src/lib/rss";
 import { pagePath } from "../src/lib/pages";
 import { renderRobots, renderSitemap } from "../src/lib/seo";
 import { buildPublicSearchIndex, SEARCH_INDEX_PATH } from "../src/lib/publicSearch";
-import { DIARY_PATH, diaryDayPath, groupByDay } from "../src/lib/diaryCalendar";
+import { DIARY_FEED_PATH, DIARY_PATH, diaryDayPath, diaryYearPath, diaryYears, groupByDay } from "../src/lib/diaryCalendar";
+import { parseBody } from "../src/lib/editorDoc";
 import { postExcerpt } from "../src/lib/publicSite";
 import { writeCardChunks } from "./cardChunks";
 import { readWorks } from "../src/data/worksSnapshot";
@@ -31,7 +32,7 @@ function worksEntries(works: Awaited<ReturnType<typeof readWorks>>): { path: str
 /** দিনলিপি-পঞ্জিকা: /diary ও লেখা-আছে এমন প্রতিটি দিন (দিনলিপি না থাকলে কিছু নয়) */
 function diaryPaths(snap: NonNullable<Awaited<ReturnType<typeof readSnapshot>>>): string[] {
   const days = [...groupByDay(snap.diary, snap.settings.timezone).keys()].sort();
-  return days.length ? [DIARY_PATH, ...days.map(diaryDayPath)] : [];
+  return days.length ? [DIARY_PATH, ...diaryYears(days).map(diaryYearPath), ...days.map(diaryDayPath)] : [];
 }
 
 async function main() {
@@ -46,6 +47,16 @@ async function main() {
   const feedAll = mergeFeed(snap.posts, chapterFeedItems(works));
   // P4b-২: RSS (সবসময় তৈরি — পাঠক/রিডার-অ্যাপের জন্য; ইনডেক্স-টগল শুধু সার্চ-ইঞ্জিন নিয়ন্ত্রণ করে)
   await writeFile(`${DIR}/rss.xml`, renderRss({ siteUrl, title: siteTitle, description: tagline, posts: feedAll, items: feedItems, mode: feedMode }), "utf8");
+  // দিনলিপির আলাদা feed (`/diary/feed.xml`) — মূল rss.xml-এ দিনলিপি নেই; দিনলিপি না থাকলে ফাইল লেখা হয় না
+  const diaryDays = groupByDay(snap.diary, snap.settings.timezone);
+  if (diaryDays.size) {
+    const items = [...diaryDays].sort(([a], [b]) => (a < b ? 1 : -1)).flatMap(([day, es]) => {
+      const p = snap.diary.find((x) => x.id === es[0].id)!;
+      return [{ slug: day, title: p.title || day, excerpt: p.excerpt, body: JSON.stringify({ type: "doc", content: es.flatMap((e) => parseBody(e.body).content ?? []) }), publishedAt: p.publishedAt, updatedAt: p.updatedAt, path: diaryDayPath(day) }];
+    });
+    await mkdir(`${DIR}/diary`, { recursive: true });
+    await writeFile(`${DIR}${DIARY_FEED_PATH}`, renderRss({ siteUrl, title: `${siteTitle} — দিনলিপি`, description: tagline, posts: items, items: feedItems, mode: feedMode, feedPath: DIARY_FEED_PATH }), "utf8");
+  }
   // P10a-২: পাবলিক খোঁজের index (সবসময়; ইনডেক্স-টগল শুধু সার্চ-ইঞ্জিনের জন্য) — শুধু title/slug/excerpt/category, `body` নয়
   const searchIndex = buildPublicSearchIndex(snap.posts.map((x) => ({ title: x.title, slug: x.slug, excerpt: postExcerpt(x), categoryName: x.categoryName, publishedAt: x.publishedAt })));
   await writeFile(`${DIR}${SEARCH_INDEX_PATH}`, JSON.stringify(searchIndex), "utf8");
