@@ -65,19 +65,25 @@ describe("latestDay", () => {
 });
 
 describe("diaryPreview", () => {
-  const lines = (n: number) => JSON.stringify(textToDoc(Array.from({ length: n }, (_, i) => `লাইন ${i + 1}`).join("\n")));
-  it("৫০ বা কমে কাটে না", () => expect(diaryPreview(lines(50)).truncated).toBe(false));
-  it("৫১ লাইনে ৫০টা রাখে ও truncated", () => {
-    const r = diaryPreview(lines(51));
+  const doc = (...paras: string[]) => JSON.stringify(textToDoc(paras.join("\n")));
+  const text = (b: string) => JSON.parse(b).content.map((n: { content?: { text?: string }[] }) => (n.content ?? []).map((c) => c.text ?? "").join("")).join("|");
+  it("৩০ শব্দ বা কমে কাটে না", () => expect(diaryPreview(doc(Array(30).fill("ক").join(" "))).truncated).toBe(false));
+  it("নিকটতম দাঁড়িতে কাটে, বাক্য ভাঙে না", () => {
+    const r = diaryPreview(doc("এক দুই তিন। চার পাঁচ ছয়। সাত আট নয়।"), 7);
     expect(r.truncated).toBe(true);
-    expect(JSON.parse(r.body).content).toHaveLength(50);
+    expect(text(r.body)).toBe("এক দুই তিন। চার পাঁচ ছয়।");
   });
-  it("খালি লাইন গোনা হয় না", () => {
-    const body = JSON.stringify(textToDoc("a\n\nb\n\nc"));
-    const r = diaryPreview(body, 2);
+  it("প্রথম বাক্যই লম্বা হলে শব্দ-সীমায় কেটে …", () => {
+    const r = diaryPreview(doc("এক দুই তিন চার পাঁচ ছয়"), 3);
     expect(r.truncated).toBe(true);
-    expect(JSON.parse(r.body).content.filter((n: { content?: unknown }) => n.content)).toHaveLength(2);
+    expect(text(r.body)).toBe("এক দুই তিন…");
   });
+  it("পরের অনুচ্ছেদ সীমা ছাড়ালে ও দাঁড়ি না মিললে বাদ", () => {
+    const r = diaryPreview(doc("এক দুই।", "তিন চার পাঁচ ছয়"), 4);
+    expect(r.truncated).toBe(true);
+    expect(text(r.body)).toBe("এক দুই।");
+  });
+  it("খালি লাইন গোনা হয় না", () => expect(diaryPreview(doc("a", "", "b"), 2).truncated).toBe(false));
   it("বিকৃত body নিরাপদ", () => expect(diaryPreview("not json").truncated).toBe(false));
 });
 

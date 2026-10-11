@@ -1,11 +1,12 @@
-// পাবলিক "দিনলিপি পঞ্জিকা"-র pure অংশ (SDK/UI-মুক্ত): দিন-গ্রুপ, হিটম্যাপ-স্তর, মাসের ছক, প্রথম-৫০-লাইন প্রিভিউ।
+// পাবলিক "দিনলিপি পঞ্জিকা"-র pure অংশ (SDK/UI-মুক্ত): দিন-গ্রুপ, হিটম্যাপ-স্তর, মাসের ছক, প্রথম-~৩০-শব্দ প্রিভিউ।
 // 'দিন' = diary-র `date` ("YYYY-MM-DD", সাইট-timezone); না থাকলে publishedAt/createdAt-এর সাইট-timezone-দিন।
 import { dayKey, formatMonthYear } from "./datetime";
 import { isValidDayKey } from "./diary";
-import { docToText, parseBody, type DocNode } from "./editorDoc";
+import { countWords, docToText, parseBody, type DocNode } from "./editorDoc";
 
 export const DIARY_PATH = "/diary";
-export const DIARY_PREVIEW_LINES = 50;
+/** প্রিভিউ-সীমা: প্রায় এত শব্দ, নিকটতম দাঁড়ি (।?!.)-তে বাক্য ভেঙে নয় */
+export const DIARY_PREVIEW_WORDS = 30;
 export const DIARY_FEED_PATH = "/diary/feed.xml";
 /** ASCII পথ: /diary/2026-10-10 (বাংলা অঙ্ক নয়) */
 export const diaryDayPath = (day: string): string => `${DIARY_PATH}/${day}`;
@@ -80,21 +81,57 @@ export function buildDiaryMonth(days: ReadonlyMap<string, number>, ym: string): 
 /** সর্বশেষ দিন (লেখা-আছে এমন); না থাকলে undefined */
 export const latestDay = (days: Iterable<string>): string | undefined => [...days].sort().pop();
 
-/** body-র প্রথম `max`টি অ-খালি লাইন (প্যারাগ্রাফ/আইটেম); বাকি থাকলে truncated=true। body = সংরক্ষিত Tiptap-JSON string */
-export function diaryPreview(body: string, max = DIARY_PREVIEW_LINES): { body: string; truncated: boolean } {
-  const doc = parseBody(body);
-  const nodes = doc.content ?? [];
-  const kept: DocNode[] = [];
-  let lines = 0;
+type PNode = DocNode;
+const SENT_END = /[।?!.]/u;
+
+/** paragraph-এর সরাসরি text/hardBreak সন্তান → `cut` অক্ষর পর্যন্ত কেটে (mark অক্ষত) + ঐচ্ছিক "…" */
+function sliceInline(kids: readonly PNode[], cut: number, ellipsis: boolean): PNode[] {
+  const out: PNode[] = [];
+  let used = 0;
+  for (const k of kids) {
+    const len = k.type === "text" ? (k.text ?? "").length : 1;
+    if (used + len <= cut) out.push(k);
+    else if (k.type === "text" && cut > used) out.push({ ...k, text: (k.text ?? "").slice(0, cut - used) });
+    used += len;
+    if (used >= cut) break;
+  }
+  if (ellipsis) out.push({ type: "text", text: "…" });
+  return out;
+}
+
+/** body-র প্রথম ~`maxWords` শব্দ, নিকটতম দাঁড়িতে কাটা; বাকি থাকলে truncated=true। body = সংরক্ষিত Tiptap-JSON string।
+ *  প্রথম বাক্যই সীমার বেশি লম্বা হলে শব্দ-সীমায় কেটে "…" যোগ হয়। */
+export function diaryPreview(body: string, maxWords = DIARY_PREVIEW_WORDS): { body: string; truncated: boolean } {
+  const nodes = parseBody(body).content ?? [];
+  const kept: PNode[] = [];
+  let used = 0;
   let truncated = false;
   for (const n of nodes) {
-    const filled = docToText({ type: "doc", content: [n] }) !== "";
-    if (filled && lines >= max) {
-      truncated = true;
-      break;
+    const text = docToText({ type: "doc", content: [n] });
+    const w = countWords(text);
+    if (w === 0) {
+      kept.push(n);
+      continue;
     }
-    kept.push(n);
-    if (filled) lines += 1;
+    if (used + w <= maxWords) {
+      kept.push(n);
+      used += w;
+      continue;
+    }
+    truncated = true;
+    const kids = n.content ?? [];
+    if (n.type === "paragraph" && kids.every((k) => k.type === "text" || k.type === "hardBreak")) {
+      const flat = kids.map((k) => (k.type === "text" ? (k.text ?? "") : "\n")).join("");
+      const rem = maxWords - used;
+      const ends = [...flat.matchAll(/\S+/gu)];
+      const limit = rem > 0 && ends[rem - 1] ? ends[rem - 1].index! + ends[rem - 1][0].length : 0;
+      const head = flat.slice(0, limit);
+      let cut = -1;
+      for (let i = head.length - 1; i >= 0; i--) if (SENT_END.test(head[i]) && countWords(head.slice(0, i + 1)) > 0) { cut = i + 1; break; }
+      if (cut > 0) kept.push({ ...n, content: sliceInline(kids, cut, false) });
+      else if (used === 0 && limit > 0) kept.push({ ...n, content: sliceInline(kids, limit, true) });
+    } else if (used === 0) kept.push(n); // তালিকা/শিরোনাম-জাতীয় প্রথম ব্লক: পুরোটা (বিরল)
+    break;
   }
   return { body: JSON.stringify({ type: "doc", content: kept.length ? kept : [{ type: "paragraph" }] }), truncated };
 }

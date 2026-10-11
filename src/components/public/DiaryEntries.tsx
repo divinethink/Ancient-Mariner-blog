@@ -10,7 +10,7 @@ export function dayLabel(day: string): string {
   return `${bn.public.weekdaysFull[d.getUTCDay()]} · ${formatDate(d, "UTC")}`;
 }
 
-/** দিনের লেখা (পঞ্জিকার নিচে)। `preview` হলে প্রথম ৫০ লাইন + আরও পড়ুন; নইলে পুরোটা */
+/** দিনের লেখা (পঞ্জিকার নিচে)। `preview` হলে প্রথম ~৩০ শব্দ (বাক্যের শেষে) + আরও পড়ুন; নইলে পুরোটা */
 export function DiaryEntries({ day, entries, preview = false }: { day: string; entries: readonly DiaryEntry[]; preview?: boolean }) {
   return (
     <section aria-label={dayLabel(day)} className="mt-6">

@@ -26,7 +26,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return buildSeo({ siteUrl, siteName: siteTitle, title: bn.public.calendarTitle, description: bn.public.diaryDesc, path: DIARY_PATH, allowIndexing, type: "website", hasOgImage: hasDefaultOgImage() }) as Metadata;
 }
 
-/** `/diary`: পঞ্জিকা (সর্বশেষ লেখার মাস) + নিচে সর্বশেষ দিনলিপির প্রথম ৫০ লাইন ও আরও পড়ুন */
+/** `/diary`: পঞ্জিকা (সর্বশেষ লেখার মাস) + নিচে সর্বশেষ দিনলিপির প্রথম ~৩০ শব্দ ও আরও পড়ুন */
 export default async function DiaryHome() {
   const { tz, byDay, words } = await getPublicDiary();
   const last = latestDay(byDay.keys());
