@@ -1,4 +1,7 @@
 // UI-টেক্সট কেন্দ্রীয় ফাইলে (Checklist P0c)। নতুন স্ট্রিং এখানে যোগ হবে, কম্পোনেন্টে হার্ডকোড নয়।
+/** বাংলা অঙ্ক (গ্রুপিং ছাড়া) — UI-র সংখ্যা সব জায়গায় একই ধরনের */
+const bnDigits = (n: number) => n.toLocaleString("bn-BD", { useGrouping: false });
+
 export const bn = {
   siteName: "Ancient Mariner",
   comingSoon: "শীঘ্রই আসছে।",
@@ -279,15 +282,17 @@ export const bn = {
     loadFailed: "সংরক্ষিত লেখার তালিকা আনা যায়নি। নেট দেখে আবার চেষ্টা করুন।",
     retry: "আবার চেষ্টা করুন",
     untitled: "(শিরোনামহীন)",
-    draft: "Draft",
-    published: "Published",
-    archived: "Archived",
+    draft: "খসড়া",
+    published: "প্রকাশিত",
+    archived: "আর্কাইভ",
     localOnly: "এই ডিভাইসে",
     words: "শব্দ",
     filters: "লেখার তালিকা ফিল্টার",
     filterAll: "সব",
-    filterArchived: "Archived",
-    filterTrash: "🗑 ট্র্যাশ",
+    filterArchived: "আর্কাইভ",
+    filterTrash: "ট্র্যাশ",
+    trashTitle: "ট্র্যাশ",
+    moreMenu: "আরও",
     menuOpen: "লেখার মেনু",
     trashIt: "ট্র্যাশে পাঠান",
     history: "ইতিহাস",
@@ -1245,17 +1250,17 @@ export const bn = {
   },
   home: {
     goalTitle: "আজকের লক্ষ্য",
-    goalWords: (n: number, goal: number) => `আজ ${n}/${goal} শব্দ`,
+    goalWords: (n: number, goal: number) => `আজ ${bnDigits(n)}/${bnDigits(goal)} শব্দ`,
     goalHint: "শুধু আজকের নতুন শব্দ গোনা হয় — চাপ নেই 🌱",
-    glance: (pub: number, draft: number) => `প্রকাশিত ${pub} · Draft ${draft}`,
+    glance: (pub: number, draft: number) => `${bnDigits(pub)} প্রকাশিত · ${bnDigits(draft)} খসড়া`,
     pickTitle: "আইডিয়া থেকে একটা বাছুন",
     pickWrite: "এটা নিয়ে লিখুন",
     pickAnother: "আরেকটা",
     pickNone: "বাছার মতো আইডিয়া নেই।",
     pickFailed: "লেখাটি খোলা যায়নি — আবার চেষ্টা করুন।",
     prefsTitle: "লাইব্রেরি হোমের কার্ড (এই ডিভাইসে)",
-    prefGoal: "দৈনিক-লক্ষ্যের রিং দেখান",
-    prefGlance: "At a Glance (প্রকাশিত/Draft সংখ্যা) দেখান",
+    prefGoal: "দৈনিক-লক্ষ্যের বার দেখান",
+    prefGlance: "শিরোনামের নিচে প্রকাশিত/খসড়া সংখ্যা দেখান",
     prefPick: "'আইডিয়া থেকে বাছুন' দেখান",
   },
   marks: {

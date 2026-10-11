@@ -11,6 +11,7 @@ import type { PostWithId } from "@/data/postRepo";
 import { triggerSiteRebuild } from "@/data/rebuildClient";
 import { getPostRepo } from "@/data/postRepo.wire";
 import { syncAllDirty } from "@/data/syncEngine";
+import { Icon } from "@/components/icons";
 import { bn } from "@/i18n/bn";
 import { formatDate } from "@/lib/datetime";
 import { CONTENT_TYPE, type ContentType, type PostStatus } from "@/lib/enums";
@@ -18,10 +19,11 @@ import { FIND_LIMIT } from "@/lib/postFind";
 import { buildCategoryTree } from "@/lib/taxonomy";
 import { trashDaysLeft } from "@/lib/trash";
 import { BulkBar } from "./BulkBar";
-import { HomeCards } from "./HomeCards";
+import { HomeCards, ResumeGoalCard } from "./HomeCards";
 import { useSiteTimezone } from "./SiteSettingsProvider";
 import { setPaletteTitles } from "./paletteSource";
 import { useLongPress } from "./useLongPress";
+import { useHomeCards } from "./useHomeCards";
 import { useMinWidth } from "./useMinWidth";
 import { TrashList, type TrashItem } from "./TrashList";
 
@@ -47,6 +49,7 @@ const toItem = (p: PostWithId): Item => ({
   contentType: p.contentType,
   categoryName: p.categoryName,
 });
+const bnNum = (n: number) => n.toLocaleString("bn-BD", { useGrouping: false });
 type View = "list" | "split" | "table";
 const VIEWS: View[] = ["list", "split", "table"];
 const statusLabel = (it: Item) =>
@@ -109,14 +112,16 @@ function PostMenu({
   id,
   onTrash,
   disabled,
+  className = "relative shrink-0",
 }: {
   id: string;
   onTrash: () => void;
   disabled: boolean;
+  className?: string;
 }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className="relative shrink-0">
+    <div className={className}>
       <button
         type="button"
         aria-label={bn.library.menuOpen}
@@ -147,6 +152,110 @@ function PostMenu({
           </button>
         </div>
       )}
+    </div>
+  );
+}
+
+/** হেডার (ধাপ ২): শিরোনাম + `৬ প্রকাশিত · ১৬ খসড়া` উপশিরোনাম + আইকন-বাটন (খোঁজ · নির্বাচন · ⋯) */
+function LibraryHeader({
+  counts,
+  trashCount,
+  selecting,
+  selectDisabled,
+  onToggleSelect,
+  findOpen,
+  onToggleFind,
+  inTrash,
+  onTrash,
+}: {
+  counts: { published: number; drafts: number } | null;
+  trashCount: number;
+  selecting: boolean;
+  selectDisabled: boolean;
+  onToggleSelect: () => void;
+  findOpen: boolean;
+  onToggleFind: () => void;
+  inTrash: boolean;
+  onTrash: () => void;
+}) {
+  const hc = useHomeCards();
+  const [menu, setMenu] = useState(false);
+  const iconBtn = "flex size-11 shrink-0 items-center justify-center rounded-full border border-line";
+  const item = "flex min-h-11 w-full items-center whitespace-nowrap px-4 text-left";
+  return (
+    <div className="mb-4 flex items-start gap-2">
+      <div className="min-w-0 flex-1">
+        <h1 className="font-serif text-3xl font-bold">{bn.dashboard.library}</h1>
+        {counts && (!hc || hc.glance) && (
+          <p className="text-sm text-muted">{bn.home.glance(counts.published, counts.drafts)}</p>
+        )}
+      </div>
+      <Link href="/dashboard/search" aria-label={bn.search.navLabel} className={iconBtn}>
+        <Icon name="search" size={20} />
+      </Link>
+      <button
+        type="button"
+        aria-label={selecting ? bn.bulk.toggleOff : bn.bulk.toggle}
+        aria-pressed={selecting}
+        disabled={selectDisabled}
+        onClick={onToggleSelect}
+        className={`${iconBtn} disabled:opacity-50 ${selecting ? "border-transparent bg-btn-bg text-btn-tx" : ""}`}
+      >
+        <Icon name="check" size={20} />
+      </button>
+      <div className="relative">
+        <button
+          type="button"
+          aria-label={bn.library.moreMenu}
+          aria-haspopup="menu"
+          aria-expanded={menu}
+          onClick={() => setMenu((o) => !o)}
+          className={iconBtn}
+        >
+          <Icon name="more" size={20} strokeWidth={2.6} />
+        </button>
+        {menu && (
+          <>
+            <button
+              type="button"
+              aria-label={bn.org.find.close}
+              tabIndex={-1}
+              onClick={() => setMenu(false)}
+              className="fixed inset-0 z-10 cursor-default"
+            />
+            <div role="menu" className="absolute right-0 top-12 z-20 flex flex-col rounded-xl border border-line bg-surface py-1 shadow">
+              {!inTrash && (
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    setMenu(false);
+                    onToggleFind();
+                  }}
+                  className={item}
+                >
+                  {findOpen ? bn.org.find.close : bn.org.find.open}
+                </button>
+              )}
+              <Link href="/dashboard/library" role="menuitem" className={item}>
+                {bn.dashboard.organize}
+              </Link>
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  setMenu(false);
+                  onTrash();
+                }}
+                className={item}
+              >
+                {bn.library.filterTrash}
+                {trashCount ? ` (${bnNum(trashCount)})` : ""}
+              </button>
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 }
@@ -354,6 +463,9 @@ export function LibraryHome() {
   if (state.kind === "loading") {
     return (
       <div role="status" aria-live="polite">
+        <div className="mb-4">
+          <h1 className="font-serif text-3xl font-bold">{bn.dashboard.library}</h1>
+        </div>
         <p className="sr-only">{bn.library.loading}</p>
         {[0, 1, 2].map((i) => (
           <div key={i} className="mb-3 h-20 animate-pulse rounded-2xl bg-line" />
@@ -382,40 +494,45 @@ export function LibraryHome() {
   const selStatuses = [...selected].map((id) => known.get(id)).filter((x): x is PostStatus => !!x);
   const allSelected = selectableIds.length > 0 && selectableIds.every((id) => selected.has(id));
   const rowBody = (it: Item) => (
-    <>
-      <span className="min-w-0 flex-1">
-        <span className="block truncate font-serif text-lg font-bold">
-          {it.title || bn.library.untitled}
+    <span className="min-w-0 flex-1">
+      <span className="block truncate font-serif text-lg font-bold">{it.title || bn.library.untitled}</span>
+      <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted">
+        <span className="shrink-0 rounded-full bg-line px-2 py-0.5 text-xs">{statusLabel(it)}</span>
+        <span className="whitespace-nowrap">{formatDate(new Date(it.updatedAt), tz)}</span>
+        <span aria-hidden>·</span>
+        <span className="whitespace-nowrap">
+          {bnNum(it.wordCount)} {bn.library.words}
         </span>
-        <span className="text-sm text-muted">
-          {formatDate(new Date(it.updatedAt), tz)} · {it.wordCount} {bn.library.words}
-          {it.contentType &&
-            it.contentType !== "post" &&
-            ` · ${bn.org.types[it.contentType] ?? it.contentType}`}
-          {it.categoryName && ` · ${it.categoryName}`}
-        </span>
+        {it.contentType && it.contentType !== "post" && (
+          <>
+            <span aria-hidden>·</span>
+            <span>{bn.org.types[it.contentType] ?? it.contentType}</span>
+          </>
+        )}
+        {it.categoryName && (
+          <>
+            <span aria-hidden>·</span>
+            <span>{it.categoryName}</span>
+          </>
+        )}
       </span>
-      <span className="shrink-0 rounded-full bg-line px-2 py-0.5 text-xs text-muted">
-        {statusLabel(it)}
-      </span>
-    </>
+    </span>
   );
   const chips: [Filter, string][] = [
     ["all", bn.library.filterAll],
-    ["draft", bn.library.draft],
     ["published", bn.library.published],
+    ["draft", bn.library.draft],
     ["archived", bn.library.filterArchived],
-    ["trash", `${bn.library.filterTrash}${trashed.length ? ` (${trashed.length})` : ""}`],
-  ];
+  ]; // ট্র্যাশ এখন হেডারের ⋯ মেনুতে
   const showList = filter !== "trash" && (searching ? shown.length > 0 : items.length > 0);
   const previewItem = shown.find((i) => i.id === previewId) ?? null;
   const listUl = (
     <ul className="space-y-3">
       {shown.map((it) => (
-        <li key={it.id} className="flex items-start gap-1">
+        <li key={it.id} className="relative">
           {selecting ? (
             <label
-              className={`flex min-w-0 flex-1 items-start gap-3 rounded-2xl border bg-surface p-4 ${
+              className={`flex min-w-0 items-start gap-3 rounded-2xl border bg-surface p-4 ${
                 selected.has(it.id) ? "border-accent" : "border-line"
               } ${it.localOnly ? "opacity-60" : "cursor-pointer"}`}
             >
@@ -434,11 +551,16 @@ export function LibraryHome() {
               <Link
                 href={`/dashboard/posts/${it.id}/edit`}
                 {...(it.localOnly ? {} : longPress(it.id))}
-                className="flex min-w-0 flex-1 select-none items-start gap-3 rounded-2xl border border-line bg-surface p-4 [-webkit-touch-callout:none]"
+                className="flex min-w-0 select-none items-start gap-3 rounded-2xl border border-line bg-surface p-4 pr-12 [-webkit-touch-callout:none]"
               >
                 {rowBody(it)}
               </Link>
-              <PostMenu id={it.id} disabled={busy} onTrash={() => void trashPost(it.id)} />
+              <PostMenu
+                id={it.id}
+                disabled={busy}
+                onTrash={() => void trashPost(it.id)}
+                className="absolute right-1 top-1"
+              />
             </>
           )}
           {selecting && it.localOnly && <span className="sr-only">{bn.bulk.localOnlyNote}</span>}
@@ -450,6 +572,24 @@ export function LibraryHome() {
     <div
       className={`${selecting ? "pb-64" : ""} ${mode === "list" || filter === "trash" ? "mx-auto max-w-3xl" : ""}`}
     >
+      <LibraryHeader
+        counts={{
+          published: items.filter((i) => i.rawStatus === "published").length,
+          drafts: items.filter((i) => i.rawStatus === "draft").length,
+        }}
+        trashCount={trashed.length}
+        selecting={selecting}
+        selectDisabled={busy}
+        onToggleSelect={() => (selecting ? exitSelect() : setSelecting(true))}
+        findOpen={searchOpen}
+        onToggleFind={() => setSearchOpen((o) => !o)}
+        inTrash={filter === "trash"}
+        onTrash={() => {
+          setFilter("trash");
+          setSelected(new Set());
+          setLastReq(null);
+        }}
+      />
       {remoteFailed && (
         <p role="alert" className="mb-4 rounded-xl border border-line bg-surface p-3 text-muted">
           {bn.library.loadFailed}{" "}
@@ -475,24 +615,11 @@ export function LibraryHome() {
           )}
         </p>
       )}
-      {latest && filter !== "trash" && !selecting && (
-        <Link
-          href={`/dashboard/posts/${latest.id}/edit`}
-          className="mb-5 block rounded-2xl bg-btn-bg p-4 text-btn-tx"
-        >
-          <span className="text-sm opacity-90">▶ {bn.library.resume}</span>
-          <span className="block font-serif text-lg font-bold">
-            {latest.title || bn.library.untitled}
-          </span>
-        </Link>
-      )}
       {filter !== "trash" && !selecting && (
-        <HomeCards
-          published={items.filter((i) => i.rawStatus === "published").length}
-          drafts={items.filter((i) => i.rawStatus === "draft").length}
-        />
+        <ResumeGoalCard latest={latest ? { id: latest.id, title: latest.title } : null} />
       )}
-      <div role="group" aria-label={bn.library.filters} className="mb-4 flex flex-wrap gap-2">
+      {filter !== "trash" && !selecting && <HomeCards />}
+      <div role="group" aria-label={bn.library.filters} className="mb-4 grid grid-cols-4 gap-2">
         {chips.map(([key, label]) => (
           <button
             key={key}
@@ -503,30 +630,13 @@ export function LibraryHome() {
               setSelected(new Set()); // অন্য দৃশ্যের লেখা নির্বাচনে থাকে না
               setLastReq(null);
             }}
-            className={`min-h-11 rounded-full border px-4 text-sm ${
+            className={`min-h-11 truncate rounded-full border px-2 text-sm ${
               filter === key ? "border-transparent bg-btn-bg text-btn-tx" : "border-line"
             }`}
           >
             {label}
           </button>
         ))}
-      </div>
-      <div className="mb-4 flex flex-wrap gap-2">
-        <Link
-          href="/dashboard/search"
-          className="flex min-h-11 items-center rounded-full border border-line px-4 text-sm"
-        >
-          🔎 {bn.search.navLabel}
-        </Link>
-        <button
-          type="button"
-          aria-pressed={selecting}
-          disabled={busy}
-          onClick={() => (selecting ? exitSelect() : setSelecting(true))}
-          className="min-h-11 rounded-full border border-line px-4 text-sm"
-        >
-          {selecting ? bn.bulk.toggleOff : bn.bulk.toggle}
-        </button>
       </div>
       {desktop && filter !== "trash" && (
         <div role="group" aria-label={bn.library.view.label} className="mb-4 flex gap-2">
@@ -547,16 +657,8 @@ export function LibraryHome() {
       )}
       {filter !== "trash" && (
         <div className="mb-4">
-          <button
-            type="button"
-            aria-pressed={searchOpen}
-            onClick={() => setSearchOpen((o) => !o)}
-            className="min-h-11 rounded-full border border-line px-4 text-sm"
-          >
-            🔍 {searchOpen ? bn.org.find.close : bn.org.find.open}
-          </button>
           {searchOpen && (
-            <div className="mt-3 space-y-3 rounded-2xl border border-line bg-surface p-4">
+            <div className="space-y-3 rounded-2xl border border-line bg-surface p-4">
               <label className="block text-sm text-muted">
                 {bn.org.find.label}
                 <input
@@ -621,6 +723,7 @@ export function LibraryHome() {
           </button>
         </p>
       )}
+      {filter === "trash" && <h2 className="mb-2 font-semibold">{bn.library.trashTitle}</h2>}
       {filter === "trash" ? (
         <TrashList
           items={trashed}

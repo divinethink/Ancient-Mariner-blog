@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { convertIdeaToPost } from "@/data/ideaConvert";
@@ -16,8 +17,8 @@ import { useHomeCards } from "./useHomeCards";
 
 const bnNum = (n: number) => n.toLocaleString("bn-BD", { useGrouping: false });
 
-/** লাইব্রেরি হোমের তিনটি শান্ত কার্ড (Mockup §৭.৬, P7a)। প্রতিটা Settings-এ বন্ধ করা যায় (প্রতি-ডিভাইস) */
-export function HomeCards({ published, drafts }: { published: number; drafts: number }) {
+/** রিজিউম + দৈনিক লক্ষ্য এক কার্ডে (ধাপ ২): `▶ চালিয়ে যান` শিরোনাম + পাতলা প্রগ্রেস-বার। লক্ষ্য-পছন্দ বন্ধ থাকলে শুধু রিজিউম */
+export function ResumeGoalCard({ latest }: { latest: { id: string; title: string } | null }) {
   const tz = useSiteTimezone();
   const prefs = useHomeCards(); // SSR/hydration মিল: mount-এর পর পছন্দ আসে
   const [words, setWords] = useState(0);
@@ -33,34 +34,43 @@ export function HomeCards({ published, drafts }: { published: number; drafts: nu
       dead = true;
     };
   }, [tz]);
-  if (!prefs) return null;
+  const showGoal = !!prefs?.goal;
   const pct = goalPercent(words, DEFAULT_GOAL);
+  const goal = showGoal ? (
+    <span className="mt-2 block">
+      <span className="flex items-center justify-between gap-2 text-sm">
+        <span>{bn.home.goalWords(words, DEFAULT_GOAL)}</span>
+        <span aria-hidden>{bnNum(pct)}%</span>
+      </span>
+      <span
+        role="progressbar"
+        aria-label={bn.home.goalTitle}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={pct}
+        className="mt-1 block h-1.5 overflow-hidden rounded-full"
+        style={{ background: "color-mix(in srgb, currentColor 25%, transparent)" }}
+      >
+        <span className="block h-full rounded-full bg-current" style={{ width: `${pct}%` }} />
+      </span>
+    </span>
+  ) : null;
+  if (!latest) return goal ? <div className="mb-4 rounded-2xl border border-line bg-surface p-4">{goal}</div> : null;
   return (
-    <div className="mb-5 space-y-3">
-      {prefs.goal && (
-        <div className="flex items-center gap-4 rounded-2xl border border-line bg-surface p-4">
-          <div
-            role="img"
-            aria-label={bn.home.goalWords(words, DEFAULT_GOAL)}
-            className="relative grid size-14 shrink-0 place-items-center rounded-full"
-            style={{ background: `conic-gradient(var(--accent) ${pct}%, var(--line) 0)` }}
-          >
-            <span className="absolute inset-1.5 rounded-full bg-surface" aria-hidden />
-            <span className="relative text-sm font-semibold" aria-hidden>
-              {bnNum(pct)}%
-            </span>
-          </div>
-          <div className="min-w-0">
-            <p className="font-semibold">{bn.home.goalWords(words, DEFAULT_GOAL)}</p>
-            <p className="text-sm text-muted">{bn.home.goalHint}</p>
-          </div>
-        </div>
-      )}
-      {prefs.glance && (
-        <p className="rounded-2xl border border-line bg-surface p-4 text-sm text-muted">
-          📊 {bn.home.glance(published, drafts)}
-        </p>
-      )}
+    <Link href={`/dashboard/posts/${latest.id}/edit`} className="mb-4 block rounded-2xl bg-btn-bg p-4 text-btn-tx">
+      <span className="text-sm opacity-90">▶ {bn.library.resume}</span>
+      <span className="block truncate font-serif text-lg font-bold">{latest.title || bn.library.untitled}</span>
+      {goal}
+    </Link>
+  );
+}
+
+/** লাইব্রেরি হোমের শান্ত কার্ড: আইডিয়া-বাছাই ও এই-দিনে (Mockup §৭.৬, P7a); প্রতিটা Settings-এ বন্ধ করা যায় */
+export function HomeCards() {
+  const prefs = useHomeCards();
+  if (!prefs) return null;
+  return (
+    <div className="mb-4 space-y-3">
       {prefs.pick && <IdeaPick />}
       <OnThisDay />
     </div>
