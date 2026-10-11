@@ -10,29 +10,31 @@ import { getPublicDiary } from "@/data/publicDiary";
 import { getPublicSettings } from "@/data/publicSnapshot";
 import { bn } from "@/i18n/bn";
 import { buildDiaryMonth, buildYearView, DIARY_FEED_PATH, DIARY_PATH, diaryYears, latestDay, streakStats } from "@/lib/diaryCalendar";
+import { widgetTitle } from "@/lib/layout";
 import { buildSeo } from "@/lib/seo";
 
 // build-সময়ে prerender; পাঠক-রিকোয়েস্টে Worker চলে না
 export const dynamic = "force-static";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const { siteTitle, allowIndexing } = await getPublicSettings();
+  const { siteTitle, allowIndexing, layout } = await getPublicSettings();
   let siteUrl: string | undefined;
   try {
     siteUrl = getSiteUrl();
   } catch {
     siteUrl = undefined; // SITE_URL ছাড়া (লোকাল dev) canonical বাদ
   }
-  return buildSeo({ siteUrl, siteName: siteTitle, title: bn.public.calendarTitle, description: bn.public.diaryDesc, path: DIARY_PATH, allowIndexing, type: "website", hasOgImage: hasDefaultOgImage() }) as Metadata;
+  return buildSeo({ siteUrl, siteName: siteTitle, title: widgetTitle(layout.sidebar, "calendar", bn.public.calendarTitle), description: bn.public.diaryDesc, path: DIARY_PATH, allowIndexing, type: "website", hasOgImage: hasDefaultOgImage() }) as Metadata;
 }
 
 /** `/diary`: পঞ্জিকা (সর্বশেষ লেখার মাস) + নিচে সর্বশেষ দিনলিপির প্রথম ~৩০ শব্দ ও আরও পড়ুন */
 export default async function DiaryHome() {
   const { tz, byDay, words } = await getPublicDiary();
+  const calTitle = widgetTitle((await getPublicSettings()).layout.sidebar, "calendar", bn.public.calendarTitle);
   const last = latestDay(byDay.keys());
   return (
     <PublicShell>
-      <h1 className="font-serif text-3xl font-bold">{bn.public.calendarTitle}</h1>
+      <h1 className="font-serif text-3xl font-bold">{calTitle}</h1>
       {last ? (
         <>
           <p className="mt-1 text-muted">{bn.public.diaryDesc}</p>

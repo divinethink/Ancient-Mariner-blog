@@ -63,6 +63,7 @@ export function AddProvider({ children }: { children: ReactNode }) {
   const [diaryTitle, setDiaryTitle] = useState("");
   const [diaryPlace, setDiaryPlace] = useState("");
   const [diaryDay, setDiaryDay] = useState(""); // খালি = আজ
+  const [todayKey, setTodayKey] = useState(""); // sheet খোলার সময় বসে (render-এ Date.now() নয়)
   const [diaryVersion, setDiaryVersion] = useState(0);
   const diaryIdRef = useRef<string>("");
   const diaryTextRef = useRef("");
@@ -82,8 +83,9 @@ export function AddProvider({ children }: { children: ReactNode }) {
     if (idRef.current === "") idRef.current = newId();
     if (diaryIdRef.current === "") diaryIdRef.current = newId();
     setStatus("idle");
+    setTodayKey(dayKey(Date.now(), tz));
     setMode(m);
-  }, []);
+  }, [tz]);
   const openMenu = useCallback(() => open("menu"), [open]);
   const openIdea = useCallback(() => open("idea"), [open]);
   const openDiary = useCallback(() => open("diary"), [open]);
@@ -382,7 +384,7 @@ export function AddProvider({ children }: { children: ReactNode }) {
                         {d.fieldDay}
                         <input
                           type="date"
-                          max={dayKey(Date.now(), tz)}
+                          max={todayKey || undefined}
                           value={diaryDay}
                           onChange={(e) => {
                             setDiaryDay(e.target.value);

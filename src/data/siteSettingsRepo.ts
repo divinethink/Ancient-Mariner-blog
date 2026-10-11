@@ -1,6 +1,7 @@
 // siteSettingsRepo = interface + Zod boundary (Arch §২ 'Repo গঠন'); adapter: .client.ts (পথ ক), .server.ts (পথ খ)।
 // সম্পাদনাযোগ্য ফিল্ড: নাম, ট্যাগলাইন, থিম-default, timezone, postsPerPage, ইনডেক্স/AI-crawler টগল (P2c-১); authorBio, feedItems, feedMode (P4b-২)।
 // socialLinks.facebook, links, layout (sidebar/home ক্রম) — পাঠ P4b-৩; menu, footer — পাঠ P9a-১ (খালি = আগের default); সম্পাদনা UI P9a-২/৩। design (accent/fontPair/cardStyle) — P9b-১ (খালি/অজানা = ডিফল্ট; সম্পাদনা UI P9b-২; logoMediaId/bannerMediaId একই map-এ)। পরের phase-এর ফিল্ড (logo/banner…) এই schema-য় নেই — সেভ `merge` বলে সেগুলো অক্ষত থাকে।
+import { LAYOUT_TITLE_MAX } from "@/lib/layout";
 import { z } from "zod";
 import { DEFAULT_TIMEZONE } from "@/lib/datetime";
 import { FeedMode, Theme } from "@/lib/enums";
@@ -31,7 +32,7 @@ import {
 } from "@/lib/menu";
 
 const HttpUrl = z.string().trim().max(URL_MAX).refine(isHttpUrl, "http/https URL দরকার");
-const LayoutItem = z.object({ id: z.string().min(1).max(40), enabled: z.boolean() });
+const LayoutItem = z.object({ id: z.string().min(1).max(40), enabled: z.boolean(), title: z.string().max(LAYOUT_TITLE_MAX).optional() }); // title: owner-দেওয়া নিজের নাম (ঐচ্ছিক; পুরনো doc-এ নেই)
 
 const SafeHref = z.string().trim().max(URL_MAX).refine(isSafeHref, "http/https বা '/' দিয়ে শুরু পথ দরকার");
 const MenuItemSchema = z

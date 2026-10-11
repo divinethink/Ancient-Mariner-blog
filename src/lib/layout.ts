@@ -1,6 +1,7 @@
 // পাবলিক sidebar/Home-সেকশনের ক্রম ও চালু-বন্ধ (Arch §৬ `layout`, §১৭ P4b-৩)। pure, SDK/UI-মুক্ত।
 // সংরক্ষিত মান আংশিক/পুরনো/অজানা-id-যুক্ত হতে পারে — তাই default-এর সাথে মিলিয়ে সবসময় পূর্ণ তালিকা (defensive read)।
-export type LayoutItem = { id: string; enabled: boolean };
+export type LayoutItem = { id: string; enabled: boolean; /** owner-দেওয়া নিজের নাম (ঐচ্ছিক; খালি = ডিফল্ট) */ title?: string };
+export const LAYOUT_TITLE_MAX = 40;
 
 export const SIDEBAR_WIDGETS = ["search", "facebook", "category", "popular", "archive", "calendar", "links", "follow", "recent", "author"] as const;
 export type SidebarWidget = (typeof SIDEBAR_WIDGETS)[number];
@@ -30,15 +31,29 @@ export const DEFAULT_HOME: readonly { id: HomeSection; enabled: boolean }[] = [
 export function resolveLayout<T extends string>(
   stored: readonly LayoutItem[],
   defaults: readonly { id: T; enabled: boolean }[],
-): { id: T; enabled: boolean }[] {
+): { id: T; enabled: boolean; title?: string }[] {
   const known = new Map(defaults.map((d) => [d.id as string, d] as const));
   const seen = new Set<string>();
-  const out: { id: T; enabled: boolean }[] = [];
+  const out: { id: T; enabled: boolean; title?: string }[] = [];
   for (const s of stored) {
     if (!known.has(s.id) || seen.has(s.id)) continue;
     seen.add(s.id);
-    out.push({ id: s.id as T, enabled: s.enabled });
+    const title = s.title?.trim().slice(0, LAYOUT_TITLE_MAX);
+    out.push({ id: s.id as T, enabled: s.enabled, ...(title && { title }) });
   }
   for (const d of defaults) if (!seen.has(d.id)) out.push({ ...d });
   return out;
+}
+
+/** একটা widget-এর নিজের নাম (সংরক্ষিত তালিকা থেকে); না থাকলে/খালি হলে `fallback` */
+export function widgetTitle(stored: readonly LayoutItem[], id: string, fallback: string): string {
+  return stored.find((x) => x.id === id)?.title?.trim() || fallback;
+}
+
+/** সম্পাদনার পর: খালি/ফাঁকা `title` ফিল্ডটাই সরানো, বাকিটা trim ও সীমিত (সংরক্ষণ ও dirty-তুলনার আগে) */
+export function cleanTitles<T extends { title?: string }>(rows: readonly T[]): T[] {
+  return rows.map(({ title, ...r }) => {
+    const t = title?.trim().slice(0, LAYOUT_TITLE_MAX);
+    return (t ? { ...r, title: t } : r) as T;
+  });
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_HOME, DEFAULT_SIDEBAR, resolveLayout } from "./layout";
+import { cleanTitles, DEFAULT_HOME, DEFAULT_SIDEBAR, resolveLayout, widgetTitle } from "./layout";
 import { pickFeatured } from "./featured";
 
 describe("resolveLayout", () => {
@@ -56,5 +56,21 @@ describe("pickFeatured", () => {
   it("সমান সময়ে ইনপুটের প্রথমটা", () => {
     const t = d("2026-10-01");
     expect(pickFeatured([{ id: "x", publishedAt: t }, { id: "y", publishedAt: t }])).toBe("x");
+  });
+});
+
+describe("widget নাম", () => {
+  it("resolveLayout নিজের নাম রাখে, ফাঁকা নাম বাদ দেয়", () => {
+    const r = resolveLayout([{ id: "calendar", enabled: true, title: "  আমার দিনলিপি " }, { id: "search", enabled: true, title: "  " }], DEFAULT_SIDEBAR);
+    expect(r[0]).toEqual({ id: "calendar", enabled: true, title: "আমার দিনলিপি" });
+    expect(r[1]).toEqual({ id: "search", enabled: true });
+  });
+  it("widgetTitle: নিজের নাম বা fallback", () => {
+    expect(widgetTitle([{ id: "calendar", enabled: true, title: "ক" }], "calendar", "ডিফল্ট")).toBe("ক");
+    expect(widgetTitle([{ id: "calendar", enabled: true }], "calendar", "ডিফল্ট")).toBe("ডিফল্ট");
+    expect(widgetTitle([], "calendar", "ডিফল্ট")).toBe("ডিফল্ট");
+  });
+  it("cleanTitles খালি title ফিল্ড সরায়", () => {
+    expect(cleanTitles([{ id: "a", enabled: true, title: " " }, { id: "b", enabled: true, title: " খ " }])).toEqual([{ id: "a", enabled: true }, { id: "b", enabled: true, title: "খ" }]);
   });
 });

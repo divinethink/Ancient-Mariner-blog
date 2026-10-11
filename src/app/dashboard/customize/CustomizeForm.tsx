@@ -22,7 +22,7 @@ import {
 } from "@/lib/menu";
 import { footerLinkError, menuRowError, moveAt, removeAt, seedMenu, withType } from "@/lib/menuEdit";
 import { DEFAULT_DESIGN } from "@/lib/design";
-import { DEFAULT_HOME, DEFAULT_SIDEBAR, resolveLayout } from "@/lib/layout";
+import { DEFAULT_HOME, DEFAULT_SIDEBAR, LAYOUT_TITLE_MAX, cleanTitles, resolveLayout } from "@/lib/layout";
 import { LINK_LABEL_MAX, facebookError, siteLinkError, toggleAt, type SiteLink } from "@/lib/layoutEdit";
 import { LINKS_MAX, URL_MAX } from "@/lib/siteSettings";
 import { useSiteSettings } from "../SiteSettingsProvider";
@@ -32,7 +32,7 @@ import { DesignTab } from "./DesignTab";
 type Load = { kind: "loading" } | { kind: "error" } | { kind: "ready"; saved: SiteSettings };
 type Row<T> = T & { k: number }; // স্থির key — ক্রম বদলালে input-ফোকাস/মান গুলিয়ে না যাওয়ার জন্য
 type Tab = "menu" | "footer" | "sidebar" | "home" | "design";
-type LayoutRow = { id: string; enabled: boolean };
+type LayoutRow = { id: string; enabled: boolean; title?: string };
 
 const t = bn.customize;
 const input = "mt-1 min-h-11 w-full rounded-lg border border-line bg-surface px-3";
@@ -55,12 +55,12 @@ const rowsOf = (s: SiteSettings) => ({
   design: s.design,
 });
 
-export function CustomizeForm() {
+export function CustomizeForm({ initialTab }: { initialTab?: Tab }) {
   const { setSettings } = useSiteSettings();
   const [load, setLoad] = useState<Load>({ kind: "loading" });
   const [pages, setPages] = useState<PageWithId[] | null>(null); // null = আনা যায়নি
   const [cats, setCats] = useState<TermWithId[] | null>(null);
-  const [tab, setTab] = useState<Tab>("menu");
+  const [tab, setTab] = useState<Tab>(initialTab ?? "menu");
   const [menu, setMenu] = useState<Row<MenuItem>[]>([]);
   const [footText, setFootText] = useState("");
   const [footLinks, setFootLinks] = useState<Row<FooterLink>[]>([]);
@@ -154,7 +154,7 @@ export function CustomizeForm() {
   const fbOut = fb.trim();
   const dirty =
     JSON.stringify({ m: saved.menu, f: saved.footer, s: sidebarOf(saved), h: homeOf(saved), b: saved.socialLinks.facebook, l: saved.links, d: saved.design }) !==
-    JSON.stringify({ m: menuOut, f: footOut, s: sidebar, h: home, b: fbOut, l: linksOut, d: design });
+    JSON.stringify({ m: menuOut, f: footOut, s: cleanTitles(sidebar), h: home, b: fbOut, l: linksOut, d: design });
   const hasErr =
     menu.some((m) => menuRowError(m)) ||
     footLinks.some((l) => footerLinkError(l)) ||
@@ -164,7 +164,7 @@ export function CustomizeForm() {
     menu.length === 0 &&
     footText === "" &&
     footLinks.length === 0 &&
-    JSON.stringify(sidebar) === JSON.stringify(resolveLayout([], DEFAULT_SIDEBAR)) &&
+    JSON.stringify(cleanTitles(sidebar)) === JSON.stringify(resolveLayout([], DEFAULT_SIDEBAR)) &&
     JSON.stringify(home) === JSON.stringify(resolveLayout([], DEFAULT_HOME)) &&
     design.accent === DEFAULT_DESIGN.accent &&
     design.fontPair === DEFAULT_DESIGN.fontPair &&
@@ -182,7 +182,7 @@ export function CustomizeForm() {
         ...latest,
         menu: menuOut,
         footer: footOut,
-        layout: { sidebar, home },
+        layout: { sidebar: cleanTitles(sidebar), home },
         socialLinks: { ...latest.socialLinks, facebook: fbOut },
         links: linksOut,
         design,
@@ -254,6 +254,7 @@ export function CustomizeForm() {
     set: (r: LayoutRow[]) => void,
     names: Record<string, string>,
     label: string,
+    renamable = false,
   ) => (
     <ol className="space-y-3" aria-label={label}>
       {rows.map((r, i) => (
@@ -272,6 +273,22 @@ export function CustomizeForm() {
               {names[r.id] ?? r.id} {!r.enabled && <span className="text-sm">({t.off})</span>}
             </span>
           </label>
+          {renamable && r.id !== "author" && (
+            <label className="block w-full text-sm text-muted">
+              {t.widgetNameLabel}
+              <input
+                type="text"
+                className={input}
+                maxLength={LAYOUT_TITLE_MAX}
+                placeholder={names[r.id] ?? r.id}
+                value={r.title ?? ""}
+                onChange={(e) => {
+                  edit();
+                  set(rows.map((x, k) => (k === i ? { ...x, title: e.target.value } : x)));
+                }}
+              />
+            </label>
+          )}
           <div className="flex gap-2">
             <button
               type="button"
@@ -502,7 +519,7 @@ export function CustomizeForm() {
       {tab === "sidebar" && (
         <section className="space-y-4" aria-label={t.tabSidebar}>
           <p className="text-sm text-muted">{t.sidebarHint}</p>
-          {layoutList(sidebar, setSidebar, t.widgets, t.tabSidebar)}
+          {layoutList(sidebar, setSidebar, t.widgets, t.tabSidebar, true)}
           <label className="block">
             {t.fbLabel}
             <input
