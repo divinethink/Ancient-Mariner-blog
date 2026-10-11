@@ -396,10 +396,13 @@ describe("writingProjects / chapters (P14a-১)", () => {
   });
   const PUB = { status: "published", visibility: "public" };
 
-  it("প্রজেক্ট: owner create/update পারে; অবৈধ enum/ownerUid ও অন্য uid/anonymous পারে না", async () => {
+  it("প্রজেক্ট: owner create/update পারে; অবৈধ ধরন/enum/ownerUid ও অন্য uid/anonymous পারে না", async () => {
     await assertSucceeds(setDoc(doc(owner(), "writingProjects", "p1"), proj()));
     await assertSucceeds(updateDoc(doc(owner(), "writingProjects", "p1"), { title: "নতুন" }));
-    await assertFails(setDoc(doc(owner(), "writingProjects", "p2"), proj({ type: "poem" })));
+    await assertSucceeds(setDoc(doc(owner(), "writingProjects", "p3"), proj({ type: "গবেষণা" }))); // মুক্ত ধরন বৈধ
+    await assertFails(setDoc(doc(owner(), "writingProjects", "p2"), proj({ type: "" })));
+    await assertFails(setDoc(doc(owner(), "writingProjects", "p2"), proj({ type: "ক".repeat(41) })));
+    await assertFails(setDoc(doc(owner(), "writingProjects", "p2"), proj({ type: 5 })));
     await assertFails(setDoc(doc(owner(), "writingProjects", "p2"), proj({ status: "scheduled" })));
     await assertFails(setDoc(doc(owner(), "writingProjects", "p2"), proj({ visibility: "unlisted" })));
     await assertFails(setDoc(doc(owner(), "writingProjects", "p2"), proj({ ownerUid: "someoneElse123456" })));

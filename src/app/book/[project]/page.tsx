@@ -10,6 +10,7 @@ import { hasDefaultOgImage } from "@/data/publicAssets";
 import { getPublicSettings } from "@/data/publicSnapshot";
 import { getPublicWorks } from "@/data/worksSnapshot";
 import { bn } from "@/i18n/bn";
+import { typeLabel } from "@/lib/projectType";
 import { worksPath } from "@/lib/projects";
 import { buildSeo } from "@/lib/seo";
 import { projectExcerpt, worksWordTotal } from "@/lib/works";
@@ -64,7 +65,7 @@ export default async function BookPage({ params }: Props) {
         <ZenToggle />
       </div>
       <article id="book-article" className="mt-4">
-        <p className="text-sm text-muted">{bn.works.types[project.type]}</p>
+        <p className="text-sm text-muted">{typeLabel(project.type, bn.works.types)}</p>
         <h1 className="font-serif text-3xl font-bold leading-snug">{project.title}</h1>
         <p className="mt-2 text-sm text-muted">
           {bn.works.chapterCount(chapters.length)} · {bn.works.wordCount(worksWordTotal(chapters))}

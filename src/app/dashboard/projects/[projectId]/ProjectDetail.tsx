@@ -13,7 +13,9 @@ import {
 import { getProjectRepo } from "@/data/projectRepo.wire";
 import { triggerSiteRebuild } from "@/data/rebuildClient";
 import { bn } from "@/i18n/bn";
-import { PROJECT_STATUS, PROJECT_TYPE, PROJECT_VISIBILITY, type ProjectStatus, type ProjectType, type ProjectVisibility } from "@/lib/enums";
+import { PROJECT_STATUS, PROJECT_VISIBILITY, type ProjectStatus, type ProjectVisibility } from "@/lib/enums";
+import { resolveType, splitType } from "@/lib/projectType";
+import { ProjectTypeField } from "../ProjectTypeField";
 import { newId } from "@/lib/id";
 import { MAX_CHAPTERS_PER_PROJECT, moveId, projectProgress } from "@/lib/projects";
 import { chapterPath, newChapterPath } from "@/lib/projectsUi";
@@ -33,7 +35,8 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
   const [project, setProject] = useState<WritingProjectWithId | null>(null);
   const [all, setAll] = useState<ChapterWithId[]>([]); // ট্র্যাশ সহ
   const [title, setTitle] = useState("");
-  const [type, setType] = useState<ProjectType>("novel");
+  const [typeSel, setTypeSel] = useState("novel");
+  const [typeCustom, setTypeCustom] = useState("");
   const [desc, setDesc] = useState("");
   const [target, setTarget] = useState("");
   const [status, setStatus] = useState<ProjectStatus>("draft");
@@ -45,7 +48,9 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
   const fill = useCallback((p: WritingProjectWithId) => {
     setProject(p);
     setTitle(p.title);
-    setType(p.type);
+    const sp = splitType(p.type);
+    setTypeSel(sp.select);
+    setTypeCustom(sp.custom);
     setDesc(p.description);
     setTarget(p.targetWords ? String(p.targetWords) : "");
     setStatus(p.status);
@@ -107,6 +112,8 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
     run(async () => {
       const tw = target.trim() === "" ? null : Number(target);
       if (tw !== null && (!Number.isInteger(tw) || tw < 0)) throw new Error("bad target");
+      const type = resolveType(typeSel, typeCustom, t.types);
+      if (!type) throw new Error("type needed");
       const before = project;
       const after = await (await getProjectRepo()).updateProject(projectId, { title, type, description: desc, status, visibility: vis, targetWords: tw });
       fill(after);
@@ -244,16 +251,7 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
           <span className="mb-1 block text-sm text-muted">{t.titleLabel}</span>
           <input value={title} maxLength={120} onChange={(e) => setTitle(e.target.value)} className={field} />
         </label>
-        <label className="block">
-          <span className="mb-1 block text-sm text-muted">{t.typeLabel}</span>
-          <select value={type} onChange={(e) => setType(e.target.value as ProjectType)} className={field}>
-            {PROJECT_TYPE.map((x) => (
-              <option key={x} value={x}>
-                {t.types[x]}
-              </option>
-            ))}
-          </select>
-        </label>
+        <ProjectTypeField select={typeSel} custom={typeCustom} onSelect={setTypeSel} onCustom={setTypeCustom} />
         <label className="block">
           <span className="mb-1 block text-sm text-muted">{t.descLabel}</span>
           <textarea value={desc} maxLength={500} rows={3} onChange={(e) => setDesc(e.target.value)} className={`${field} py-2`} />

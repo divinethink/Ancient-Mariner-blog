@@ -39,7 +39,10 @@ export const MEDIA_VISIBILITY = ["public", "private"] as const;
 // `spam` = স্বয়ংক্রিয় (অতিরিক্ত লিংক) বা owner-লুকানো — পাবলিকে অদৃশ্য। rules-এ enum-তালিকা লাগে না (পাবলিক-read শর্ত শুধু 'approved'; client write নেই)
 export const COMMENT_STATUS = ["pending", "approved", "spam"] as const;
 // P14a-১: writingProjects/chapters (Arch §৬) — rules-এ enum-তালিকা বসে (পাবলিক-read শর্ত: published + public; অধ্যায়ের ক্ষেত্রে প্রজেক্টেরও)
-export const PROJECT_TYPE = ["novel", "story", "drama"] as const;
+// প্রজেক্টের `type` = মুক্ত লেখা (owner নিজের নাম দিতে পারেন); এই তালিকা শুধু বাছাই-করা প্রিসেট (পুরনো doc-এর novel/story/drama বৈধ থাকে)।
+// rules-এ তাই enum-তালিকা নেই — শুধু string ও দৈর্ঘ্য (১–৪০)
+export const PROJECT_TYPE = ["novel", "story", "drama", "biography", "history", "memoir", "travelogue"] as const;
+export const PROJECT_TYPE_MAX = 40;
 export const PROJECT_STATUS = ["draft", "published", "archived"] as const;
 export const PROJECT_VISIBILITY = ["private", "public"] as const;
 export const CHAPTER_STATUS = ["draft", "published", "trashed"] as const;
@@ -56,7 +59,7 @@ export const NoteKind = z.enum(NOTE_KIND);
 export const TaxonomyKind = z.enum(TAXONOMY_KIND);
 export const Theme = z.enum(THEME);
 export const CommentStatus = z.enum(COMMENT_STATUS);
-export const ProjectType = z.enum(PROJECT_TYPE);
+export const ProjectType = z.string().trim().min(1).max(PROJECT_TYPE_MAX);
 export const ProjectStatus = z.enum(PROJECT_STATUS);
 export const ProjectVisibility = z.enum(PROJECT_VISIBILITY);
 export const ChapterStatus = z.enum(CHAPTER_STATUS);

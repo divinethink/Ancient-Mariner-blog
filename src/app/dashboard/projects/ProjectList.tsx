@@ -7,7 +7,8 @@ import { useEffect, useRef, useState } from "react";
 import { ProjectRuleError, type WritingProjectWithId } from "@/data/projectRepo";
 import { getProjectRepo } from "@/data/projectRepo.wire";
 import { bn } from "@/i18n/bn";
-import { PROJECT_TYPE, type ProjectType } from "@/lib/enums";
+import { resolveType, typeLabel } from "@/lib/projectType";
+import { ProjectTypeField } from "./ProjectTypeField";
 import { newId } from "@/lib/id";
 import { newChapterPath, projectPath } from "@/lib/projectsUi";
 
@@ -20,7 +21,8 @@ export function ProjectList({ pick }: { pick: boolean }) {
   const [tick, setTick] = useState(0);
   const [load, setLoad] = useState<Load>({ kind: "loading" });
   const [title, setTitle] = useState("");
-  const [type, setType] = useState<ProjectType>("novel");
+  const [typeSel, setTypeSel] = useState("novel");
+  const [typeCustom, setTypeCustom] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   const idRef = useRef<string>("");
@@ -45,6 +47,11 @@ export function ProjectList({ pick }: { pick: boolean }) {
     if (busyRef.current) return; // double-tap গার্ড
     if (!title.trim()) {
       setErr(t.nameNeeded);
+      return;
+    }
+    const type = resolveType(typeSel, typeCustom, t.types);
+    if (!type) {
+      setErr(t.typeNeeded);
       return;
     }
     if (idRef.current === "") idRef.current = newId(); // retry-তে একই id ⇒ create idempotent
@@ -89,16 +96,7 @@ export function ProjectList({ pick }: { pick: boolean }) {
             <span className="mb-1 block text-sm text-muted">{t.titleLabel}</span>
             <input value={title} maxLength={120} onChange={(e) => setTitle(e.target.value)} className={field} />
           </label>
-          <label className="block">
-            <span className="mb-1 block text-sm text-muted">{t.typeLabel}</span>
-            <select value={type} onChange={(e) => setType(e.target.value as ProjectType)} className={field}>
-              {PROJECT_TYPE.map((x) => (
-                <option key={x} value={x}>
-                  {t.types[x]}
-                </option>
-              ))}
-            </select>
-          </label>
+          <ProjectTypeField select={typeSel} custom={typeCustom} onSelect={setTypeSel} onCustom={setTypeCustom} />
           <button
             type="button"
             disabled={busy}
@@ -148,7 +146,7 @@ function Row({ p }: { p: WritingProjectWithId }) {
       <span className="min-w-0">
         <span className="block truncate font-serif font-bold">📖 {p.title}</span>
         <span className="block truncate text-sm text-muted">
-          {t.types[p.type]} · {t.vis[p.visibility]}
+          {typeLabel(p.type, t.types)} · {t.vis[p.visibility]}
         </span>
       </span>
       <span className="shrink-0 rounded-full bg-line px-3 text-xs">{t.statusNames[p.status]}</span>

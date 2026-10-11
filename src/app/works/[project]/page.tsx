@@ -7,6 +7,7 @@ import { hasDefaultOgImage } from "@/data/publicAssets";
 import { getPublicSettings } from "@/data/publicSnapshot";
 import { getPublicWorks } from "@/data/worksSnapshot";
 import { bn } from "@/i18n/bn";
+import { typeLabel } from "@/lib/projectType";
 import { bookPath, worksPath } from "@/lib/projects";
 import { buildSeo } from "@/lib/seo";
 import { projectExcerpt, worksWordTotal } from "@/lib/works";
@@ -47,7 +48,7 @@ export default async function WorkPage({ params }: Props) {
           ← {bn.works.title}
         </Link>
       </nav>
-      <p className="mt-1 text-sm text-muted">{bn.works.types[project.type]}</p>
+      <p className="mt-1 text-sm text-muted">{typeLabel(project.type, bn.works.types)}</p>
       <h1 className="font-serif text-3xl font-bold leading-snug">{project.title}</h1>
       {project.description && <p className="mt-3 whitespace-pre-line">{project.description}</p>}
       {chapters.length > 0 && (

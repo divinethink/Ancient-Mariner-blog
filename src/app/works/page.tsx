@@ -6,6 +6,7 @@ import { hasDefaultOgImage } from "@/data/publicAssets";
 import { getPublicSettings } from "@/data/publicSnapshot";
 import { getPublicWorks } from "@/data/worksSnapshot";
 import { bn } from "@/i18n/bn";
+import { typeLabel } from "@/lib/projectType";
 import { worksPath } from "@/lib/projects";
 import { buildSeo } from "@/lib/seo";
 import { projectExcerpt, worksWordTotal } from "@/lib/works";
@@ -41,7 +42,7 @@ export default async function WorksIndex() {
         <ul className="mt-6 flex flex-col gap-4">
           {works.map(({ project, chapters }) => (
             <li key={project.id} className="rounded-2xl border border-line bg-surface p-4">
-              <p className="text-sm text-muted">{bn.works.types[project.type]}</p>
+              <p className="text-sm text-muted">{typeLabel(project.type, bn.works.types)}</p>
               <h2 className="font-serif text-xl font-bold">
                 <Link href={worksPath(project.slug)} prefetch={false} className="inline-flex min-h-11 items-center text-accent-text">
                   {project.title}

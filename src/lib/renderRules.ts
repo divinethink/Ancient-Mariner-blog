@@ -9,7 +9,6 @@ import {
   POST_STATUS,
   POST_VISIBILITY,
   PROJECT_STATUS,
-  PROJECT_TYPE,
   PROJECT_VISIBILITY,
 } from "./enums";
 
@@ -25,7 +24,6 @@ export function renderRules(tpl: string, ownerUid: string): string {
     .replaceAll("__MEDIA_TYPE__", list(MEDIA_TYPE))
     .replaceAll("__MEDIA_DELIVERY__", list(MEDIA_DELIVERY))
     .replaceAll("__MEDIA_VISIBILITY__", list(MEDIA_VISIBILITY))
-    .replaceAll("__PROJECT_TYPE__", list(PROJECT_TYPE))
     .replaceAll("__PROJECT_STATUS__", list(PROJECT_STATUS))
     .replaceAll("__PROJECT_VISIBILITY__", list(PROJECT_VISIBILITY))
     .replaceAll("__CHAPTER_STATUS__", list(CHAPTER_STATUS))

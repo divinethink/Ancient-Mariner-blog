@@ -28,7 +28,9 @@ service cloud.firestore {
     function validProject() {
       return request.resource.data.title is string
           && request.resource.data.ownerUid == '__OWNER_UID__'
-          && request.resource.data.type in __PROJECT_TYPE__
+          && request.resource.data.type is string
+          && request.resource.data.type.size() >= 1
+          && request.resource.data.type.size() <= 40
           && request.resource.data.status in __PROJECT_STATUS__
           && request.resource.data.visibility in __PROJECT_VISIBILITY__;
     }

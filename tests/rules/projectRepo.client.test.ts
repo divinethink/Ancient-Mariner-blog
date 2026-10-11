@@ -64,7 +64,8 @@ describe("projectRepo.client — প্রজেক্ট (Emulator)", () => {
 
   it("অবৈধ ইনপুটে Zod ব্যর্থ; অজানা id-তে ProjectNotFoundError", async () => {
     await expect(repo().createProject({ title: "  ", type: "novel" })).rejects.toThrow();
-    await expect(repo().createProject({ title: "x", type: "poem" as never })).rejects.toThrow();
+    await expect(repo().createProject({ title: "x", type: "  " })).rejects.toThrow();
+    await expect(repo().createProject({ title: "x", type: "ক".repeat(41) })).rejects.toThrow();
     await expect(repo().updateProject("nope1234567890123456", { title: "x" })).rejects.toBeInstanceOf(ProjectNotFoundError);
   });
 
