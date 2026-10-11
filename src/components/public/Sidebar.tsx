@@ -12,6 +12,7 @@ import { FEED_PATH } from "@/lib/rss";
 import type { PublicDiary } from "@/data/publicDiary";
 import { AuthorBox } from "./AuthorBox";
 import { DiaryCalendar } from "./DiaryCalendar";
+import { DiaryEntries } from "./DiaryEntries";
 
 const RECENT_COUNT = 5;
 const box = "rounded-2xl border border-line bg-surface p-4";
@@ -76,6 +77,7 @@ function widget(id: SidebarWidget, s: SiteSettings, scopes: readonly Scope[], po
       return (
         <Box title={bn.public.calendarTitle}>
           <DiaryCalendar view={buildDiaryMonth(diary.words, last.slice(0, 7))} timeZone={diary.tz} />
+          <DiaryEntries day={last} entries={diary.byDay.get(last) ?? []} preview />
           <Link href={DIARY_PATH} prefetch={false} className="mt-2 inline-flex min-h-11 items-center text-accent-text underline">
             {bn.public.diaryLatest} →
           </Link>
