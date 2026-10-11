@@ -15,6 +15,8 @@ import { writePopular } from "../src/data/popularSnapshot";
 import { dayKey } from "../src/lib/datetime";
 import { POPULAR_DAYS, POPULAR_LIMIT, pickPopular, type PopularRow } from "../src/lib/popular";
 import { addDays } from "../src/lib/stats";
+import { getPublicWorksSource, type PublicWorks } from "../src/data/worksRepo.server";
+import { writeWorks } from "../src/data/worksSnapshot";
 
 /** 'পঠিত' (P11a-২): D1 থেকে শেষ ৩০ দিনের top-N। যেকোনো ব্যর্থতায় খালি — widget লুকানো, build কখনো থামে না (ভিউ-গণনা সাইটের মূল কাজ নয়) */
 async function loadPopular(publishedIds: Set<string>, timeZone: string, now: Date): Promise<PopularRow[]> {
@@ -58,6 +60,16 @@ async function main() {
   }
   await writeComments(commentRows);
   console.log(`✅ মন্তব্য: ${commentRows.length}টি`);
+  // P14c-১: published+public প্রজেক্ট ও অধ্যায় (`/works`)। rules query না মানলে (403) খালি + সতর্কতা — ব্লগের বাকি build থামে না; অন্য ত্রুটিতে build থামে
+  let works: PublicWorks = { projects: [], chapters: [] };
+  try {
+    works = await getPublicWorksSource().listPublic();
+  } catch (e) {
+    if (!(e instanceof Error && /Firestore REST 403/.test(e.message))) throw e;
+    console.warn("⚠️ /works ডেটা পড়া যায়নি (403 — rules/query মেলেনি?) — /works ছাড়া এগোচ্ছি");
+  }
+  await writeWorks(works.projects, works.chapters);
+  console.log(`✅ /works: ${works.projects.length}টি প্রজেক্ট, ${works.chapters.length}টি অধ্যায়`);
   console.log(`✅ ${posts.length}টি published+public লেখা + সাইট-সেটিং (ইনডেক্স: ${settings.allowIndexing ? "চালু" : "বন্ধ"}) + ${terms.categories.length} ক্যাটাগরি/${terms.tags.length} ট্যাগ/${terms.series.length} সিরিজ + ${pages.length}টি পেজ + ${media.length}/${coverIds.length}টি cover/gallery-ছবি → ${SNAPSHOT_PATH}`);
 }
 

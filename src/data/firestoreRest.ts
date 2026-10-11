@@ -70,3 +70,36 @@ export function approvedCommentsQuery(limit = 5000) {
     },
   };
 }
+
+const eqFilter = (field: string, value: string) => ({
+  fieldFilter: { field: { fieldPath: field }, op: "EQUAL", value: { stringValue: value } },
+});
+
+/** build-এর পাবলিক প্রজেক্ট query (P14c-১): published+public (rules-সম্মত; শুধু equality ⇒ নতুন index লাগে না) */
+export function publishedProjectsQuery() {
+  return {
+    structuredQuery: {
+      from: [{ collectionId: "writingProjects" }],
+      where: { compositeFilter: { op: "AND", filters: [eqFilter("status", "published"), eqFilter("visibility", "public")] } },
+    },
+  };
+}
+
+/**
+ * build-এর পাবলিক অধ্যায় query (P14c-১): এক প্রজেক্টের published+public অধ্যায়। `projectId` equality থাকায় rules-এর
+ * `get(writingProjects/$(resource.data.projectId))` শর্ত query-তে প্রমাণযোগ্য; শুধু equality ⇒ নতুন composite index নেই; ক্রম কোডে (`order`)।
+ */
+export function publishedChaptersQuery(projectId: string, limit = 500) {
+  return {
+    structuredQuery: {
+      from: [{ collectionId: "chapters" }],
+      where: {
+        compositeFilter: {
+          op: "AND",
+          filters: [eqFilter("projectId", projectId), eqFilter("status", "published"), eqFilter("visibility", "public")],
+        },
+      },
+      limit,
+    },
+  };
+}

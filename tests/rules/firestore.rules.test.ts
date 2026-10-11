@@ -474,6 +474,24 @@ describe("writingProjects / chapters (P14a-১)", () => {
     await assertFails(getDoc(doc(anon(), "chapters", "cFlip")));
   });
 
+  // P14c-১: build-এর পাবলিক REST query-র ধাঁচ — projectId + status + visibility equality; rules-এর get() শর্ত query-তে প্রমাণযোগ্য কিনা
+  it("অধ্যায় পাবলিক query (projectId+status+visibility filter): প্রজেক্ট published+public হলে চলে; filter-ছাড়া/প্রজেক্ট-ছাড়া ব্যর্থ; প্রজেক্ট private হলে ব্যর্থ", async () => {
+    await seed("writingProjects", "qp", proj(PUB));
+    await seed("writingProjects", "qpriv", proj({ status: "published", visibility: "private" }));
+    await seed("chapters", "q1", chap({ ...PUB, projectId: "qp", order: 1 }));
+    await seed("chapters", "q2", chap({ ...PUB, projectId: "qp", order: 0 }));
+    await seed("chapters", "qd", chap({ status: "draft", visibility: "public", projectId: "qp" }));
+    await seed("chapters", "qx", chap({ ...PUB, projectId: "qpriv" }));
+    const q = (pid: string) =>
+      query(collection(anon(), "chapters"), where("projectId", "==", pid), where("status", "==", "published"), where("visibility", "==", "public"));
+    const snap = await assertSucceeds(getDocs(q("qp")));
+    expect(snap.docs.map((d) => d.id).sort()).toEqual(["q1", "q2"]); // draft নেই
+    await assertFails(getDocs(q("qpriv"))); // প্রজেক্ট private ⇒ অধ্যায়-query-ও বন্ধ
+    await assertFails(getDocs(q("nonexistent")));
+    await assertFails(getDocs(query(collection(anon(), "chapters"), where("projectId", "==", "qp")))); // status/visibility filter ছাড়া
+    await assertFails(getDocs(query(collection(anon(), "chapters"), where("status", "==", "published"), where("visibility", "==", "public")))); // projectId ছাড়া
+  });
+
   it("অধ্যায় মোছা: শুধু ট্র্যাশ-করা অধ্যায় owner মুছতে পারে; অন্যরা কখনো না", async () => {
     await seed("chapters", "live", chap());
     await seed("chapters", "pubCh", chap(PUB));
