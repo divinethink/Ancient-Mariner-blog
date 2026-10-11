@@ -17,6 +17,18 @@ export default function SettingsPage() {
       <DefaultCategoryField />
       <HomeCardPrefs />
       <SearchIndexPanel />
+      <Link
+        href="/dashboard/settings/legacy-guide"
+        className="mt-10 flex min-h-12 items-center justify-between rounded-2xl border border-line bg-surface px-4 py-3"
+      >
+        <span>
+          <span className="block font-semibold">{bn.legacy.settingsLink}</span>
+          <span className="block text-sm text-muted">{bn.legacy.settingsLinkHint}</span>
+        </span>
+        <span aria-hidden className="text-muted">
+          ›
+        </span>
+      </Link>
       <div className="mt-10">
         <BuildStatus />
       </div>

@@ -3,6 +3,7 @@ import { bn } from "@/i18n/bn";
 import { AutoBackupPanel } from "./AutoBackupPanel";
 import { BackupPanel } from "./BackupPanel";
 import { RestorePanel } from "./RestorePanel";
+import { TextExportPanel } from "./TextExportPanel";
 
 export default function BackupsPage() {
   return (
@@ -17,6 +18,7 @@ export default function BackupsPage() {
       <p className="mb-6 text-muted">{bn.backup.intro}</p>
       <AutoBackupPanel />
       <BackupPanel />
+      <TextExportPanel />
       <RestorePanel />
     </>
   );

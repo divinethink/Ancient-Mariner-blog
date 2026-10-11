@@ -3,7 +3,10 @@ import type { DocNode } from "../editorDoc";
 
 type Mode = "plain" | "md";
 
-const mdEscape = (s: string) => s.replace(/([\\`*_[\]])/g, "\\$1");
+// শিরোনাম-স্তর সরানোর (P13b: সংগ্রহ-ফাইলে লেখার ভেতরের H2/H3 যেন ক্যাটাগরি/লেখার শিরোনামের নিচে থাকে); ডিফল্ট ০ = আগের আচরণ
+let headingShift = 0;
+
+export const mdEscape = (s: string) => s.replace(/([\\`*_[\]])/g, "\\$1");
 
 function inline(n: DocNode, mode: Mode): string {
   if (n.type === "hardBreak") return mode === "md" ? "  \n" : "\n";
@@ -29,7 +32,7 @@ function block(n: DocNode, mode: Mode, quote: boolean): string[] {
     case "paragraph":
       return [inlineText(n, mode)];
     case "heading": {
-      const level = Number(n.attrs?.level) === 3 ? 3 : 2;
+      const level = Math.min(6, (Number(n.attrs?.level) === 3 ? 3 : 2) + headingShift);
       return [mode === "md" ? `${"#".repeat(level)} ${inlineText(n, mode)}` : inlineText(n, mode)];
     }
     case "horizontalRule":
@@ -73,6 +76,16 @@ export function serializeDoc(doc: DocNode, mode: Mode): string {
     .replace(/\n{3,}/g, "\n\n")
     .trim();
   return out ? `${out}\n` : "";
+}
+
+/** Markdown, শিরোনাম-স্তর `shift` ধাপ নিচে (শুধু সংগ্রহ-এক্সপোর্টে) */
+export function serializeDocShifted(doc: DocNode, shift: number): string {
+  headingShift = Math.max(0, Math.min(4, Math.trunc(shift)));
+  try {
+    return serializeDoc(doc, "md");
+  } finally {
+    headingShift = 0;
+  }
 }
 
 /** শিরোনামসহ কপির টেক্সট; শিরোনাম থাকলে Markdown-এ `# `, সাধারণে প্রথম লাইন */
