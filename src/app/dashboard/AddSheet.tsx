@@ -270,6 +270,10 @@ export function AddProvider({ children }: { children: ReactNode }) {
                   <span aria-hidden>✏️</span>
                   {t.newPost}
                 </Link>
+                <Link href="/dashboard/projects?pick=1" onClick={() => setMode("closed")} className={row}>
+                  <span aria-hidden>📖</span>
+                  {t.newChapter}
+                </Link>
                 <button type="button" onClick={() => setMode("templates")} className={row}>
                   <span aria-hidden>📄</span>
                   {t.fromTemplate}
