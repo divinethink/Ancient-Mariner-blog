@@ -2,7 +2,8 @@
 
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useRef, useState, type CSSProperties, type MouseEvent } from "react";
 import type { Editor } from "@tiptap/react";
 import { applyComfort, applyEditorAids, readComfort, readFocus, saveFocus } from "@/data/comfortStore";
 import { draftStore, type EditorPos } from "@/data/draftStore";
@@ -42,7 +43,9 @@ type SaveState = "idle" | "saving" | "saved" | "failed";
 
 export function EditorSurface({ postId, data }: { postId: string; data: Loaded }) {
   const [title, setTitle] = useState(data.title);
+  const router = useRouter();
   const [saveState, setSaveState] = useState<SaveState>("idle");
+  const saveFailedRef = useRef(false); // সর্বশেষ লোকাল সেভ ব্যর্থ? (Back-এ নিরাপত্তা-সতর্কতার জন্য)
   const [words, setWords] = useState(() => countWords(docToText(data.doc)));
   const [excerpt, setExcerpt] = useState(data.excerpt);
   const tz = useSiteTimezone();
@@ -137,11 +140,13 @@ export function EditorSurface({ postId, data }: { postId: string; data: Loaded }
         });
         void goalStore.record(dayKey(Date.now(), tzRef.current), postId, wc, initialWordsRef.current).catch(() => undefined);
         setWords(wc);
+        saveFailedRef.current = false;
         setSaveState("saved");
         edited(); // লোকাল সেভের পর Firestore sync-এর সময়সূচি
       }
       await draftStore.savePos(postId, pos);
     } catch {
+      saveFailedRef.current = true;
       setSaveState("failed");
     }
   }, [postId, edited]);
@@ -156,6 +161,22 @@ export function EditorSurface({ postId, data }: { postId: string; data: Loaded }
     clearTimeout(timerRef.current);
     return persist();
   }, [persist]);
+
+  /** Back: সাধারণ পথে Link যেমন চলে (লোকাল ড্রাফট আগেই সেভ; unmount-এও flush)। শুধু "সংরক্ষণ চলছে"/"ব্যর্থ" অবস্থায়
+   *  আগে সেভ শেষ করে; তারপরও ব্যর্থ হলে তবেই সতর্কতা — সফল পথে কোনো dialog নেই (Arch §১২) */
+  const onBack = useCallback(
+    async (e: MouseEvent) => {
+      if (saveState !== "saving" && saveState !== "failed") {
+        flush();
+        return;
+      }
+      e.preventDefault();
+      await flushAsync();
+      if (saveFailedRef.current && !confirm(bn.editor.backUnsaved)) return;
+      router.push("/dashboard");
+    },
+    [saveState, flush, flushAsync, router],
+  );
 
   const onBlur = useCallback(() => {
     void flushAsync().then(blur);
@@ -273,12 +294,12 @@ export function EditorSurface({ postId, data }: { postId: string; data: Loaded }
       data-focus={focus ? "on" : "off"}
       style={{ paddingRight: inspector ? "24rem" : undefined, "--insp-w": inspector ? "24rem" : "0px" } as CSSProperties}
     >
-      <header className="chrome sticky top-0 z-20 -mx-6 mb-4 flex min-h-14 items-center gap-3 border-b border-line bg-bg/90 px-4 backdrop-blur">
+      <header className="chrome sticky top-0 z-20 -mx-6 mb-4 flex min-h-14 items-center gap-1 border-b border-line bg-bg/90 px-4 backdrop-blur sm:gap-3">
         <Link
           href="/dashboard"
           aria-label={bn.editor.back}
-          onClick={flush}
-          className="flex size-11 items-center justify-center text-xl"
+          onClick={(e) => void onBack(e)}
+          className="flex size-11 shrink-0 items-center justify-center text-xl"
         >
           ←
         </Link>
@@ -321,7 +342,7 @@ export function EditorSurface({ postId, data }: { postId: string; data: Loaded }
           aria-pressed={focus}
           title="Ctrl/⌘+Shift+F"
           onClick={toggleFocus}
-          className={`min-h-11 min-w-11 rounded-full text-base ${focus ? "bg-line" : ""}`}
+          className={`hidden min-h-11 min-w-11 rounded-full text-base sm:inline-flex sm:items-center sm:justify-center ${focus ? "bg-line" : ""}`}
         >
           🧘
         </button>
@@ -353,6 +374,17 @@ export function EditorSurface({ postId, data }: { postId: string; data: Loaded }
           </button>
           {moreOpen && (
             <div className="absolute right-0 top-11 z-30 flex flex-col rounded-xl border border-line bg-surface shadow">
+              <button
+                type="button"
+                aria-pressed={focus}
+                onClick={() => {
+                  setMoreOpen(false);
+                  toggleFocus();
+                }}
+                className="min-h-11 whitespace-nowrap px-4 text-left sm:hidden"
+              >
+                🧘 {focus ? bn.editor.focusOff : bn.editor.focusOn}
+              </button>
               <Link
                 href={`/dashboard/posts/${postId}/preview`}
                 onClick={flush}
@@ -426,7 +458,7 @@ export function EditorSurface({ postId, data }: { postId: string; data: Loaded }
             schedule(true);
           }}
           onBlur={onBlur}
-          className="mb-3 block w-full resize-none bg-transparent font-serif text-3xl font-bold leading-snug outline-none field-sizing-content"
+          className="mb-5 block w-full resize-none border-b border-line bg-transparent pb-3 font-serif text-2xl font-bold leading-snug outline-none field-sizing-content placeholder:text-lg placeholder:font-normal placeholder:text-muted md:text-3xl"
         />
 
         <TiptapEditor

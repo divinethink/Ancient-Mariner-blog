@@ -4,7 +4,7 @@
 // strike/code/codeBlock বন্ধ, heading H2–H3, লিংক শুধু http/https/mailto।
 import { EditorContent, useEditor, useEditorState, type Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { bn } from "@/i18n/bn";
 import type { EditorPos } from "@/data/draftStore";
 import { typewriterDelta } from "@/lib/comfort";
@@ -92,6 +92,13 @@ export default function TiptapEditor({
 
 function Toolbar({ editor }: { editor: Editor }) {
   const inset = useKeyboardInset();
+  const [more, setMore] = useState(false);
+  useEffect(() => {
+    if (!more) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setMore(false);
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [more]);
   const s = useEditorState({
     editor,
     selector: (ctx) => ({
@@ -133,14 +140,21 @@ function Toolbar({ editor }: { editor: Editor }) {
     { key: "redo", label: bn.editor.redo, icon: "↷", on: false, run: () => editor.chain().focus().redo().run() },
   ];
 
+  // মোবাইলে ৭টির বেশি বাটন আঁটে না ⇒ ৬টি মূল টুল সরাসরি, বাকি (ক্রমিক তালিকা, লিংক, undo/redo) "⋯" পপওভারে; অনুভূমিক স্ক্রল নেই
+  const PRIMARY = ["b", "i", "u", "h", "q", "ul"];
+  const primary = items.filter((it) => PRIMARY.includes(it.key));
+  const overflow = items.filter((it) => !PRIMARY.includes(it.key));
+  const overflowOn = overflow.some((it) => it.on);
+  const btn = "min-h-11 min-w-11 flex-1 rounded-lg text-base font-semibold md:flex-none";
+
   return (
     <div
       role="toolbar"
       aria-label={bn.editor.toolbar}
       style={{ bottom: inset }}
-      className="chrome fixed inset-x-0 z-30 flex gap-1 lg:left-[var(--nav-w,0px)] lg:right-[var(--insp-w,0px)] overflow-x-auto border-t border-line bg-surface p-1.5 md:justify-center"
+      className="chrome fixed inset-x-0 z-30 flex gap-1 border-t border-line bg-surface p-1.5 md:justify-center lg:left-[var(--nav-w,0px)] lg:right-[var(--insp-w,0px)]"
     >
-      {items.map((it) => (
+      {primary.map((it) => (
         <button
           key={it.key}
           type="button"
@@ -149,13 +163,59 @@ function Toolbar({ editor }: { editor: Editor }) {
           // মাউস/টাচে selection হারানো এড়াতে focus সরতে দেওয়া হয় না
           onMouseDown={(e) => e.preventDefault()}
           onClick={it.run}
-          className={`min-h-11 min-w-11 shrink-0 rounded-lg text-base font-semibold ${
-            it.on ? "bg-btn-bg text-btn-tx" : "text-text"
-          }`}
+          className={`${btn} ${it.on ? "bg-btn-bg text-btn-tx" : "text-text"}`}
         >
           {it.icon}
         </button>
       ))}
+      <button
+        type="button"
+        aria-label={bn.editor.moreTools}
+        aria-haspopup="menu"
+        aria-expanded={more}
+        onMouseDown={(e) => e.preventDefault()}
+        onClick={() => setMore((o) => !o)}
+        className={`${btn} text-xl ${more || overflowOn ? "bg-line" : "text-text"}`}
+      >
+        ⋯
+      </button>
+      {more && (
+        <>
+          {/* বাইরে ট্যাপে বন্ধ; -z-10 = টুলবারের stacking-context-এর ভেতরে, বাটনের নিচে */}
+          <button
+            type="button"
+            aria-label={bn.editor.moreTools}
+            tabIndex={-1}
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => setMore(false)}
+            className="fixed inset-0 -z-10 cursor-default"
+          />
+          <div
+            role="menu"
+            className="absolute bottom-full right-1.5 mb-1 flex min-w-48 flex-col rounded-xl border border-line bg-surface p-1 shadow-lg"
+          >
+            {overflow.map((it) => (
+              <button
+                key={it.key}
+                type="button"
+                role="menuitem"
+                aria-pressed={it.on}
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => {
+                  it.run();
+                  setMore(false);
+                }}
+                className={`flex min-h-11 items-center gap-3 rounded-lg px-3 text-left ${it.on ? "bg-btn-bg text-btn-tx" : ""}`}
+              >
+                <span aria-hidden className="w-6 text-center font-semibold">
+                  {it.icon}
+                </span>
+                <span>{it.label}</span>
+              </button>
+            ))}
+          </div>
+        </>
+      )}
     </div>
   );
 }
