@@ -18,6 +18,11 @@ describe("renderRules", () => {
       "['image', 'file'] ['upload', 'authenticated'] ['public', 'private']",
     );
   });
+  it("writing project/chapter enum-তালিকা বসায়", () => {
+    expect(renderRules("__PROJECT_TYPE__ __PROJECT_STATUS__ __PROJECT_VISIBILITY__ __CHAPTER_STATUS__ __CHAPTER_VISIBILITY__", UID)).toBe(
+      "['novel', 'story', 'drama'] ['draft', 'published', 'archived'] ['private', 'public'] ['draft', 'published', 'trashed'] ['private', 'public']",
+    );
+  });
   it("অবৈধ uid-এ ব্যর্থ", () => {
     expect(() => renderRules("x", "")).toThrow();
     expect(() => renderRules("x", "a'b")).toThrow();

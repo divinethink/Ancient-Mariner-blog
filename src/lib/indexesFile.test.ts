@@ -28,4 +28,12 @@ describe("firestore.indexes.json", () => {
       file.fieldOverrides.some((o) => o.collectionGroup === "templates" && o.fieldPath === "body"),
     ).toBe(true);
   });
+  it("chapters: body exemption ও (projectId, order) composite index আছে", () => {
+    expect(file.fieldOverrides.some((o) => o.collectionGroup === "chapters" && o.fieldPath === "body")).toBe(true);
+    expect(
+      file.indexes.some(
+        (i) => i.collectionGroup === "chapters" && i.fields?.map((f) => f.fieldPath).join() === "projectId,order",
+      ),
+    ).toBe(true);
+  });
 });

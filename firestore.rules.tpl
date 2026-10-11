@@ -1,5 +1,5 @@
 rules_version = '2';
-// P1b: posts / slugs / siteSettings · P2a: drafts · P3a: categories / tags / series · P3b: ideas / notes · P4b: pages · P5a: revisions · P5b: backups · P6: media · P7b: templates · P11b: comments · P11c: shareLinks · P12-৩: bookmarks / highlights (Arch §৯)। বাকি collection phase-অনুযায়ী যোগ হয়; বাকি সব deny-all।
+// P1b: posts / slugs / siteSettings · P2a: drafts · P3a: categories / tags / series · P3b: ideas / notes · P4b: pages · P5a: revisions · P5b: backups · P6: media · P7b: templates · P11b: comments · P11c: shareLinks · P12-৩: bookmarks / highlights · P14a-১: writingProjects / chapters (Arch §৯)। বাকি collection phase-অনুযায়ী যোগ হয়; বাকি সব deny-all।
 // placeholder scripts/render-rules.ts বসায়; rendered firestore.rules git-এ commit হয় না।
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -23,6 +23,22 @@ service cloud.firestore {
           && request.resource.data.type in __MEDIA_TYPE__
           && request.resource.data.deliveryType in __MEDIA_DELIVERY__
           && request.resource.data.visibility in __MEDIA_VISIBILITY__;
+    }
+
+    function validProject() {
+      return request.resource.data.title is string
+          && request.resource.data.ownerUid == '__OWNER_UID__'
+          && request.resource.data.type in __PROJECT_TYPE__
+          && request.resource.data.status in __PROJECT_STATUS__
+          && request.resource.data.visibility in __PROJECT_VISIBILITY__;
+    }
+    function validChapter() {
+      return request.resource.data.title is string
+          && request.resource.data.ownerUid == '__OWNER_UID__'
+          && request.resource.data.projectId is string
+          && request.resource.data.order is int
+          && request.resource.data.status in __CHAPTER_STATUS__
+          && request.resource.data.visibility in __CHAPTER_VISIBILITY__;
     }
 
     match /posts/{postId} {
@@ -94,6 +110,31 @@ service cloud.firestore {
                             && request.resource.data.quote is string
                             && request.resource.data.quote.size() > 0
                             && request.resource.data.quote.size() <= 2400;
+    }
+
+    // Writing Project (P14a-১): published+public পাবলিক-read (build-সময়ে REST; query-তে explicit status/visibility filter), বাকি শুধু owner।
+    // update-এ ownerUid অপরিবর্তনীয়। অধ্যায়-সহ প্রজেক্ট মোছার guard repo-তে (rules-এ query চলে না)।
+    match /writingProjects/{projectId} {
+      allow read: if resource.data.status == 'published' && resource.data.visibility == 'public';
+      allow read, delete: if isOwner();
+      allow create: if isOwner() && validProject();
+      allow update: if isOwner() && validProject()
+                    && request.resource.data.ownerUid == resource.data.ownerUid;
+    }
+
+    // অধ্যায় (P14a-১): পাবলিক-read-এ অধ্যায় published+public এবং তার প্রজেক্টও published+public — দুটোই rules-এ (UI/build-নির্ভর নয়)।
+    // পাবলিক পড়া doc-id ধরে (get) নিশ্চিতভাবে চলে; filter-সহ query-র পথ P14c-তে CI-তে যাচাই হয়ে চূড়ান্ত হবে। filter ছাড়া query সবসময় ব্যর্থ।
+    // স্থায়ী মোছা শুধু ট্র্যাশ-করা অধ্যায়ে (স্বয়ংক্রিয় purge নেই — শুধু হাতে + confirm)।
+    match /chapters/{chapterId} {
+      allow read: if resource.data.status == 'published' && resource.data.visibility == 'public'
+                  && get(/databases/$(database)/documents/writingProjects/$(resource.data.projectId)).data.status == 'published'
+                  && get(/databases/$(database)/documents/writingProjects/$(resource.data.projectId)).data.visibility == 'public';
+      allow read: if isOwner();
+      allow delete: if isOwner() && resource.data.status == 'trashed';
+      allow create: if isOwner() && validChapter();
+      allow update: if isOwner() && validChapter()
+                    && request.resource.data.ownerUid == resource.data.ownerUid
+                    && request.resource.data.projectId == resource.data.projectId;
     }
 
     // মন্তব্য (P11b-১): approved পাবলিক-read (build-সময়ে REST; query-তে explicit status filter), বাকি (pending/spam) শুধু owner; client write নেই — জমা/মোছা/লুকানো শুধু Worker-এর privileged পথে

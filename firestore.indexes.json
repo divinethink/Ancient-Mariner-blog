@@ -105,6 +105,20 @@
           "order": "ASCENDING"
         }
       ]
+    },
+    {
+      "collectionGroup": "chapters",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "projectId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "order",
+          "order": "ASCENDING"
+        }
+      ]
     }
   ],
   "fieldOverrides": [
@@ -125,6 +139,11 @@
     },
     {
       "collectionGroup": "templates",
+      "fieldPath": "body",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "chapters",
       "fieldPath": "body",
       "indexes": []
     },

@@ -371,3 +371,123 @@ describe("bookmarks / highlights (P12-৩)", () => {
     }
   });
 });
+
+// P14a-১: writingProjects / chapters — পাবলিক-read শুধু (অধ্যায় ও তার প্রজেক্ট, দুটোই) published+public; owner write; স্থায়ী মোছা শুধু ট্র্যাশে
+describe("writingProjects / chapters (P14a-১)", () => {
+  const proj = (o: Record<string, unknown> = {}) => ({
+    title: "প্রাচীন নাবিক",
+    slug: "প্রাচীন-নাবিক",
+    type: "novel",
+    status: "draft",
+    visibility: "private",
+    ownerUid: OWNER,
+    ...o,
+  });
+  const chap = (o: Record<string, unknown> = {}) => ({
+    projectId: "p1",
+    title: "প্রথম অধ্যায়",
+    slug: "প্রথম-অধ্যায়",
+    body: "",
+    order: 0,
+    status: "draft",
+    visibility: "private",
+    ownerUid: OWNER,
+    ...o,
+  });
+  const PUB = { status: "published", visibility: "public" };
+
+  it("প্রজেক্ট: owner create/update পারে; অবৈধ enum/ownerUid ও অন্য uid/anonymous পারে না", async () => {
+    await assertSucceeds(setDoc(doc(owner(), "writingProjects", "p1"), proj()));
+    await assertSucceeds(updateDoc(doc(owner(), "writingProjects", "p1"), { title: "নতুন" }));
+    await assertFails(setDoc(doc(owner(), "writingProjects", "p2"), proj({ type: "poem" })));
+    await assertFails(setDoc(doc(owner(), "writingProjects", "p2"), proj({ status: "scheduled" })));
+    await assertFails(setDoc(doc(owner(), "writingProjects", "p2"), proj({ visibility: "unlisted" })));
+    await assertFails(setDoc(doc(owner(), "writingProjects", "p2"), proj({ ownerUid: "someoneElse123456" })));
+    await assertFails(updateDoc(doc(owner(), "writingProjects", "p1"), { ownerUid: "someoneElse123456" }));
+    await assertFails(setDoc(doc(other(), "writingProjects", "p3"), proj()));
+    await assertFails(setDoc(doc(anon(), "writingProjects", "p3"), proj()));
+    await assertFails(updateDoc(doc(other(), "writingProjects", "p1"), { title: "হ্যাক" }));
+  });
+
+  it("প্রজেক্ট: published+public পাবলিক পায়; draft/private/archived পায় না (owner পায়)", async () => {
+    await seed("writingProjects", "pub", proj(PUB));
+    await seed("writingProjects", "priv", proj({ status: "published", visibility: "private" }));
+    await seed("writingProjects", "drf", proj({ status: "draft", visibility: "public" }));
+    await seed("writingProjects", "arc", proj({ status: "archived", visibility: "public" }));
+    await assertSucceeds(getDoc(doc(anon(), "writingProjects", "pub")));
+    for (const id of ["priv", "drf", "arc"]) {
+      await assertFails(getDoc(doc(anon(), "writingProjects", id)));
+      await assertFails(getDoc(doc(other(), "writingProjects", id)));
+      await assertSucceeds(getDoc(doc(owner(), "writingProjects", id)));
+    }
+    await assertFails(getDocs(collection(anon(), "writingProjects"))); // filter ছাড়া query ব্যর্থ
+    await assertSucceeds(
+      getDocs(query(collection(anon(), "writingProjects"), where("status", "==", "published"), where("visibility", "==", "public"))),
+    );
+  });
+
+  it("অধ্যায়: owner create/update পারে; অবৈধ order/enum ও ownerUid/projectId বদল পারে না; non-owner পারে না", async () => {
+    await assertSucceeds(setDoc(doc(owner(), "chapters", "c1"), chap()));
+    await assertSucceeds(updateDoc(doc(owner(), "chapters", "c1"), { title: "নতুন", order: 3 }));
+    await assertFails(setDoc(doc(owner(), "chapters", "c2"), chap({ order: "১" })));
+    await assertFails(setDoc(doc(owner(), "chapters", "c2"), chap({ order: 1.5 })));
+    await assertFails(setDoc(doc(owner(), "chapters", "c2"), chap({ status: "archived" })));
+    await assertFails(setDoc(doc(owner(), "chapters", "c2"), chap({ visibility: "unlisted" })));
+    await assertFails(setDoc(doc(owner(), "chapters", "c2"), chap({ projectId: 5 })));
+    await assertFails(updateDoc(doc(owner(), "chapters", "c1"), { projectId: "p2" }));
+    await assertFails(updateDoc(doc(owner(), "chapters", "c1"), { ownerUid: "someoneElse123456" }));
+    await assertFails(setDoc(doc(other(), "chapters", "c3"), chap()));
+    await assertFails(setDoc(doc(anon(), "chapters", "c3"), chap()));
+    await assertFails(updateDoc(doc(other(), "chapters", "c1"), { title: "হ্যাক" }));
+  });
+
+  it("অধ্যায় পাবলিক-read: শুধু অধ্যায় ও প্রজেক্ট দুটোই published+public হলে", async () => {
+    await seed("writingProjects", "p1", proj(PUB));
+    await seed("chapters", "ok", chap(PUB));
+    await seed("chapters", "draftCh", chap({ status: "draft", visibility: "public" }));
+    await seed("chapters", "privCh", chap({ status: "published", visibility: "private" }));
+    await seed("chapters", "trashCh", chap({ status: "trashed", visibility: "public" }));
+    await assertSucceeds(getDoc(doc(anon(), "chapters", "ok")));
+    for (const id of ["draftCh", "privCh", "trashCh"]) await assertFails(getDoc(doc(anon(), "chapters", id)));
+    await assertFails(getDocs(collection(anon(), "chapters"))); // filter ছাড়া query ব্যর্থ
+  });
+
+  it("অধ্যায় ফাঁস-রোধ: প্রজেক্ট private/draft/archived/অনুপস্থিত হলে published+public অধ্যায়ও পাবলিক পায় না", async () => {
+    await seed("chapters", "c", chap({ ...PUB, projectId: "pp" }));
+    await assertFails(getDoc(doc(anon(), "chapters", "c"))); // প্রজেক্ট নেই
+    for (const [id, o] of [
+      ["pPriv", { status: "published", visibility: "private" }],
+      ["pDraft", { status: "draft", visibility: "public" }],
+      ["pArch", { status: "archived", visibility: "public" }],
+    ] as const) {
+      await seed("writingProjects", id, proj(o));
+      await seed("chapters", `c-${id}`, chap({ ...PUB, projectId: id }));
+      await assertFails(getDoc(doc(anon(), "chapters", `c-${id}`)));
+      await assertFails(getDoc(doc(other(), "chapters", `c-${id}`)));
+      await assertSucceeds(getDoc(doc(owner(), "chapters", `c-${id}`)));
+    }
+    // প্রজেক্ট পরে private করলে আগে-প্রকাশিত অধ্যায় সঙ্গে সঙ্গে বন্ধ
+    await seed("writingProjects", "pFlip", proj(PUB));
+    await seed("chapters", "cFlip", chap({ ...PUB, projectId: "pFlip" }));
+    await assertSucceeds(getDoc(doc(anon(), "chapters", "cFlip")));
+    await updateDoc(doc(owner(), "writingProjects", "pFlip"), { visibility: "private" });
+    await assertFails(getDoc(doc(anon(), "chapters", "cFlip")));
+  });
+
+  it("অধ্যায় মোছা: শুধু ট্র্যাশ-করা অধ্যায় owner মুছতে পারে; অন্যরা কখনো না", async () => {
+    await seed("chapters", "live", chap());
+    await seed("chapters", "pubCh", chap(PUB));
+    await seed("chapters", "gone", chap({ status: "trashed" }));
+    await assertFails(deleteDoc(doc(owner(), "chapters", "live")));
+    await assertFails(deleteDoc(doc(owner(), "chapters", "pubCh")));
+    await assertFails(deleteDoc(doc(other(), "chapters", "gone")));
+    await assertFails(deleteDoc(doc(anon(), "chapters", "gone")));
+    await assertSucceeds(deleteDoc(doc(owner(), "chapters", "gone")));
+  });
+
+  it("প্রজেক্ট মোছা: owner পারে, অন্যরা না", async () => {
+    await seed("writingProjects", "d", proj());
+    await assertFails(deleteDoc(doc(other(), "writingProjects", "d")));
+    await assertSucceeds(deleteDoc(doc(owner(), "writingProjects", "d")));
+  });
+});

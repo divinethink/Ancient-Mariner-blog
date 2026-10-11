@@ -38,6 +38,12 @@ export const MEDIA_VISIBILITY = ["public", "private"] as const;
 // P11b: comments (Arch §৬) — owner-সিদ্ধান্ত ২০২৬-১০-১০: মডারেশন নেই, জমা = সরাসরি `approved`; `pending` ভবিষ্যতের জন্য সংরক্ষিত (enum extensible),
 // `spam` = স্বয়ংক্রিয় (অতিরিক্ত লিংক) বা owner-লুকানো — পাবলিকে অদৃশ্য। rules-এ enum-তালিকা লাগে না (পাবলিক-read শর্ত শুধু 'approved'; client write নেই)
 export const COMMENT_STATUS = ["pending", "approved", "spam"] as const;
+// P14a-১: writingProjects/chapters (Arch §৬) — rules-এ enum-তালিকা বসে (পাবলিক-read শর্ত: published + public; অধ্যায়ের ক্ষেত্রে প্রজেক্টেরও)
+export const PROJECT_TYPE = ["novel", "story", "drama"] as const;
+export const PROJECT_STATUS = ["draft", "published", "archived"] as const;
+export const PROJECT_VISIBILITY = ["private", "public"] as const;
+export const CHAPTER_STATUS = ["draft", "published", "trashed"] as const;
+export const CHAPTER_VISIBILITY = ["private", "public"] as const;
 // Auto = সিস্টেম অনুযায়ী light/dark (Arch §১১)
 export const THEME = ["auto", "light", "sepia", "warm", "dark", "amoled"] as const;
 
@@ -50,6 +56,11 @@ export const NoteKind = z.enum(NOTE_KIND);
 export const TaxonomyKind = z.enum(TAXONOMY_KIND);
 export const Theme = z.enum(THEME);
 export const CommentStatus = z.enum(COMMENT_STATUS);
+export const ProjectType = z.enum(PROJECT_TYPE);
+export const ProjectStatus = z.enum(PROJECT_STATUS);
+export const ProjectVisibility = z.enum(PROJECT_VISIBILITY);
+export const ChapterStatus = z.enum(CHAPTER_STATUS);
+export const ChapterVisibility = z.enum(CHAPTER_VISIBILITY);
 
 /** RSS: পূর্ণ লেখা না সারাংশ (P4b-২) — শুধু siteSettings-এ; Firestore rules-এ নেই */
 export const FEED_MODE = ["full", "excerpt"] as const;
@@ -71,6 +82,11 @@ export type NoteKind = z.infer<typeof NoteKind>;
 export type TaxonomyKind = z.infer<typeof TaxonomyKind>;
 export type Theme = z.infer<typeof Theme>;
 export type CommentStatus = z.infer<typeof CommentStatus>;
+export type ProjectType = z.infer<typeof ProjectType>;
+export type ProjectStatus = z.infer<typeof ProjectStatus>;
+export type ProjectVisibility = z.infer<typeof ProjectVisibility>;
+export type ChapterStatus = z.infer<typeof ChapterStatus>;
+export type ChapterVisibility = z.infer<typeof ChapterVisibility>;
 export type FeedMode = z.infer<typeof FeedMode>;
 export type RevisionTargetType = z.infer<typeof RevisionTargetType>;
 export type RevisionTrigger = z.infer<typeof RevisionTrigger>;

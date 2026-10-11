@@ -2,7 +2,7 @@
 // Timestamp = {"$timestamp":"ISO"} (P5b-র restore এই চিহ্ন পড়বে)। revisions বাদ। ফাইল: format/version/exportedAt → collections → counts।
 export const BACKUP_FORMAT = "ancient-mariner-backup";
 export const BACKUP_VERSION = 1;
-export const BACKUP_COLLECTIONS = ["posts", "drafts", "slugs", "siteSettings", "ideas", "notes", "categories", "tags", "series", "pages", "media", "templates", "bookmarks", "highlights"] as const;
+export const BACKUP_COLLECTIONS = ["posts", "drafts", "slugs", "siteSettings", "ideas", "notes", "categories", "tags", "series", "pages", "media", "templates", "bookmarks", "highlights", "writingProjects", "chapters"] as const;
 export type BackupCollection = (typeof BACKUP_COLLECTIONS)[number];
 
 export const BACKUP_PAGE_SIZE = 100;
