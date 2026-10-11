@@ -128,3 +128,11 @@ describe("buildYearView", () => {
   });
   it("লিপ বছরে ৩৬৬", () => expect(buildYearView(new Map(), 2024).weeks.flat().filter(Boolean)).toHaveLength(366));
 });
+
+describe("groupByDay — স্থান ও শিরোনাম", () => {
+  it("location থাকলে entry-তে আসে, না থাকলে ফিল্ডই নেই", () => {
+    const m = groupByDay([post("a", { date: "2026-10-10", location: "ঢাকা" }), post("b", { date: "2026-10-09" })], TZ);
+    expect(m.get("2026-10-10")?.[0].location).toBe("ঢাকা");
+    expect(m.get("2026-10-09")?.[0]).not.toHaveProperty("location");
+  });
+});

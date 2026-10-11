@@ -224,6 +224,8 @@ export type CreatePostInput = {
   /** P8a: Quick Diary Entry — contentType=diary ও দিন ("YYYY-MM-DD"); না দিলে আগের মতো `post` */
   contentType?: ContentType;
   date?: string;
+  /** ঐচ্ছিক স্থান (≤ MAX_LOCATION) */
+  location?: string;
   /** স্পষ্ট slug দিলে সংঘাতে SlugTakenError; না দিলে শিরোনাম থেকে, সংঘাতে suffix */
   slug?: string;
 };

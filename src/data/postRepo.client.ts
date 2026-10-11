@@ -160,6 +160,7 @@ export function createPostRepoClient(db: Firestore, ownerUid: string): PostRepo 
         wordCount: input.wordCount ?? 0,
         ...(input.contentType && { contentType: input.contentType }),
         ...(input.date && { date: input.date }),
+        ...(input.location && { location: input.location }),
         ownerUid,
         createdAt: now,
         updatedAt: now,

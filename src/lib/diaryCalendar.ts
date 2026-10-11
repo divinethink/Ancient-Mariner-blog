@@ -11,8 +11,8 @@ export const DIARY_FEED_PATH = "/diary/feed.xml";
 /** ASCII পথ: /diary/2026-10-10 (বাংলা অঙ্ক নয়) */
 export const diaryDayPath = (day: string): string => `${DIARY_PATH}/${day}`;
 
-export type DiaryEntry = { id: string; day: string; title: string; body: string; words: number; at: number };
-type DiaryPostLike = { id: string; title: string; body: string; wordCount: number; date?: string; publishedAt?: Date; createdAt: Date };
+export type DiaryEntry = { id: string; day: string; title: string; body: string; words: number; at: number; location?: string };
+type DiaryPostLike = { id: string; title: string; body: string; wordCount: number; date?: string; location?: string; publishedAt?: Date; createdAt: Date };
 
 /** দিন-key: বৈধ `date` আগে; নইলে publishedAt → createdAt */
 export function entryDay(p: Pick<DiaryPostLike, "date" | "publishedAt" | "createdAt">, timeZone: string): string {
@@ -25,7 +25,7 @@ export function groupByDay(posts: readonly DiaryPostLike[], timeZone: string): M
   const out = new Map<string, DiaryEntry[]>();
   for (const p of posts) {
     const day = entryDay(p, timeZone);
-    const e: DiaryEntry = { id: p.id, day, title: p.title, body: p.body, words: p.wordCount, at: (p.publishedAt ?? p.createdAt).getTime() };
+    const e: DiaryEntry = { id: p.id, day, title: p.title, body: p.body, words: p.wordCount, at: (p.publishedAt ?? p.createdAt).getTime(), ...(p.location && { location: p.location }) };
     const l = out.get(day);
     if (l) l.push(e);
     else out.set(day, [e]);

@@ -16,9 +16,13 @@ export function DiaryEntries({ day, entries, preview = false }: { day: string; e
     <section aria-label={dayLabel(day)} className="mt-6">
       <h2 className="font-serif text-xl font-bold">{dayLabel(day)}</h2>
       {entries.map((e) => {
+        const auto = formatDate(new Date(`${day}T12:00:00Z`), "UTC");
+        const custom = e.title.trim() !== "" && e.title !== auto;
         const p = preview ? diaryPreview(e.body) : { body: e.body, truncated: false };
         return (
           <article key={e.id} className="mt-4 rounded-2xl border border-line bg-surface p-4">
+            {custom && <h3 className="font-serif text-lg font-bold">{e.title}</h3>}
+            {e.location && <p className="text-sm text-muted">📍 {e.location}</p>}
             <div className="reading">
               <PostBody body={p.body} />
             </div>
