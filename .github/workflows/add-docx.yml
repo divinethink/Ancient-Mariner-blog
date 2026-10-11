@@ -1,0 +1,36 @@
+name: add-docx
+
+# একবারের workflow (P13c): `docx` প্যাকেজ exact-pin করে package.json ও lock commit করে।
+# Actions → add-docx → Run workflow। শেষ হলে (সবুজ) তারপর কোড-ZIP আপলোড করুন — আগে নয়, নইলে build `docx` পাবে না।
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: add-docx
+  cancel-in-progress: false
+
+jobs:
+  install:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install docx (exact pin)
+        run: npm install --save-exact docx
+      - name: Verify
+        run: |
+          set -e
+          grep -E '"docx": "[0-9]+\.[0-9]+\.[0-9]+"' package.json
+          node -e "const d=require('docx');for(const k of ['Document','Packer','Paragraph','TextRun','ExternalHyperlink','HeadingLevel','LevelFormat','BorderStyle']){if(!d[k])throw new Error('missing '+k)}console.log('docx ok')"
+      - name: Commit package.json and lock
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json package-lock.json
+          git diff --cached --quiet && echo "nothing to commit" || git commit -m "chore: add docx (exact pin) for P13c Word export"
+          git push
