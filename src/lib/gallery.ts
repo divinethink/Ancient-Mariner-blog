@@ -24,6 +24,16 @@ export function resolveGallery(ids: readonly string[] | undefined, media: Readon
   });
 }
 
+/** body-র mediaImage id → render-তথ্য map (PostBody-র `media`); মেটা না থাকা/অবৈধ URL বাদ */
+export function resolveMediaMap(ids: readonly string[], media: ReadonlyMap<string, CardMedia> | undefined): Map<string, CoverView> {
+  const out = new Map<string, CoverView>();
+  for (const id of ids) {
+    const v = resolveCover(id, media);
+    if (v) out.set(id, v);
+  }
+  return out;
+}
+
 export const sameIds = (a: readonly string[], b: readonly string[]): boolean => a.length === b.length && a.every((x, i) => x === b[i]);
 
 /** picker: নেই ⇒ শেষে যোগ (সীমা পর্যন্ত), আছে ⇒ সরানো */

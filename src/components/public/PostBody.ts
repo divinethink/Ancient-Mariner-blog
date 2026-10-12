@@ -2,6 +2,8 @@
 // যাতে প্রতিটা node/mark-এর allowed-vs-blocked unit-test CI-তে চলে। node/mark-তালিকার উৎস `lib/editor-nodes.ts`।
 // HTML কখনো string থেকে বসে না (dangerouslySetInnerHTML নেই); টেক্সট React escape করে।
 import { createElement as h, Fragment, type ReactNode } from "react";
+import { cldSrcSet, cldUrl } from "@/lib/cloudinary";
+import type { CoverView } from "@/lib/cards";
 import { isSafeHref } from "@/lib/editor-nodes";
 import { headingId } from "@/lib/toc";
 import { parseBody, type DocMark, type DocNode } from "@/lib/editorDoc";
@@ -24,7 +26,8 @@ function applyMarks(text: string, marks: DocMark[] | undefined): ReactNode {
 }
 
 /** anchors চালু হলে heading-গুলো ক্রমানুসারে `h-1, h-2…` id পায় (TOC-র `lib/toc` একই DFS-ক্রম); নইলে id নেই */
-type State = { anchors: boolean; n: number };
+/** `media`: mediaId → ছবির render-তথ্য (build-এ public media থেকে); না থাকলে mediaImage কিছুই render করে না (ভাঙা ছবি কখনো নয়) */
+type State = { anchors: boolean; n: number; media?: ReadonlyMap<string, CoverView> };
 
 function kids(n: DocNode, st: State): ReactNode[] {
   return (n.content ?? []).map((c, i) => renderNode(c, i, st));
@@ -55,18 +58,55 @@ function renderNode(n: DocNode, key: number, st: State): ReactNode {
       return h("hr", { key });
     case "hardBreak":
       return h("br", { key });
+    case "mediaImage": {
+      const m = typeof n.attrs?.mediaId === "string" ? st.media?.get(n.attrs.mediaId) : undefined;
+      const src = m ? cldUrl(m.cloud, m.publicId, { w: 800 }) : null;
+      if (!m || !src) return null;
+      const alt = typeof n.attrs?.alt === "string" && n.attrs.alt ? n.attrs.alt : m.alt; // doc-এর alt অগ্রাধিকার, নইলে media-র
+      const caption = typeof n.attrs?.caption === "string" ? n.attrs.caption : "";
+      return h(
+        "figure",
+        { key, className: "reading-figure" },
+        h("img", {
+          src,
+          srcSet: cldSrcSet(m.cloud, m.publicId, m.w ?? 2000) ?? undefined,
+          sizes: "(min-width: 768px) 720px, 100vw",
+          alt,
+          ...(m.w && m.h ? { width: m.w, height: m.h } : {}),
+          loading: "lazy",
+          decoding: "async",
+        }),
+        caption ? h("figcaption", null, caption) : null,
+      );
+    }
     default:
-      return null; // allowlist-বহির্ভূত node (image/iframe/script/…) — কিছুই render হয় না
+      return null; // allowlist-বহির্ভূত node (image/iframe/script/…) — কিছুই render হয় না (কেবল mediaImage mediaId-ভিত্তিক)
   }
 }
 
 /** doc যেমন আছে তেমন render (কোনো sanitize ছাড়া) — renderer-এর নিজস্ব allowlist-test-এর জন্য আলাদা export */
-export function DocView({ doc, anchors = false }: { doc: DocNode; anchors?: boolean }): ReactNode {
+export function DocView({
+  doc,
+  anchors = false,
+  media,
+}: {
+  doc: DocNode;
+  anchors?: boolean;
+  media?: ReadonlyMap<string, CoverView>;
+}): ReactNode {
   if (doc.type !== "doc") return null;
-  return h(Fragment, null, ...kids(doc, { anchors, n: 0 }));
+  return h(Fragment, null, ...kids(doc, { anchors, n: 0, media }));
 }
 
 /** সংরক্ষিত body-string → `parseBody` (sanitize) → render */
-export function PostBody({ body, anchors = false }: { body: string; anchors?: boolean }): ReactNode {
-  return h(DocView, { doc: parseBody(body), anchors });
+export function PostBody({
+  body,
+  anchors = false,
+  media,
+}: {
+  body: string;
+  anchors?: boolean;
+  media?: ReadonlyMap<string, CoverView>;
+}): ReactNode {
+  return h(DocView, { doc: parseBody(body), anchors, media });
 }

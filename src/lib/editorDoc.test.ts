@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  collectMediaIds,
   countWords,
   docToText,
   EMPTY_DOC,
@@ -92,5 +93,45 @@ describe("docToText / countWords / makeExcerpt", () => {
     const e = makeExcerpt("ক".repeat(300), 160);
     expect(Array.from(e).length).toBe(161);
     expect(e.endsWith("…")).toBe(true);
+  });
+});
+
+describe("mediaImage", () => {
+  const img = (attrs: object) => ({ type: "mediaImage", attrs });
+  it("বৈধ mediaId টিকে থাকে; raw src/url/অতিরিক্ত attr ঝরে যায়", () => {
+    const d = doc(img({ mediaId: "abC_12-x", alt: " ছবি ", caption: "ক্যাপশন", src: "https://evil/x.png", url: "javascript:1" }), p("ঠিক"));
+    expect(sanitizeDoc(d)).toEqual(doc(img({ mediaId: "abC_12-x", alt: "ছবি", caption: "ক্যাপশন" }), p("ঠিক")));
+  });
+  it("খালি caption বাদ, alt ডিফল্ট ''", () => {
+    expect(sanitizeDoc(doc(img({ mediaId: "m1" }), p("ক")))).toEqual(doc(img({ mediaId: "m1", alt: "" }), p("ক")));
+  });
+  it("অবৈধ/অনুপস্থিত mediaId ⇒ node বাদ (URL, path, দীর্ঘ, সংখ্যা)", () => {
+    for (const mediaId of ["https://x/y.png", "a/b", "a b", "", "x".repeat(65), 5, undefined, "../x"]) {
+      expect(sanitizeDoc(doc(img({ mediaId }), p("ক")))).toEqual(doc(p("ক")));
+    }
+    expect(sanitizeDoc(doc({ type: "mediaImage" }, p("ক")))).toEqual(doc(p("ক")));
+  });
+  it("alt/caption ৩০০ অক্ষরে ছাঁটা; content ঝরে যায়", () => {
+    const long = "ক".repeat(400);
+    const out = sanitizeDoc(doc({ type: "mediaImage", attrs: { mediaId: "m", alt: long, caption: long }, content: [{ type: "text", text: "x" }] }));
+    const a = (out.content?.[0].attrs ?? {}) as { alt: string; caption: string };
+    expect(Array.from(a.alt)).toHaveLength(300);
+    expect(Array.from(a.caption)).toHaveLength(300);
+    expect(out.content?.[0].content).toBeUndefined();
+  });
+  it("round-trip স্থিতিশীল; পুরনো image node এখনও বাদ", () => {
+    const d = doc(img({ mediaId: "m1", alt: "", caption: "ক" }));
+    expect(parseBody(serializeDoc(d))).toEqual(d);
+    expect(sanitizeDoc(doc({ type: "image", attrs: { src: "https://x/y.png" } }, p("ক")))).toEqual(doc(p("ক")));
+  });
+  it("docToText/শব্দ-গণনা/excerpt থেকে বাদ", () => {
+    const d = sanitizeDoc(doc(p("এক দুই"), img({ mediaId: "m1", alt: "লুকানো alt", caption: "লুকানো ক্যাপশন" }), p("তিন")));
+    expect(docToText(d)).toBe("এক দুই\nতিন");
+    expect(countWords(docToText(d))).toBe(3);
+  });
+  it("collectMediaIds: ডুপ্লিকেট ছাড়া, ক্রম বজায়, নেস্টেড সহ", () => {
+    const d = sanitizeDoc(doc(img({ mediaId: "b" }), img({ mediaId: "a" }), img({ mediaId: "b" }), { type: "blockquote", content: [img({ mediaId: "c" })] }));
+    expect(collectMediaIds(d)).toEqual(["b", "a", "c"]);
+    expect(collectMediaIds(EMPTY_DOC)).toEqual([]);
   });
 });

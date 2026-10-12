@@ -1,6 +1,7 @@
 import { createElement as h } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
+import type { CoverView } from "@/lib/cards";
 import type { DocNode } from "@/lib/editorDoc";
 import { DocView, PostBody } from "./PostBody";
 
@@ -75,5 +76,39 @@ describe("DocView — anchors", () => {
     const doc: DocNode = { type: "doc", content: [hd(2, "ক"), { type: "blockquote", content: [hd(3, "খ")] }, hd(2, "গ")] };
     expect(renderToStaticMarkup(h(DocView, { doc, anchors: true }))).toBe('<h2 id="h-1">ক</h2><blockquote><h3 id="h-2">খ</h3></blockquote><h2 id="h-3">গ</h2>');
     expect(renderToStaticMarkup(h(DocView, { doc }))).toBe("<h2>ক</h2><blockquote><h3>খ</h3></blockquote><h2>গ</h2>");
+  });
+});
+
+describe("mediaImage render", () => {
+  const cv: CoverView = { cloud: "democloud", publicId: "blog/abc", w: 1600, h: 900, alt: "মিডিয়া-alt" };
+  const media = new Map([["m1", cv]]);
+  const img = (attrs: object): DocNode => ({ type: "mediaImage", attrs });
+  const doc = (...c: DocNode[]): DocNode => ({ type: "doc", content: c });
+  it("figure>img: cldUrl, srcset, lazy, মাপ; কোনো raw URL পাথ নয়", () => {
+    const html = renderToStaticMarkup(h(DocView, { doc: doc(img({ mediaId: "m1", alt: "নিজের alt", caption: "ক্যাপশন <b>" })), media }));
+    expect(html).toContain('<figure class="reading-figure">');
+    expect(html).toContain("https://res.cloudinary.com/democloud/image/upload/f_auto,q_auto,w_800,c_limit/blog/abc");
+    expect(html).toContain('alt="নিজের alt"');
+    expect(html).toContain('loading="lazy"');
+    expect(html).toContain('width="1600"');
+    expect(html).toContain("<figcaption>ক্যাপশন &lt;b&gt;</figcaption>");
+  });
+  it("doc-alt খালি হলে media-র alt; ক্যাপশন না থাকলে figcaption নেই", () => {
+    const html = renderToStaticMarkup(h(DocView, { doc: doc(img({ mediaId: "m1", alt: "" })), media }));
+    expect(html).toContain('alt="মিডিয়া-alt"');
+    expect(html).not.toContain("figcaption");
+  });
+  it("media map নেই/id অজানা/অবৈধ cloud ⇒ কিছুই render নয়", () => {
+    expect(renderToStaticMarkup(h(DocView, { doc: doc(img({ mediaId: "m1" })) }))).toBe("");
+    expect(renderToStaticMarkup(h(DocView, { doc: doc(img({ mediaId: "zz" })), media }))).toBe("");
+    const bad = new Map([["m1", { ...cv, cloud: "a/b" }]]);
+    expect(renderToStaticMarkup(h(DocView, { doc: doc(img({ mediaId: "m1" })), media: bad }))).toBe("");
+  });
+  it("PostBody: body-এর raw src পৌঁছায় না; mediaId থেকেই URL", () => {
+    const body = JSON.stringify(doc(img({ mediaId: "m1", src: "https://evil.example/x.png" }), { type: "paragraph", content: [t("ঠিক")] }));
+    const html = renderToStaticMarkup(h(PostBody, { body, media }));
+    expect(html).not.toContain("evil.example");
+    expect(html).toContain("res.cloudinary.com/democloud");
+    expect(html).toContain("<p>ঠিক</p>");
   });
 });

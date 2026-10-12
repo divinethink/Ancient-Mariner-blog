@@ -1,6 +1,14 @@
 // Tiptap JSON-এর pure সহায়ক (SDK/UI-মুক্ত): parse, allowlist-sanitize, plain-text, শব্দ-গণনা, excerpt।
 // body সংরক্ষিত হয় JSON.stringify-করা string হিসেবে (Arch §৬)।
-import { ALLOWED_MARKS, ALLOWED_NODES, HEADING_LEVELS, isSafeHref } from "./editor-nodes";
+import {
+  ALLOWED_MARKS,
+  ALLOWED_NODES,
+  HEADING_LEVELS,
+  isSafeHref,
+  isSafeMediaId,
+  MEDIA_ALT_MAX,
+  MEDIA_CAPTION_MAX,
+} from "./editor-nodes";
 
 export type DocMark = { type: string; attrs?: Record<string, unknown> };
 export type DocNode = {
@@ -32,12 +40,21 @@ function cleanMarks(marks: unknown): DocMark[] | undefined {
   return out.length ? out : undefined;
 }
 
+const clip = (v: unknown, max: number): string => (typeof v === "string" ? Array.from(v.trim()).slice(0, max).join("") : "");
+
 function cleanNode(n: unknown): DocNode | null {
   if (!isObj(n) || typeof n.type !== "string" || !NODES.has(n.type)) return null;
   if (n.type === "text") {
     if (typeof n.text !== "string" || n.text === "") return null;
     const marks = cleanMarks(n.marks);
     return marks ? { type: "text", text: n.text, marks } : { type: "text", text: n.text };
+  }
+  if (n.type === "mediaImage") {
+    // leaf node: শুধু mediaId (+alt/caption)। অবৈধ id ⇒ node বাদ; raw src/url ইত্যাদি attr ঝরে যায়
+    const a = isObj(n.attrs) ? n.attrs : {};
+    if (!isSafeMediaId(a.mediaId)) return null;
+    const caption = clip(a.caption, MEDIA_CAPTION_MAX);
+    return { type: "mediaImage", attrs: { mediaId: a.mediaId, alt: clip(a.alt, MEDIA_ALT_MAX), ...(caption ? { caption } : {}) } };
   }
   const out: DocNode = { type: n.type };
   if (n.type === "heading") {
@@ -72,6 +89,17 @@ export function parseBody(body: string): DocNode {
 }
 
 export const serializeDoc = (doc: unknown): string => JSON.stringify(sanitizeDoc(doc));
+
+/** body-র সব mediaImage-এর id (ডুপ্লিকেট ছাড়া, ক্রম বজায়) — build-এ public media আনতে */
+export function collectMediaIds(doc: DocNode): string[] {
+  const out = new Set<string>();
+  const walk = (n: DocNode) => {
+    if (n.type === "mediaImage" && typeof n.attrs?.mediaId === "string") out.add(n.attrs.mediaId);
+    n.content?.forEach(walk);
+  };
+  walk(doc);
+  return [...out];
+}
 
 const BLOCKS = new Set(["paragraph", "heading", "listItem", "blockquote", "horizontalRule"]);
 
