@@ -1,11 +1,12 @@
 "use client";
 
-// পাবলিক সাইটের সর্বশেষ build ও হালনাগাদ-অবস্থা + [আবার build করুন] (Arch §১২; Settings ও Publish panel-এ)
+// পাবলিক সাইটের সর্বশেষ build ও হালনাগাদ-অবস্থা + [আবার build করুন] (Arch §১২; Settings, Customize ও Publish panel-এ)
+// ধাপ ক: এক লাইনের বার — 'সর্বশেষ build' ও 'হালনাগাদ চলছে/হয়নি' এক বার্তায়।
 import { useEffect, useState } from "react";
 import { lastRebuildFailure, readRebuildMark, triggerSiteRebuild } from "@/data/rebuildClient";
 import { bn } from "@/i18n/bn";
 import { buildState } from "@/lib/buildStatus";
-import { formatDateTime } from "@/lib/datetime";
+import { formatShortDateTime } from "@/lib/datetime";
 import { useSiteTimezone } from "./SiteSettingsProvider";
 
 type Snap = { builtAt: number | null; changedAt?: number; now: number };
@@ -55,35 +56,44 @@ export function BuildStatus() {
   }
 
   const state = snap ? buildState(snap) : null;
+  const when = snap?.builtAt ? `${bn.build.lastBuild}: ${formatShortDateTime(snap.builtAt, tz)}` : snap ? bn.build.unknown : "…";
   return (
-    <section aria-label={bn.build.label} className="rounded-2xl border border-line bg-surface p-4">
-      <h2 className="font-serif text-lg font-bold">{bn.build.label}</h2>
-      <p className="mt-1 text-sm text-muted">
-        {snap?.builtAt ? `${bn.build.lastBuild}: ${formatDateTime(snap.builtAt, tz)}` : snap ? bn.build.unknown : "…"}
+    <section
+      aria-label={bn.build.label}
+      className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-2xl border border-line bg-surface px-3 py-1.5"
+    >
+      <p className="min-w-0 flex-1 basis-40 text-sm text-muted">
+        {when}
+        {state === "pending" && (
+          <>
+            {" · "}
+            <span role="status" className="text-text">
+              {bn.build.pendingShort}
+            </span>
+          </>
+        )}
+        {state === "stale" && (
+          <>
+            {" · "}
+            <span role="alert" className="text-accent-text">
+              {bn.build.staleShort}
+            </span>
+          </>
+        )}
       </p>
-      {state === "pending" && (
-        <p role="status" className="mt-2 text-sm">
-          {bn.build.pending}
-        </p>
-      )}
-      {state === "stale" && (
-        <p role="alert" className="mt-2 text-sm text-accent-text">
-          {bn.build.stale}
-        </p>
-      )}
-      {msg && (
-        <p role="status" className="mt-2 text-sm text-muted">
-          {msg}
-        </p>
-      )}
       <button
         type="button"
         onClick={() => void rebuild()}
         disabled={busy}
-        className="mt-3 min-h-11 rounded-full border border-line px-4 disabled:opacity-50"
+        className="min-h-11 shrink-0 rounded-full border border-line px-3 text-sm disabled:opacity-50"
       >
         {busy ? bn.build.requesting : bn.build.rebuild}
       </button>
+      {msg && (
+        <p role="status" className="basis-full pb-1 text-sm text-muted">
+          {msg}
+        </p>
+      )}
     </section>
   );
 }

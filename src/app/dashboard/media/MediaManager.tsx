@@ -6,6 +6,8 @@ import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import { getMediaRepo } from "@/data/mediaRepo.wire";
 import type { MediaWithId } from "@/data/mediaRepo";
 import { deleteMedia, privateMediaUrl, UploadError, uploadMedia } from "@/data/mediaUpload.client";
+import { Icon } from "@/components/icons";
+import { Segmented } from "@/components/ui/Segmented";
 import { bn } from "@/i18n/bn";
 import { cldUrl, cloudFromUrl } from "@/lib/cloudinary";
 import { FILE_EXT } from "@/lib/media";
@@ -16,6 +18,7 @@ type Status = "loading" | "error" | "ready";
 
 const ghost = "min-h-11 rounded-full border border-line px-4 disabled:opacity-50";
 const primary = "min-h-11 rounded-full bg-btn-bg px-5 font-semibold text-btn-tx disabled:opacity-50";
+const menuItem = "flex min-h-11 w-full items-center rounded-lg px-3 text-left hover:bg-line/40 disabled:opacity-50";
 const field = "w-full rounded-lg border border-line bg-surface px-3 text-base";
 // শুধু ছবির MIME দিলে মোবাইলে গ্যালারি/ফটো-পিকার আসে; এক্সটেনশন মেশালে সাধারণ ফাইল-চুজার আসে।
 const acceptImages = "image/jpeg,image/png,image/webp,image/gif";
@@ -41,6 +44,7 @@ export function MediaManager() {
   const [notes, setNotes] = useState<string[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
   const [editing, setEditing] = useState<string | null>(null);
+  const [menu, setMenu] = useState<string | null>(null); // খোলা "⋯" মেনু (একসাথে একটা)
   const [copied, setCopied] = useState<string | null>(null);
   const [opened, setOpened] = useState<{ id: string; url: string } | null>(null);
   const galleryRef = useRef<HTMLInputElement>(null);
@@ -171,19 +175,30 @@ export function MediaManager() {
         <input ref={galleryRef} type="file" multiple accept={acceptImages} onChange={onFiles} className="hidden" />
         <input ref={fileRef} type="file" multiple accept={acceptFiles} onChange={onFiles} className="hidden" />
         <input ref={cameraRef} type="file" accept="image/*" capture="environment" onChange={onFiles} className="hidden" />
-        <fieldset className="flex items-center gap-1" aria-label={t.visibility}>
-          {(["public", "private"] as const).map((v) => (
-            <button
-              key={v}
-              type="button"
-              aria-pressed={vis === v}
-              onClick={() => setVis(v)}
-              className={`min-h-11 rounded-full border px-4 ${vis === v ? "border-accent bg-accent/10 text-accent-text" : "border-line"}`}
-            >
-              {v === "public" ? t.pub : t.priv}
-            </button>
-          ))}
-        </fieldset>
+      </div>
+
+      <div className="mb-4 space-y-2">
+        <Segmented
+          label={t.uploadAs}
+          showLabel
+          value={vis}
+          onChange={setVis}
+          options={[
+            { value: "public", label: t.pub },
+            { value: "private", label: t.priv },
+          ]}
+        />
+        <Segmented
+          label={t.show}
+          showLabel
+          value={filter}
+          onChange={changeFilter}
+          options={[
+            { value: "", label: t.all },
+            { value: "image", label: t.images },
+            { value: "file", label: t.files },
+          ]}
+        />
       </div>
 
       {progress && (
@@ -199,20 +214,6 @@ export function MediaManager() {
         </ul>
       )}
 
-      <div className="mb-4 flex flex-wrap gap-2" role="group" aria-label={t.title}>
-        {([["", t.all], ["image", t.images], ["file", t.files]] as const).map(([v, label]) => (
-          <button
-            key={v}
-            type="button"
-            aria-pressed={filter === v}
-            onClick={() => changeFilter(v)}
-            className={`min-h-11 rounded-full border px-4 ${filter === v ? "border-accent bg-accent/10 text-accent-text" : "border-line"}`}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-
       {status === "loading" && <p className="text-muted">{t.loading}</p>}
       {status === "error" && (
         <p>
@@ -224,51 +225,95 @@ export function MediaManager() {
       )}
       {status === "ready" && items.length === 0 && <p className="text-muted">{t.empty}</p>}
 
-      <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <ul className="grid grid-cols-2 items-start gap-3 lg:grid-cols-3">
         {status === "ready" &&
           items.map((m) => {
             const src = thumb(m);
+            const open = menu === m.id;
             return (
-              <li key={m.id} className="rounded-2xl border border-line bg-surface p-3">
-                <div className="mb-2 flex aspect-video items-center justify-center overflow-hidden rounded-xl bg-line/40 text-3xl">
+              <li
+                key={m.id}
+                className={`rounded-2xl border border-line bg-surface p-2 ${editing === m.id ? "col-span-2 lg:col-span-3" : ""}`}
+                onKeyDown={(e) => {
+                  if (e.key === "Escape") setMenu(null);
+                }}
+              >
+                <div className="flex aspect-[4/3] items-center justify-center overflow-hidden rounded-xl bg-line/40 text-3xl">
                   {src ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={src} alt={m.altText || m.fileName} loading="lazy" className="h-full w-full object-cover" />
+                    <img src={src} alt={m.altText || m.fileName} loading="lazy" className="h-full w-full object-contain" />
                   ) : (
                     <span aria-hidden>{m.visibility === "private" ? "🔒" : m.type === "image" ? "🖼️" : "📄"}</span>
                   )}
                 </div>
-                <p className="break-all font-semibold">{m.fileName}</p>
-                <p className="mb-2 text-sm text-muted">
-                  {sizeText(m.size)}
-                  {m.width && m.height ? ` · ${nf.format(m.width)}×${nf.format(m.height)}` : ""}
-                  {m.visibility === "private" ? ` · ${t.privateTag}` : ""}
-                </p>
+                <div className="mt-2 flex items-start gap-1">
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold" title={m.fileName}>
+                      {m.fileName}
+                    </p>
+                    <p className="text-xs text-muted">
+                      {sizeText(m.size)}
+                      {m.width && m.height ? ` · ${nf.format(m.width)}×${nf.format(m.height)}` : ""}
+                      {m.visibility === "private" ? ` · ${t.privateTag}` : ""}
+                    </p>
+                  </div>
+                  {editing !== m.id && (
+                    <button
+                      type="button"
+                      aria-label={`${t.actions}: ${m.fileName}`}
+                      aria-expanded={open}
+                      aria-controls={`mm-${m.id}`}
+                      onClick={() => setMenu(open ? null : m.id)}
+                      className={`-mr-1 -mt-1 inline-flex size-11 shrink-0 items-center justify-center rounded-full ${open ? "bg-line/60" : ""}`}
+                    >
+                      <Icon name="more" />
+                    </button>
+                  )}
+                </div>
 
                 {editing === m.id ? (
-                  <MetaForm m={m} busy={busy === m.id} onSave={onSaveMeta} onCancel={() => setEditing(null)} />
-                ) : (
-                  <div className="flex flex-wrap items-center gap-2">
-                    <button type="button" className={ghost} onClick={() => setEditing(m.id)}>
-                      {t.edit}
-                    </button>
-                    {m.visibility === "public" && m.cloudinaryUrl && (
-                      <button type="button" className={ghost} onClick={() => onCopy(m)}>
-                        {copied === m.id ? t.copied : t.copy}
-                      </button>
-                    )}
-                    {m.visibility === "private" &&
-                      (opened?.id === m.id ? (
-                        <a href={opened.url} target="_blank" rel="noopener noreferrer" className={`${ghost} inline-flex items-center`}>
-                          {t.openNow}
-                        </a>
-                      ) : (
-                        <button type="button" className={ghost} disabled={busy === m.id} onClick={() => onOpenPrivate(m)}>
-                          {t.openPrivate}
-                        </button>
-                      ))}
-                    <ConfirmButton label={t.del} question={t.delQ} disabled={busy === m.id} onConfirm={() => onDelete(m)} className={ghost} />
+                  <div className="mt-2">
+                    <MetaForm m={m} busy={busy === m.id} onSave={onSaveMeta} onCancel={() => setEditing(null)} />
                   </div>
+                ) : (
+                  open && (
+                    <div id={`mm-${m.id}`} className="mt-1 border-t border-line pt-1 text-sm">
+                      <button
+                        type="button"
+                        className={menuItem}
+                        onClick={() => {
+                          setMenu(null);
+                          setEditing(m.id);
+                        }}
+                      >
+                        {t.edit}
+                      </button>
+                      {m.visibility === "public" && m.cloudinaryUrl && (
+                        <button type="button" className={menuItem} onClick={() => onCopy(m)}>
+                          {copied === m.id ? t.copied : t.copy}
+                        </button>
+                      )}
+                      {m.visibility === "private" &&
+                        (opened?.id === m.id ? (
+                          <a href={opened.url} target="_blank" rel="noopener noreferrer" className={menuItem}>
+                            {t.openNow}
+                          </a>
+                        ) : (
+                          <button type="button" className={menuItem} disabled={busy === m.id} onClick={() => onOpenPrivate(m)}>
+                            {t.openPrivate}
+                          </button>
+                        ))}
+                      <div className="px-1 py-1">
+                        <ConfirmButton
+                          label={t.del}
+                          question={t.delQ}
+                          disabled={busy === m.id}
+                          onConfirm={() => onDelete(m)}
+                          className={`${menuItem} px-2 text-red-600 dark:text-red-400`}
+                        />
+                      </div>
+                    </div>
+                  )
                 )}
               </li>
             );

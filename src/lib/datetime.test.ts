@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { dayKey, formatDate, fromZonedInput, toZonedInput, tzLabel } from "./datetime";
+import { dayKey, formatDate, formatShortDateTime, fromZonedInput, toZonedInput, tzLabel } from "./datetime";
 
 describe("dayKey (Asia/Dhaka = UTC+6)", () => {
   it("UTC 17:59 একই দিন, 18:00 পরের দিন", () => {
@@ -43,5 +43,15 @@ describe("tzLabel", () => {
   });
   it("অবৈধ id-তে শুধু id (throw নয়)", () => {
     expect(tzLabel("Mars/Base")).toBe("Mars/Base");
+  });
+});
+
+describe("formatShortDateTime", () => {
+  it("বছর ছাড়া, সাইট-timezone-এ দিন-মাস ও সময়", () => {
+    const out = formatShortDateTime("2026-10-12T05:37:00Z"); // ঢাকায় ১১:৩৭
+    expect(out).toContain("অক্টোবর");
+    expect(out).not.toContain("২০২৬");
+    expect(out).toContain("১১");
+    expect(out).not.toContain(" এ ");
   });
 });

@@ -26,6 +26,13 @@ export function formatDateTime(d: DateInput, timeZone = DEFAULT_TIMEZONE): strin
   }).format(toDate(d));
 }
 
+/** সংক্ষিপ্ত তারিখ-সময় (বছর ছাড়া), বাংলায়: "১২ অক্টোবর, ১১:৩৭ AM" (তারিখ ও সময় আলাদা করে জোড়া — 'এ' সংযোজক এড়াতে) */
+export function formatShortDateTime(d: DateInput, timeZone = DEFAULT_TIMEZONE): string {
+  const date = new Intl.DateTimeFormat("bn-BD", { timeZone, day: "numeric", month: "long" }).format(toDate(d));
+  const time = new Intl.DateTimeFormat("bn-BD", { timeZone, hour: "numeric", minute: "2-digit" }).format(toDate(d)).replace(/\s/g, "\u00A0"); // AM/PM আলাদা লাইনে না ভাঙতে
+  return `${date}, ${time}`;
+}
+
 /** সাইট-timezone-এর 'দিন'-key: ASCII "YYYY-MM-DD" (দৈনিক-লক্ষ্য, diary, archive, D1 dedupe-এর ভিত্তি) */
 export function dayKey(d: DateInput, timeZone = DEFAULT_TIMEZONE): string {
   const parts = new Intl.DateTimeFormat("en-US", {

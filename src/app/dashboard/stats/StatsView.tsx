@@ -4,6 +4,8 @@
 // লেখার শিরোনাম owner-CSR-এ `posts` থেকে (শুধু দেখানো ~১০টার, memory-cache); না পেলে 'মোছা লেখা'।
 import { useCallback, useEffect, useState } from "react";
 import { getPostRepo } from "@/data/postRepo.wire";
+import { Segmented } from "@/components/ui/Segmented";
+import { StatCard } from "@/components/ui/StatCard";
 import { StatsError, fetchStats, type StatsPayload } from "@/data/statsRepo";
 import { bn } from "@/i18n/bn";
 import { STATS_RANGES, countryLabel, pctChange, referrerLabel, type Point, type StatsRange } from "@/lib/stats";
@@ -28,13 +30,12 @@ function Change({ cur, prev }: { cur: number; prev: number | null }) {
   );
 }
 
-function Ranked({ title, rows, label }: { title: string; rows: readonly Point[]; label: (k: string) => string }) {
+function RankedList({ rows, label }: { rows: readonly Point[]; label: (k: string) => string }) {
   const [all, setAll] = useState(false);
-  if (rows.length === 0) return null;
+  if (rows.length === 0) return <p className="text-muted">{T.noRows}</p>;
   const shown = all ? rows : rows.slice(0, SHOWN);
   return (
-    <section className={card}>
-      <h2 className="mb-2 font-serif text-lg font-bold">{title}</h2>
+    <>
       <ul>
         {shown.map((r) => (
           <li key={r.k} className="flex min-h-11 items-center justify-between gap-3 border-b border-dashed border-line last:border-0">
@@ -47,6 +48,41 @@ function Ranked({ title, rows, label }: { title: string; rows: readonly Point[];
         <button type="button" onClick={() => setAll(!all)} className="mt-1 inline-flex min-h-11 items-center text-accent-text underline">
           {all ? T.showLess : T.showAll}
         </button>
+      )}
+    </>
+  );
+}
+
+function Ranked({ title, rows, label }: { title: string; rows: readonly Point[]; label: (k: string) => string }) {
+  if (rows.length === 0) return null;
+  return (
+    <section className={card}>
+      <h2 className="mb-2 font-serif text-lg font-bold">{title}</h2>
+      <RankedList rows={rows} label={label} />
+    </section>
+  );
+}
+
+// রেফারার ও দেশ — একই কার্ডে ছোট ট্যাব (ধাপ ক)
+function Breakdown({ referrers, countries }: { referrers: readonly Point[]; countries: readonly Point[] }) {
+  const [tab, setTab] = useState<"referrers" | "countries">("referrers");
+  return (
+    <section className={card}>
+      <div className="mb-2">
+        <Segmented
+          label={`${T.referrers} / ${T.countries}`}
+          value={tab}
+          onChange={setTab}
+          options={[
+            { value: "referrers", label: T.referrers },
+            { value: "countries", label: T.countries },
+          ]}
+        />
+      </div>
+      {tab === "referrers" ? (
+        <RankedList key="r" rows={referrers} label={(k) => referrerLabel(k, T.direct)} />
+      ) : (
+        <RankedList key="c" rows={countries} label={(k) => countryLabel(k, T.unknownCountry)} />
       )}
     </section>
   );
@@ -102,19 +138,13 @@ export function StatsView() {
 
   return (
     <div className="space-y-4">
-      <div role="group" aria-label={T.rangeLabel} className="flex flex-wrap gap-2">
-        {STATS_RANGES.map((r) => (
-          <button
-            key={r}
-            type="button"
-            aria-pressed={range === r}
-            onClick={() => setRange(r)}
-            className={`min-h-11 rounded-full border px-4 font-medium ${range === r ? "border-btn-bg bg-btn-bg text-btn-tx" : "border-line bg-surface"}`}
-          >
-            {T.ranges[r]}
-          </button>
-        ))}
-      </div>
+      <Segmented
+        compact
+        label={T.rangeLabel}
+        value={range}
+        onChange={setRange}
+        options={STATS_RANGES.map((r) => ({ value: r, label: T.ranges[r] }))}
+      />
 
       {err ? (
         <div role="alert" className={card}>
@@ -132,21 +162,15 @@ export function StatsView() {
         </div>
       ) : (
         <>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className={card}>
-              <p className="text-sm text-muted">👁 {T.views}</p>
-              <p className="text-3xl font-bold">
-                {num(data.views)}
-                <Change cur={data.views} prev={data.prevViews} />
-              </p>
-            </div>
-            <div className={card}>
-              <p className="text-sm text-muted">👥 {T.visitors}</p>
-              <p className="text-3xl font-bold">
-                {num(data.visitors)}
-                <Change cur={data.visitors} prev={data.prevVisitors} />
-              </p>
-            </div>
+          <div className="grid grid-cols-2 gap-3">
+            <StatCard icon="👁" label={T.views}>
+              {num(data.views)}
+              <Change cur={data.views} prev={data.prevViews} />
+            </StatCard>
+            <StatCard icon="👥" label={T.visitors}>
+              {num(data.visitors)}
+              <Change cur={data.visitors} prev={data.prevVisitors} />
+            </StatCard>
           </div>
 
           {data.views === 0 ? (
@@ -162,9 +186,8 @@ export function StatsView() {
                   rows={data.posts.map((p) => ({ k: p.postId, n: p.n }))}
                   label={(id) => (pending ? "…" : (titleCache.get(id) ?? T.deletedPost))}
                 />
-                <Ranked title={T.referrers} rows={data.referrers} label={(k) => referrerLabel(k, T.direct)} />
+                <Breakdown referrers={data.referrers} countries={data.countries} />
               </div>
-              <Ranked title={T.countries} rows={data.countries} label={(k) => countryLabel(k, T.unknownCountry)} />
             </>
           )}
         </>
