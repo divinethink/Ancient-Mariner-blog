@@ -92,7 +92,8 @@ main:has(.dash-shell) {
 .pm > * {
   transition: opacity 0.2s;
 }
-[data-pf="1"] .pm > :not(.pf-cur) {
+/* শুধু ফোকাস মোড চালু + ক্যারেট বডিতে থাকলে ঝাপসা (শিরোনাম/মেনুতে গেলে বা ফোকাস বন্ধে লেখা স্বাভাবিক) */
+[data-pf="1"] [data-focus="on"] .pm:focus > :not(.pf-cur) {
   opacity: 0.35;
 }
 [data-tw="1"] .pm {

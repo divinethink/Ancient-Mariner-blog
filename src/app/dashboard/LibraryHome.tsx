@@ -159,24 +159,14 @@ function PostMenu({
 /** হেডার (ধাপ ২): শিরোনাম + `৬ প্রকাশিত · ১৬ খসড়া` উপশিরোনাম + আইকন-বাটন (খোঁজ · নির্বাচন · ⋯) */
 function LibraryHeader({
   counts,
-  trashCount,
   selecting,
   selectDisabled,
   onToggleSelect,
-  findOpen,
-  onToggleFind,
-  inTrash,
-  onTrash,
 }: {
   counts: { published: number; drafts: number } | null;
-  trashCount: number;
   selecting: boolean;
   selectDisabled: boolean;
   onToggleSelect: () => void;
-  findOpen: boolean;
-  onToggleFind: () => void;
-  inTrash: boolean;
-  onTrash: () => void;
 }) {
   const hc = useHomeCards();
   const [menu, setMenu] = useState(false);
@@ -224,37 +214,9 @@ function LibraryHeader({
               className="fixed inset-0 z-10 cursor-default"
             />
             <div role="menu" className="absolute right-0 top-12 z-20 flex flex-col rounded-xl border border-line bg-surface py-1 shadow">
-              {!inTrash && (
-                <button
-                  type="button"
-                  role="menuitem"
-                  onClick={() => {
-                    setMenu(false);
-                    onToggleFind();
-                  }}
-                  className={item}
-                >
-                  {findOpen ? bn.org.find.close : bn.org.find.open}
-                </button>
-              )}
-              <a href="/" target="_blank" rel="noopener noreferrer" role="menuitem" onClick={() => setMenu(false)} className={item}>
-                {bn.dashboard.viewSite} ↗
-              </a>
               <Link href="/dashboard/library" role="menuitem" className={item}>
                 {bn.dashboard.organize}
               </Link>
-              <button
-                type="button"
-                role="menuitem"
-                onClick={() => {
-                  setMenu(false);
-                  onTrash();
-                }}
-                className={item}
-              >
-                {bn.library.filterTrash}
-                {trashCount ? ` (${bnNum(trashCount)})` : ""}
-              </button>
             </div>
           </>
         )}
@@ -268,7 +230,7 @@ export function LibraryHome() {
   const [state, setState] = useState<State>({ kind: "loading" });
   const [attempt, setAttempt] = useState(0);
   const bgSynced = useRef(false);
-  const [filter, setFilter] = useState<Filter>("all");
+  const [filter, setFilter] = useState<Filter>("draft");
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   // Bulk select-mode (P3b-ক)
@@ -277,7 +239,7 @@ export function LibraryHome() {
   const [progress, setProgress] = useState<{ d: number; t: number } | null>(null);
   const [lastReq, setLastReq] = useState<BulkRequest | null>(null);
   // 🔍 খোঁজ ও Type/Category ফিল্টার (P3a-২খ): শর্ত থাকলে সার্ভার-query-র ফল দেখায় (প্রথম ~৫০টা), নইলে স্বাভাবিক তালিকা
-  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchOpen] = useState(false); // মেনু থেকে "খুঁজুন" সরানো হয়েছে (বাম পাশে সার্চ-আইকন আছে); panel সুপ্ত
   const [q, setQ] = useState("");
   const [dq, setDq] = useState(""); // debounce-করা (read সাশ্রয়)
   const [typeF, setTypeF] = useState<ContentType | "">("");
@@ -393,6 +355,11 @@ export function LibraryHome() {
       // সংরক্ষণহীন লোকাল লেখা আগে সার্ভারে — নইলে ট্র্যাশের সাথে লোকাল মোছায় হারাত
       await syncAllDirty(repo, draftStore);
       if ((await draftStore.loadDraft(id))?.dirty) return bn.library.trashUnsynced;
+      // সার্ভারে নেই (সিঙ্ক-করা কপি আর নেই) কিন্তু লোকালে ক্লিন কপি আছে ⇒ repo.trash ব্যর্থ হতো; লোকাল কপি সরালেই তালিকা থেকে যায়
+      if (!(await repo.get(id))) {
+        await draftStore.deleteDraft(id);
+        return;
+      }
       const wasPublished =
         state.kind === "ready" && state.items.find((i) => i.id === id)?.status === "published";
       await repo.trash(id);
@@ -521,12 +488,16 @@ export function LibraryHome() {
       </span>
     </span>
   );
+  const countOf = (k: Filter) =>
+    k === "all" ? items.length : k === "trash" ? trashed.length : items.filter((i) => i.rawStatus === k).length;
+  // ক্রম: খসড়া, প্রকাশিত, আর্কাইভ, সব, ট্র্যাশ (শেষে)
   const chips: [Filter, string][] = [
-    ["all", bn.library.filterAll],
-    ["published", bn.library.published],
     ["draft", bn.library.draft],
+    ["published", bn.library.published],
     ["archived", bn.library.filterArchived],
-  ]; // ট্র্যাশ এখন হেডারের ⋯ মেনুতে
+    ["all", bn.library.filterAll],
+    ["trash", bn.library.filterTrash],
+  ];
   const showList = filter !== "trash" && (searching ? shown.length > 0 : items.length > 0);
   const previewItem = shown.find((i) => i.id === previewId) ?? null;
   const listUl = (
@@ -580,18 +551,9 @@ export function LibraryHome() {
           published: items.filter((i) => i.rawStatus === "published").length,
           drafts: items.filter((i) => i.rawStatus === "draft").length,
         }}
-        trashCount={trashed.length}
         selecting={selecting}
         selectDisabled={busy}
         onToggleSelect={() => (selecting ? exitSelect() : setSelecting(true))}
-        findOpen={searchOpen}
-        onToggleFind={() => setSearchOpen((o) => !o)}
-        inTrash={filter === "trash"}
-        onTrash={() => {
-          setFilter("trash");
-          setSelected(new Set());
-          setLastReq(null);
-        }}
       />
       {remoteFailed && (
         <p role="alert" className="mb-4 rounded-xl border border-line bg-surface p-3 text-muted">
@@ -622,7 +584,7 @@ export function LibraryHome() {
         <ResumeGoalCard latest={latest ? { id: latest.id, title: latest.title } : null} />
       )}
       {filter !== "trash" && !selecting && <HomeCards />}
-      <div role="group" aria-label={bn.library.filters} className="mb-4 grid grid-cols-4 gap-2">
+      <div role="group" aria-label={bn.library.filters} className="mb-4 grid grid-cols-5 gap-1.5">
         {chips.map(([key, label]) => (
           <button
             key={key}
@@ -633,11 +595,11 @@ export function LibraryHome() {
               setSelected(new Set()); // অন্য দৃশ্যের লেখা নির্বাচনে থাকে না
               setLastReq(null);
             }}
-            className={`min-h-11 truncate rounded-full border px-2 text-sm ${
+            className={`min-h-11 truncate rounded-full border px-1 text-sm ${
               filter === key ? "border-transparent bg-btn-bg text-btn-tx" : "border-line"
             }`}
           >
-            {label}
+            {label} {bnNum(countOf(key))}
           </button>
         ))}
       </div>

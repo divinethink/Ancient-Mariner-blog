@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { Analytics } from "@/components/public/Analytics";
-import { sidebarContent } from "@/components/public/Sidebar";
+import { hasFollowWidget, sidebarContent } from "@/components/public/Sidebar";
 import { OwnerLink } from "@/components/public/OwnerLink";
 import { MobileMenu } from "@/components/public/MobileMenu";
 import { ThemeToggle } from "@/components/public/ThemeToggle";
@@ -49,6 +49,7 @@ export async function PublicShell({ children, sidebar = false, home = false }: {
   const about = pages.find((p) => p.slug === "about");
   const privacy = pages.find((p) => p.slug === "privacy");
   const side = sidebar ? sidebarContent(settings, scopes, popular, diary) : null;
+  const rssInSide = !!side && hasFollowWidget(settings); // sidebar-এ RSS থাকলে footer-এ নয়
   const cats = scopes.filter((s) => s.kind === "category" && s.term);
   const top = cats.filter((s) => !s.term?.parentCategoryId);
   const custom = resolveMenu(
@@ -113,6 +114,8 @@ export async function PublicShell({ children, sidebar = false, home = false }: {
   return (
     <div className={wrap}>
       <Analytics />
+      {/* feed-reader/ব্রাউজারের স্বয়ংক্রিয় শনাক্তি (React 19 <head>-এ তোলে) */}
+      <link rel="alternate" type="application/rss+xml" title={settings.siteTitle} href={FEED_PATH} />
       <header className="zen-hide mb-6 border-b border-line pb-2">
         <nav aria-label={bn.public.navLabel} className="flex items-center gap-x-2 min-[760px]:gap-x-5">
           <Link href="/" prefetch={false} style={headFontStyle(settings.design.titleFont)} className={`${nav} shrink-0 gap-2 font-serif text-lg font-bold`}>
@@ -172,9 +175,11 @@ export async function PublicShell({ children, sidebar = false, home = false }: {
           )
         )}
         {/* static ফাইল — Next <Link> নয়, সরাসরি <a> (build-seo `rss.xml` লেখে) */}
-        <a href={FEED_PATH} className={footLink}>
-          {bn.public.rss}
-        </a>
+        {!rssInSide && (
+          <a href={FEED_PATH} className={footLink}>
+            {bn.public.rss}
+          </a>
+        )}
         </div>
       </footer>
     </div>

@@ -193,6 +193,10 @@ function widget(id: SidebarWidget, s: SiteSettings, scopes: readonly Scope[], po
   }
 }
 
+/** sidebar-এ চালু "follow" (RSS) widget আছে কি — থাকলে footer-এ RSS দ্বিতীয়বার দেখানো হয় না */
+export const hasFollowWidget = (s: SiteSettings): boolean =>
+  resolveLayout(s.layout.sidebar, DEFAULT_SIDEBAR).some((w) => w.id === "follow" && w.enabled);
+
 /** `layout.sidebar` অনুযায়ী চালু widget-গুলো; কিছুই না থাকলে null (কলার গ্রিড বানায় না) */
 export function sidebarContent(s: SiteSettings, scopes: readonly Scope[], popular: readonly PopularRow[], diary?: PublicDiary): ReactNode {
   const blocks = resolveLayout(s.layout.sidebar, DEFAULT_SIDEBAR)
