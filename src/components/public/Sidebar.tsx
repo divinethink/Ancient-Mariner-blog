@@ -25,7 +25,7 @@ const ext = { rel: "noopener noreferrer", target: "_blank" } as const;
 function Box({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className={box}>
-      <h2 className="mb-2 font-serif text-lg font-bold">{title}</h2>
+      <h2 className="relative mb-3 pb-2 font-serif text-lg font-bold text-accent-text after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-10 after:rounded-full after:bg-accent">{title}</h2>
       {children}
     </section>
   );

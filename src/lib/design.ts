@@ -24,6 +24,22 @@ export function resolveDesign(raw: unknown): Design {
   };
 }
 
+/** সাইটের নাম/স্লোগানের ফন্ট ও সাইজ (সেটিংস; অজানা/অনুপস্থিত = ডিফল্ট ⇒ আজকের চেহারা হুবহু)। শুধু বন্ধ enum — custom CSS নেই। */
+export const HEAD_FONTS = ["theme", "serif", "sans", "hind"] as const;
+export const HEAD_SIZES = ["sm", "md", "lg"] as const;
+export type HeadFont = (typeof HEAD_FONTS)[number];
+export type HeadSize = (typeof HEAD_SIZES)[number];
+export type DesignHead = { titleFont: HeadFont; titleSize: HeadSize; taglineFont: HeadFont; taglineSize: HeadSize };
+export const DEFAULT_HEAD: DesignHead = { titleFont: "theme", titleSize: "md", taglineFont: "theme", taglineSize: "md" };
+
+/** "theme" = থিমের ফন্ট-জোড়া (inline style নেই); বাকিগুলো @fontsource-এ লোড-করা পরিবার */
+const HEAD_FAMILY: Record<Exclude<HeadFont, "theme">, string> = {
+  serif: '"Noto Serif Bengali", serif',
+  sans: '"Noto Sans Bengali", system-ui, sans-serif',
+  hind: '"Hind Siliguri", system-ui, sans-serif',
+};
+export const headFontStyle = (f: HeadFont): { fontFamily: string } | undefined => (f === "theme" ? undefined : { fontFamily: HEAD_FAMILY[f] });
+
 /** logo/banner-এর media-id (P9b-২; খালি = নেই) — Design-এর enum-অংশের বাইরে, কিন্তু একই `siteSettings.design` map-এ */
 export type DesignMedia = { logoMediaId: string; bannerMediaId: string };
 export const MEDIA_ID_MAX = 128;

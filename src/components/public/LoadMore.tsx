@@ -5,20 +5,31 @@ import { cardChunkPath, type CardView } from "@/lib/cards";
 import { PostCardList } from "./PostCard";
 
 /** [আরও দেখান]: build-সময়ের card-JSON chunk fetch (Firestore নয়, Arch §২); ব্যর্থ হলে স্পষ্ট error + আবার চেষ্টা */
-export function LoadMore({ scopeKey, chunks }: { scopeKey: string; chunks: number }) {
+/**
+ * `initial`: সার্ভারে আগে থেকে জানা, কিন্তু লুকানো কার্ড — প্রথম ক্লিকে নেটওয়ার্ক ছাড়াই দেখায় (হোমের ৬টির পরের বাকি প্রথম-পেজ)।
+ * `exclude`: যে id আগেই পেজে দেখানো (featured/প্রথম ৬টি) — chunk থেকে এলে বাদ, ডুপ্লিকেট নয়।
+ */
+export function LoadMore({ scopeKey, chunks, initial = [], exclude = [] }: { scopeKey: string; chunks: number; initial?: readonly CardView[]; exclude?: readonly string[] }) {
+  const [pending, setPending] = useState<readonly CardView[]>(initial);
   const [loaded, setLoaded] = useState<CardView[]>([]);
   const [next, setNext] = useState(2); // chunk-নম্বর ২ থেকে
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
 
   async function more() {
+    if (pending.length > 0) {
+      setLoaded((l) => [...l, ...pending]);
+      setPending([]);
+      return;
+    }
     setBusy(true);
     setFailed(false);
     try {
       const res = await fetch(cardChunkPath(scopeKey, next), { signal: AbortSignal.timeout(8000) });
       if (!res.ok) throw new Error(String(res.status));
       const items = (await res.json()) as CardView[];
-      setLoaded((l) => [...l, ...items]);
+      const seen = new Set<string>([...exclude, ...initial.map((c) => c.id)]);
+      setLoaded((l) => [...l, ...items.filter((c) => !seen.has(c.id) && !l.some((x) => x.id === c.id))]);
       setNext((n) => n + 1);
     } catch {
       setFailed(true);
@@ -39,7 +50,7 @@ export function LoadMore({ scopeKey, chunks }: { scopeKey: string; chunks: numbe
           {bn.public.loadFailed}
         </p>
       )}
-      {next <= chunks + 1 && (
+      {(pending.length > 0 || next <= chunks + 1) && (
         <button
           type="button"
           onClick={more}

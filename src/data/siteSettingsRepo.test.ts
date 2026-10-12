@@ -144,7 +144,9 @@ describe("design (P9b)", () => {
   it("doc-এ না থাকলে ডিফল্ট; অজানা উপ-ফিল্ড শুধু নিজে ডিফল্টে — বাকি বৈধ মান থাকে", () => {
     expect(parseSiteSettings({ siteTitle: "x" }).design).toEqual(DEFAULT_SETTINGS.design);
     const r = parseSiteSettings({ design: { accent: "teal", fontPair: "comic", cardStyle: "flat", logoMediaId: "abc", bannerMediaId: 5 } });
-    expect(r.design).toEqual({ accent: "teal", fontPair: "serif-sans", cardStyle: "flat", logoMediaId: "abc", bannerMediaId: "" });
+    expect(r.design).toEqual({ ...DEFAULT_SETTINGS.design, accent: "teal", fontPair: "serif-sans", cardStyle: "flat", logoMediaId: "abc", bannerMediaId: "" });
+    // নাম/স্লোগানের ফন্ট-সাইজ: অনুপস্থিত/অজানা = ডিফল্ট, বৈধ = রাখে
+    expect(parseSiteSettings({ design: { titleFont: "hind", titleSize: "xl", taglineSize: "lg" } }).design).toMatchObject({ titleFont: "hind", titleSize: "md", taglineFont: "theme", taglineSize: "lg" });
   });
   it("সেভ-যাচাই: logo/banner id ডিফল্ট খালি", () => {
     const r = SiteSettingsInputSchema.safeParse({ ...valid, design: { ...DEFAULT_SETTINGS.design, logoMediaId: "blog-1" } });

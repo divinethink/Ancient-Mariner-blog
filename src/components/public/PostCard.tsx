@@ -3,17 +3,15 @@ import { Cover } from "@/components/public/Cover";
 import { bn } from "@/i18n/bn";
 import type { CardLink, CardView } from "@/lib/cards";
 
-const chip = "inline-flex min-h-10 items-center rounded-full border border-line px-3 text-sm";
-
-function Chip({ l }: { l: CardLink }) {
+/** ক্যাটাগরি: শিরোনামের উপরে ছোট accent লেখা (featured-এর লেবেলের মতো); আগের নিচের chip-এর জায়গা বাঁচে */
+function CategoryLabel({ l }: { l: CardLink }) {
+  const cls = "-mt-2 inline-flex min-h-10 items-center text-sm font-semibold";
   return l.href ? (
-    <Link href={l.href} prefetch={false} className={`${chip} text-accent-text`}>
+    <Link href={l.href} prefetch={false} className={`${cls} text-accent-text`}>
       {l.name}
     </Link>
   ) : (
-    <span className={`${chip} text-muted`}>
-      {l.name}
-    </span>
+    <span className={`${cls} text-muted`}>{l.name}</span>
   );
 }
 
@@ -49,13 +47,8 @@ export function PostCard({ c, compact = false }: { c: CardView; compact?: boolea
           )}
         </div>
       )}
-      {!c.cover && c.day && (
-        <div aria-hidden="true" className="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-xl bg-bg text-center leading-tight">
-          <span className="font-serif text-xl font-bold">{c.day}</span>
-          <span className="text-xs text-muted">{c.month}</span>
-        </div>
-      )}
       <div className="min-w-0 flex-1">
+        {c.category && <CategoryLabel l={c.category} />}
         <h3 className="font-serif text-xl font-bold leading-snug">
           <Link href={c.href} prefetch={false} className="inline-flex min-h-11 items-center">
             {c.title || bn.library.untitled}
@@ -66,11 +59,6 @@ export function PostCard({ c, compact = false }: { c: CardView; compact?: boolea
           {c.minutes > 0 && ` · ${bn.public.readMinutes(c.minutes)}`}
         </p>
         {c.excerpt && <p className="mt-2 line-clamp-2 text-muted">{c.excerpt}</p>}
-        {c.category && (
-          <div className="mt-2">
-            <Chip l={c.category} />
-          </div>
-        )}
       </div>
     </article>
   );

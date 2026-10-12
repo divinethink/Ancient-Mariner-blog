@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { FeaturedCard } from "@/components/public/FeaturedCard";
 import { PostCardList } from "@/components/public/PostCard";
 import { PublicShell } from "@/components/public/PublicShell";
@@ -13,9 +12,17 @@ import { bn } from "@/i18n/bn";
 import { pickFeatured } from "@/lib/featured";
 import { DEFAULT_HOME, resolveLayout } from "@/lib/layout";
 import { buildSeo } from "@/lib/seo";
+import { headFontStyle } from "@/lib/design";
+import { splitCards } from "@/lib/cards";
+import { LoadMore } from "@/components/public/LoadMore";
 
 // build-সময়ে prerender; পাঠক-রিকোয়েস্টে Worker চলে না (Arch §১২)। card-এ `body` নেই (CardView)।
 export const dynamic = "force-static";
+
+const HOME_RECENT = 6; // হোমে প্রথমে ৬টি; বাকি [আরও দেখান]-এ
+// নাম/স্লোগানের সাইজ-ক্লাস (পুরো literal — Tailwind স্ক্যান করে); md = আগের চেহারা
+const TITLE_SIZE = { sm: "text-2xl min-[640px]:text-3xl", md: "text-3xl min-[640px]:text-4xl", lg: "text-4xl min-[640px]:text-5xl" } as const;
+const TAGLINE_SIZE = { sm: "text-sm", md: "text-base", lg: "text-lg" } as const;
 
 export async function generateMetadata(): Promise<Metadata> {
   const { siteTitle, tagline, allowIndexing } = await getPublicSettings();
@@ -45,7 +52,15 @@ export default async function Home() {
   const featuredId = sections.some((x) => x.id === "featured") ? pickFeatured(posts) : undefined;
   const featured = featuredId ? all.find((c) => c.id === featuredId) : undefined;
   // featured কার্ড recent তালিকায় আবার দেখানো হয় না
-  const recent = all.filter((c) => c.id !== featured?.id).slice(0, settings.postsPerPage);
+  const rest = all.filter((c) => c.id !== featured?.id);
+  const recent = rest.slice(0, HOME_RECENT);
+  // [আরও দেখান]: প্রথম-পেজের বাকি কার্ড নেটওয়ার্ক ছাড়াই, তারপর build-সময়ের chunk (ডুপ্লিকেট বাদ)
+  const blogScope = scopes.find((s) => s.kind === "blog");
+  const { first, chunks } = splitCards(all, settings.postsPerPage, blogScope?.key ?? "");
+  const firstIds = new Set(first.map((c) => c.id));
+  const shownIds = recent.map((c) => c.id);
+  const initialMore = rest.slice(HOME_RECENT).filter((c) => firstIds.has(c.id));
+  const hasMore = !!blogScope && (initialMore.length > 0 || chunks.length > 0);
   return (
     <PublicShell sidebar home>
       {banner && (
@@ -58,8 +73,8 @@ export default async function Home() {
           return (
             <section key={id} className="text-center">
               {/* ব্যানার → নাম (h1) → স্লোগান; header-এ নাম আবার আসে না (PublicShell home) */}
-              <h1 className="font-serif text-3xl font-bold leading-snug min-[640px]:text-4xl">{settings.siteTitle}</h1>
-              {settings.tagline && <p className="mt-1 text-base text-muted">{settings.tagline}</p>}
+              <h1 style={headFontStyle(settings.design.titleFont)} className={`font-serif font-bold leading-snug ${TITLE_SIZE[settings.design.titleSize]}`}>{settings.siteTitle}</h1>
+              {settings.tagline && <p style={headFontStyle(settings.design.taglineFont)} className={`mt-1 text-muted ${TAGLINE_SIZE[settings.design.taglineSize]}`}>{settings.tagline}</p>}
             </section>
           );
         if (id === "featured") return featured ? <section key={id} className="mt-6"><FeaturedCard c={featured} /></section> : null;
@@ -67,11 +82,7 @@ export default async function Home() {
           <section key={id}>
             <h2 className="mb-4 mt-8 font-serif text-xl font-bold">{bn.public.latest}</h2>
             {all.length === 0 ? <p className="text-muted">{bn.public.empty}</p> : recent.length > 0 && <PostCardList cards={recent} />}
-            {all.length > 0 && (
-              <Link href="/blog" prefetch={false} className="mt-4 inline-flex min-h-11 items-center text-accent-text underline">
-                {bn.public.allPosts} →
-              </Link>
-            )}
+            {blogScope && hasMore && <LoadMore scopeKey={blogScope.key} chunks={chunks.length} initial={initialMore} exclude={[...shownIds, ...(featured ? [featured.id] : [])]} />}
           </section>
         );
       })}

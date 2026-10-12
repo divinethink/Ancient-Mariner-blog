@@ -12,6 +12,7 @@ import { getPublicScopes } from "@/data/publicLists";
 import { getPublicMedia, getPublicPages, getPublicSettings } from "@/data/publicSnapshot";
 import { bn } from "@/i18n/bn";
 import { resolveCover } from "@/lib/cards";
+import { headFontStyle } from "@/lib/design";
 import { cldUrl } from "@/lib/cloudinary";
 import { resolveFooter, resolveMenu, type ResolvedLink } from "@/lib/menu";
 import { DIARY_PATH } from "@/lib/diaryCalendar";
@@ -114,7 +115,7 @@ export async function PublicShell({ children, sidebar = false, home = false }: {
       <Analytics />
       <header className="zen-hide mb-6 border-b border-line pb-2">
         <nav aria-label={bn.public.navLabel} className="flex items-center gap-x-2 min-[760px]:gap-x-5">
-          <Link href="/" prefetch={false} className={`${nav} shrink-0 gap-2 font-serif text-lg font-bold`}>
+          <Link href="/" prefetch={false} style={headFontStyle(settings.design.titleFont)} className={`${nav} shrink-0 gap-2 font-serif text-lg font-bold`}>
             {logo && logoSrc && (
               // eslint-disable-next-line @next/next/no-img-element -- Cloudinary-ই optimizer (Arch §১২); alt খালি: পাশেই নাম আছে
               <img

@@ -19,7 +19,7 @@ import {
   isValidTimeZone,
 } from "@/lib/siteSettings";
 import { bn } from "@/i18n/bn";
-import { ACCENTS, CARD_STYLES, DEFAULT_DESIGN, FONT_PAIRS, MEDIA_ID_MAX } from "@/lib/design";
+import { ACCENTS, CARD_STYLES, DEFAULT_DESIGN, DEFAULT_HEAD, FONT_PAIRS, HEAD_FONTS, HEAD_SIZES, MEDIA_ID_MAX } from "@/lib/design";
 import {
   FOOTER_LINKS_MAX,
   FOOTER_TEXT_MAX,
@@ -50,6 +50,11 @@ const DesignSchema = z.object({
   cardStyle: z.enum(CARD_STYLES).catch(DEFAULT_DESIGN.cardStyle),
   logoMediaId: z.string().trim().max(MEDIA_ID_MAX).catch(""), // P9b-২; খালি = নেই
   bannerMediaId: z.string().trim().max(MEDIA_ID_MAX).catch(""),
+  // নাম/স্লোগানের ফন্ট-সাইজ (additive; পুরনো ডকে না থাকলে ডিফল্ট)
+  titleFont: z.enum(HEAD_FONTS).catch(DEFAULT_HEAD.titleFont),
+  titleSize: z.enum(HEAD_SIZES).catch(DEFAULT_HEAD.titleSize),
+  taglineFont: z.enum(HEAD_FONTS).catch(DEFAULT_HEAD.taglineFont),
+  taglineSize: z.enum(HEAD_SIZES).catch(DEFAULT_HEAD.taglineSize),
 });
 
 const fields = {
@@ -98,7 +103,7 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   layout: { sidebar: [], home: [] },
   menu: [],
   footer: { text: "", links: [] },
-  design: { ...DEFAULT_DESIGN, logoMediaId: "", bannerMediaId: "" },
+  design: { ...DEFAULT_DESIGN, ...DEFAULT_HEAD, logoMediaId: "", bannerMediaId: "" },
 };
 
 /** Defensive read: প্রতিটা ফিল্ড আলাদাভাবে যাচাই — অবৈধ/অনুপস্থিত মান শুধু সেই ফিল্ডের default-এ ফেরে */

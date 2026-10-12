@@ -800,6 +800,14 @@ export const bn = {
     identity: "সাইট পরিচিতি",
     siteTitle: "সাইটের নাম",
     tagline: "ট্যাগলাইন",
+    head: {
+      titleFont: "নামের ফন্ট",
+      titleSize: "নামের সাইজ",
+      taglineFont: "স্লোগানের ফন্ট",
+      taglineSize: "স্লোগানের সাইজ",
+      fonts: { theme: "ডিফল্ট", serif: "সেরিফ", sans: "সান্স", hind: "হিন্দ" },
+      sizes: { sm: "ছোট", md: "মাঝারি", lg: "বড়" },
+    },
     authorBio: "লেখক-পরিচিতি",
     authorBioHint:
       "পোস্টের শেষে দেখায়; খালি রাখলে ব্লক লুকানো। সর্বোচ্চ ২০০ অক্ষর, শুধু সাধারণ লেখা।",

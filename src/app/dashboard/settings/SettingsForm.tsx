@@ -9,6 +9,7 @@ import { Segmented } from "@/components/ui/Segmented";
 import { Toggle } from "@/components/ui/Toggle";
 import { bn } from "@/i18n/bn";
 import { tzLabel } from "@/lib/datetime";
+import { HEAD_FONTS, HEAD_SIZES } from "@/lib/design";
 import {
   AUTHOR_BIO_MAX,
   FEED_ITEMS_RANGE,
@@ -134,6 +135,15 @@ export function SettingsForm() {
     ) : null;
   const aria = (k: keyof SiteSettings) => ({ "aria-invalid": errs[k] ? true : undefined, "aria-describedby": errs[k] ? `err-${k}` : undefined });
 
+  // নাম/স্লোগানের ফন্ট ও সাইজ: draft.design-এর উপ-ফিল্ড (বাকি design অক্ষত)
+  const setDesign = (p: Partial<SiteSettings["design"]>) => set("design", { ...draft.design, ...p });
+  const headControls = (fk: "titleFont" | "taglineFont", sk: "titleSize" | "taglineSize", fl: string, sl: string) => (
+    <div className="space-y-2">
+      <Segmented showLabel compact label={fl} value={draft.design[fk]} options={HEAD_FONTS.map((v) => ({ value: v, label: bn.settings.head.fonts[v] }))} onChange={(v) => setDesign({ [fk]: v })} />
+      <Segmented showLabel compact label={sl} value={draft.design[sk]} options={HEAD_SIZES.map((v) => ({ value: v, label: bn.settings.head.sizes[v] }))} onChange={(v) => setDesign({ [sk]: v })} />
+    </div>
+  );
+
   const numField = (k: "postsPerPage" | "feedItems", label: string, hint: string, range: { min: number; max: number }) => (
     <label className="block min-w-0 text-sm">
       {label}
@@ -166,6 +176,7 @@ export function SettingsForm() {
           />
           {err("siteTitle")}
         </label>
+        {headControls("titleFont", "titleSize", bn.settings.head.titleFont, bn.settings.head.titleSize)}
         <label className="block">
           {bn.settings.tagline}
           <input
@@ -177,6 +188,7 @@ export function SettingsForm() {
           />
           {err("tagline")}
         </label>
+        {headControls("taglineFont", "taglineSize", bn.settings.head.taglineFont, bn.settings.head.taglineSize)}
         <label className="block">
           {bn.settings.authorBio}
           <textarea
