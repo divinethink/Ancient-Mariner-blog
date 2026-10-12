@@ -238,3 +238,9 @@ main:has(.dash-shell) {
   opacity: 0;
   pointer-events: none;
 }
+
+/* ফর্ম-ফিল্ড: ফোকাসে ডাবল-রেখা নয় — outline বাদ, বর্ডারের রঙ বদল (দৃশ্যমান থাকে) */
+.field-clean:focus-visible {
+  outline: none;
+  border-color: var(--accent-text);
+}

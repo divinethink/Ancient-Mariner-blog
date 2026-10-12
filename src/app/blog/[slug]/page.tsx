@@ -176,15 +176,16 @@ export default async function BlogPost({ params }: Props) {
       <ReadingChrome targetId="post-article" title={post.title || bn.library.untitled} />
       <ReadingResume slug={post.slug} targetId="post-article" />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: ld }} />
-      <Link href="/" prefetch={false} className="zen-hide mb-3 inline-flex min-h-11 items-center text-accent-text">
-        ← {bn.public.home}
-      </Link>
+      <ReaderBar>
+        <Link href="/" prefetch={false} className="zen-hide inline-flex min-h-11 items-center text-accent-text">
+          ← {bn.public.home}
+        </Link>
+      </ReaderBar>
       {seriesScope && sp && (
         <div className="zen-hide">
           <SeriesBanner name={seriesScope.term!.name} path={seriesScope.path} index={sp.index} total={sp.total} prev={sp.prev} next={sp.next} />
         </div>
       )}
-      <ReaderBar />
       <PostArticle toc={toc} anchors poem={post.contentType === "poetry"} title={post.title} meta={meta} links={card?.category ? [card.category] : []} body={post.body} cover={card?.cover} gallery={resolveGallery(post.gallery, media)} />
       <div className="zen-hide">
         <ShareBar url={absoluteUrl(safeSiteUrl(), blogPath(post.slug))} />

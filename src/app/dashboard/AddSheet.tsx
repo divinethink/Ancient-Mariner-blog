@@ -332,7 +332,7 @@ export function AddProvider({ children }: { children: ReactNode }) {
                       maxLength={120}
                       value={diaryTitle}
                       onChange={(e) => setDiaryTitle(e.target.value)}
-                      className="min-h-11 w-full min-w-0 rounded-xl border border-line bg-surface px-3 text-base focus-visible:outline-none focus-visible:border-accent font-semibold"
+                      className="min-h-11 w-full min-w-0 rounded-xl border border-line bg-surface px-3 text-base field-clean font-semibold"
                     />
                     <div className="grid grid-cols-2 gap-2">
                       <input
@@ -342,7 +342,7 @@ export function AddProvider({ children }: { children: ReactNode }) {
                         maxLength={MAX_LOCATION}
                         value={diaryPlace}
                         onChange={(e) => setDiaryPlace(e.target.value)}
-                        className="min-h-11 w-full min-w-0 rounded-xl border border-line bg-surface px-3 text-base focus-visible:outline-none focus-visible:border-accent"
+                        className="min-h-11 w-full min-w-0 rounded-xl border border-line bg-surface px-3 text-base field-clean"
                       />
                       <input
                         type="date"
@@ -353,7 +353,7 @@ export function AddProvider({ children }: { children: ReactNode }) {
                           setDiaryDay(e.target.value);
                           if (status !== "saving") setStatus("idle");
                         }}
-                        className="min-h-11 w-full min-w-0 rounded-xl border border-line bg-surface px-3 text-base focus-visible:outline-none focus-visible:border-accent text-text"
+                        className="min-h-11 w-full min-w-0 rounded-xl border border-line bg-surface px-3 text-base field-clean text-text"
                       />
                     </div>
                   </div>

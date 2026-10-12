@@ -56,10 +56,11 @@ export default async function BookPage({ params }: Props) {
   return (
     <PublicShell>
       <ReadingChrome targetId="book-article" title={project.title} />
-      <Link href={worksPath(project.slug)} prefetch={false} className="zen-hide mb-3 inline-flex min-h-11 items-center text-accent-text">
-        ← {project.title}
-      </Link>
-      <ReaderBar />
+      <ReaderBar>
+        <Link href={worksPath(project.slug)} prefetch={false} className="zen-hide inline-flex min-h-11 items-center text-accent-text">
+          ← {project.title}
+        </Link>
+      </ReaderBar>
       <article id="book-article" className="mt-4">
         <p className="text-sm text-muted">{typeLabel(project.type, bn.works.types)}</p>
         <h1 className="font-serif text-3xl font-bold leading-snug">{project.title}</h1>

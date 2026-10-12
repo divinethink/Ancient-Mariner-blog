@@ -58,10 +58,11 @@ export default async function ChapterPage({ params }: Props) {
   return (
     <PublicShell>
       <ReadingChrome targetId="chapter-article" title={chapter.title} />
-      <Link href={projectHref} prefetch={false} className="zen-hide mb-3 inline-flex min-h-11 items-center text-accent-text">
-        ← {work.project.title}
-      </Link>
-      <ReaderBar />
+      <ReaderBar>
+        <Link href={projectHref} prefetch={false} className="zen-hide inline-flex min-h-11 items-center text-accent-text">
+          ← {work.project.title}
+        </Link>
+      </ReaderBar>
       <article id="chapter-article" className="mt-4">
         {nb && <p className="text-sm text-muted">{bn.works.chapterOf(nb.index + 1, nb.total)}</p>}
         <h1 className="font-serif text-3xl font-bold leading-snug">{chapter.title}</h1>
