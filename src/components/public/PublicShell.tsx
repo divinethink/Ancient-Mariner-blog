@@ -157,6 +157,7 @@ export async function PublicShell({ children, sidebar = false }: { children: Rea
       <footer className="zen-hide mt-10 flex flex-col items-center gap-1 border-t border-line pt-4 text-center text-sm text-muted">
         <span>{foot.text}</span>
         <div className="flex flex-wrap items-center justify-center gap-x-5">
+        <OwnerLink className={footLink} />
         {foot.links ? (
           foot.links.map((l, i) => <NavLink key={`${i}-${l.href}`} l={l} className={footLink} />)
         ) : (
@@ -166,7 +167,6 @@ export async function PublicShell({ children, sidebar = false }: { children: Rea
             </Link>
           )
         )}
-        <OwnerLink className={footLink} />
         {/* static ফাইল — Next <Link> নয়, সরাসরি <a> (build-seo `rss.xml` লেখে) */}
         <a href={FEED_PATH} className={footLink}>
           {bn.public.rss}

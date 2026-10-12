@@ -220,10 +220,17 @@ main:has(.dash-shell) {
   max-width: 30rem;
   margin-inline: auto;
   text-align: center;
-  line-height: 2.1;
+  line-height: 1.75;
 }
+/* পঙ্‌ক্তি = ঘন; ফাঁকা অনুচ্ছেদ = এক লাইনের স্তবক-ফাঁক; <br>-যুক্ত অনুচ্ছেদ (স্তবক) শেষে এক লাইন ফাঁক */
 .reading-poem p {
-  margin: 0 0 1.4em;
+  margin: 0;
+}
+.reading-poem p:empty::before {
+  content: "\00a0";
+}
+.reading-poem p:has(br) {
+  margin-bottom: 1em;
 }
 .reading-poem blockquote {
   text-align: start;

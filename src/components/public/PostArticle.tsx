@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { ChipRow } from "@/components/public/ChipRow";
+import Link from "next/link";
 import { Cover } from "@/components/public/Cover";
 import { Gallery } from "@/components/public/Gallery";
 import { PostBody } from "@/components/public/PostBody";
@@ -38,7 +38,6 @@ export function PostArticle({
     <article id="post-article">
       <h1 className="font-serif text-3xl font-bold leading-snug">{title || bn.library.untitled}</h1>
       <p className="mt-2 text-sm text-muted">{meta}</p>
-      {links.length > 0 && <ChipRow links={links} />}
       {cover && (
         <figure className="mt-4 overflow-hidden rounded-2xl bg-line">
           <Cover cover={cover} mode="natural" priority sizes="(min-width: 768px) 720px, 100vw" />
@@ -49,6 +48,23 @@ export function PostArticle({
         <PostBody body={body} anchors={anchors} />
       </div>
       {gallery.length > 0 && <Gallery items={gallery} />}
+      {links.length > 0 && (
+        <p className="mt-8 rounded-xl border border-line bg-surface px-4 py-2 text-sm text-muted">
+          {bn.public.categories}:{" "}
+          {links.map((l, i) => (
+            <span key={l.name}>
+              {i > 0 && "، "}
+              {l.href ? (
+                <Link href={l.href} prefetch={false} className="text-accent-text">
+                  {l.name}
+                </Link>
+              ) : (
+                l.name
+              )}
+            </span>
+          ))}
+        </p>
+      )}
     </article>
   );
 }

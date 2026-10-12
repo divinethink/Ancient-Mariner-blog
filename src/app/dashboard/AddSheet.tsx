@@ -375,7 +375,7 @@ export function AddProvider({ children }: { children: ReactNode }) {
                     }
                     if (status !== "saving") setStatus("idle");
                   }}
-                  className="w-full rounded-lg border border-line bg-surface p-3 text-base"
+                  className="field-clean w-full rounded-lg border border-line bg-surface p-3 text-base"
                 />
                 <div className="mt-1 flex min-h-6 items-center justify-between text-sm">
                   <p
