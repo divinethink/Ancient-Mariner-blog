@@ -70,13 +70,6 @@ export default async function PublicPage({ params }: Props) {
         <div className="reading mt-6">
           <PostBody body={page.body} />
         </div>
-        {/* P11a-২ (Arch §১৪.৬): পাঠক-গণনার তথ্য — কোডে বসানো, তাই owner-এর সম্পাদনার ওপর নির্ভর করে না */}
-        {page.slug === "privacy" && (
-          <aside className="mt-8 rounded-2xl border border-line bg-surface p-4">
-            <h2 className="mb-2 font-serif text-lg font-bold">{bn.public.privacyViewNoticeTitle}</h2>
-            <p className="text-sm leading-relaxed">{bn.public.privacyViewNotice}</p>
-          </aside>
-        )}
       </article>
     </PublicShell>
   );

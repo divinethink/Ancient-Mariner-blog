@@ -191,7 +191,7 @@ export default async function BlogPost({ params }: Props) {
       <div className="zen-hide">
         <ShareBar url={absoluteUrl(safeSiteUrl(), blogPath(post.slug))} />
         <AuthorBox name={siteTitle} bio={authorBio} aboutHref={pages.some((p) => p.slug === "about") ? pagePath("about") : undefined} />
-        <SubscribeBox action={subscribeUrl} id="post" />
+        <SubscribeBox action={subscribeUrl} id="post" variant="post" />
         {showComments && <Comments postId={post.id} thread={thread} open={post.commentsEnabled !== false} tz={tz} />}
         <PostPager older={adj.older ? byId.get(adj.older) : undefined} newer={adj.newer ? byId.get(adj.newer) : undefined} />
         <RelatedPosts cards={related} />

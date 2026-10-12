@@ -141,17 +141,21 @@ function widget(id: SidebarWidget, s: SiteSettings, scopes: readonly Scope[], po
     case "follow":
       return (
         <Box title={ti(bn.public.followTitle)}>
-          <div className="flex flex-wrap gap-2">
-            <a href={FEED_PATH} className={cta}>
-              {bn.public.rss}
-            </a>
+          {(!s.subscribeUrl || s.socialLinks.facebook) && (
+          <div className="mb-3 flex flex-wrap gap-2">
+            {!s.subscribeUrl && (
+              <a href={FEED_PATH} className={cta}>
+                {bn.public.rss}
+              </a>
+            )}
             {s.socialLinks.facebook && (
               <a href={s.socialLinks.facebook} {...ext} className={ghost}>
                 {bn.public.followFacebook}
               </a>
             )}
           </div>
-          <SubscribeBox action={s.subscribeUrl} id="side" boxed={false} />
+          )}
+          <SubscribeBox action={s.subscribeUrl} id="side" />
         </Box>
       );
     case "recent": {
@@ -195,9 +199,9 @@ function widget(id: SidebarWidget, s: SiteSettings, scopes: readonly Scope[], po
   }
 }
 
-/** sidebar-এ চালু "follow" (RSS) widget আছে কি — থাকলে footer-এ RSS দ্বিতীয়বার দেখানো হয় না */
+/** sidebar-এ চালু "follow" widget-এ RSS বোতাম আছে কি — থাকলে footer-এ RSS দ্বিতীয়বার দেখানো হয় না (ইমেইল-সাবস্ক্রাইব চালু থাকলে widget-এ RSS বোতাম নেই, তাই footer-এ থাকে) */
 export const hasFollowWidget = (s: SiteSettings): boolean =>
-  resolveLayout(s.layout.sidebar, DEFAULT_SIDEBAR).some((w) => w.id === "follow" && w.enabled);
+  !s.subscribeUrl && resolveLayout(s.layout.sidebar, DEFAULT_SIDEBAR).some((w) => w.id === "follow" && w.enabled);
 
 /** `layout.sidebar` অনুযায়ী চালু widget-গুলো; কিছুই না থাকলে null (কলার গ্রিড বানায় না) */
 export function sidebarContent(s: SiteSettings, scopes: readonly Scope[], popular: readonly PopularRow[], diary?: PublicDiary): ReactNode {
