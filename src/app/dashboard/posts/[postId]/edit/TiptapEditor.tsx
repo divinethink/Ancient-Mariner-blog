@@ -4,12 +4,15 @@
 // strike/code/codeBlock বন্ধ, heading H2–H3, লিংক শুধু http/https/mailto।
 import { EditorContent, useEditor, useEditorState, type Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import type { MediaWithId } from "@/data/mediaRepo";
 import { bn } from "@/i18n/bn";
 import type { EditorPos } from "@/data/draftStore";
 import { typewriterDelta } from "@/lib/comfort";
-import { HEADING_LEVELS, isSafeHref } from "@/lib/editor-nodes";
+import { HEADING_LEVELS, MEDIA_ALT_MAX, isSafeHref } from "@/lib/editor-nodes";
 import type { DocNode } from "@/lib/editorDoc";
+import { ImagePickerSheet } from "./ImagePickerSheet";
+import { MediaImage } from "./mediaImageNode";
 import { ParaFocus } from "./paraFocus";
 import { useKeyboardInset } from "./useKeyboardInset";
 
@@ -42,6 +45,7 @@ export default function TiptapEditor({
         link: { openOnClick: false, autolink: false, isAllowedUri: (url: string) => isSafeHref(url) },
       }),
       ParaFocus,
+      MediaImage,
     ],
     content: initialDoc,
     // spellcheck বন্ধ: বাংলা শব্দে ভুল লাল-দাগ ও "Add to dictionary" মেনু এড়াতে
@@ -82,15 +86,26 @@ export default function TiptapEditor({
     requestAnimationFrame(() => window.scrollTo(0, p.scrollY));
   }, [editor]);
 
+  const [picker, setPicker] = useState(false);
+  const closePicker = useCallback(() => setPicker(false), []);
+
+  // বাছা ছবি কার্সারের জায়গায় বসে (blur-এর পরও ProseMirror-এর শেষ selection থাকে); doc-এ শুধু mediaId + alt
+  function insertImage(m: MediaWithId) {
+    if (!editor) return;
+    const alt = Array.from((m.altText ?? "").trim()).slice(0, MEDIA_ALT_MAX).join("");
+    editor.chain().focus().insertContent({ type: "mediaImage", attrs: { mediaId: m.id, alt } }).run();
+  }
+
   return (
     <>
       <EditorContent editor={editor} />
-      {editor && <Toolbar editor={editor} />}
+      {editor && <Toolbar editor={editor} onImage={() => setPicker(true)} />}
+      {picker && <ImagePickerSheet onClose={closePicker} onPick={insertImage} />}
     </>
   );
 }
 
-function Toolbar({ editor }: { editor: Editor }) {
+function Toolbar({ editor, onImage }: { editor: Editor; onImage: () => void }) {
   const inset = useKeyboardInset();
   const [more, setMore] = useState(false);
   useEffect(() => {
@@ -136,6 +151,7 @@ function Toolbar({ editor }: { editor: Editor }) {
     { key: "ul", label: bn.editor.bullets, icon: "•", on: s.bullets, run: () => editor.chain().focus().toggleBulletList().run() },
     { key: "ol", label: bn.editor.numbers, icon: "1.", on: s.numbers, run: () => editor.chain().focus().toggleOrderedList().run() },
     { key: "a", label: s.link ? bn.editor.unlink : bn.editor.link, icon: "🔗", on: s.link, run: toggleLink },
+    { key: "img", label: bn.editor.image.add, icon: "🖼️", on: false, run: onImage },
     { key: "undo", label: bn.editor.undo, icon: "↶", on: false, run: () => editor.chain().focus().undo().run() },
     { key: "redo", label: bn.editor.redo, icon: "↷", on: false, run: () => editor.chain().focus().redo().run() },
   ];
