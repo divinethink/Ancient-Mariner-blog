@@ -13,7 +13,6 @@ import type { PublicDiary } from "@/data/publicDiary";
 import { AuthorBox } from "./AuthorBox";
 import { DiaryCalendar } from "./DiaryCalendar";
 import { DiaryEntries } from "./DiaryEntries";
-import { OwnerEdit } from "./OwnerEdit";
 
 const RECENT_COUNT = 5;
 const box = "rounded-2xl border border-line bg-surface p-4";
@@ -25,10 +24,7 @@ const ext = { rel: "noopener noreferrer", target: "_blank" } as const;
 function Box({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className={box}>
-      <div className="mb-2 flex items-center justify-between gap-2">
-        <h2 className="font-serif text-lg font-bold">{title}</h2>
-        <OwnerEdit />
-      </div>
+      <h2 className="mb-2 font-serif text-lg font-bold">{title}</h2>
       {children}
     </section>
   );

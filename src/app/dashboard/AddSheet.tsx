@@ -323,6 +323,17 @@ export function AddProvider({ children }: { children: ReactNode }) {
                 <label htmlFor="quick-idea-text" className="sr-only">
                   {isDiary ? d.quickLabel : t.quickLabel}
                 </label>
+                {isDiary && (
+                  <input
+                    type="text"
+                    aria-label={d.fieldTitle}
+                    placeholder={d.fieldTitle}
+                    maxLength={120}
+                    value={diaryTitle}
+                    onChange={(e) => setDiaryTitle(e.target.value)}
+                    className="mb-2 min-h-11 w-full rounded-lg border border-line bg-surface px-3 text-base"
+                  />
+                )}
                 <textarea
                   id="quick-idea-text"
                   ref={areaRef}
@@ -362,15 +373,6 @@ export function AddProvider({ children }: { children: ReactNode }) {
                   <details className="mt-2 rounded-lg border border-line px-3 py-1">
                     <summary className="flex min-h-11 cursor-pointer items-center text-sm font-semibold text-accent-text">{d.moreFields}</summary>
                     <div className="space-y-2 pb-3">
-                      <input
-                        type="text"
-                        aria-label={d.fieldTitle}
-                        placeholder={d.fieldTitle}
-                        maxLength={120}
-                        value={diaryTitle}
-                        onChange={(e) => setDiaryTitle(e.target.value)}
-                        className="min-h-11 w-full rounded-lg border border-line bg-surface px-3 text-base"
-                      />
                       <input
                         type="text"
                         aria-label={d.fieldPlace}
