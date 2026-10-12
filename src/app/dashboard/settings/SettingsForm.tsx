@@ -4,6 +4,9 @@ import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { triggerSiteRebuild } from "@/data/rebuildClient";
 import { SiteSettingsInputSchema, type SiteSettings } from "@/data/siteSettingsRepo";
 import { getSiteSettingsRepo } from "@/data/siteSettingsRepo.wire";
+import { Section } from "@/components/ui/Section";
+import { Segmented } from "@/components/ui/Segmented";
+import { Toggle } from "@/components/ui/Toggle";
 import { bn } from "@/i18n/bn";
 import { tzLabel } from "@/lib/datetime";
 import {
@@ -131,10 +134,27 @@ export function SettingsForm() {
     ) : null;
   const aria = (k: keyof SiteSettings) => ({ "aria-invalid": errs[k] ? true : undefined, "aria-describedby": errs[k] ? `err-${k}` : undefined });
 
+  const numField = (k: "postsPerPage" | "feedItems", label: string, hint: string, range: { min: number; max: number }) => (
+    <label className="block min-w-0 text-sm">
+      {label}
+      <input
+        className={input}
+        type="number"
+        inputMode="numeric"
+        min={range.min}
+        max={range.max}
+        value={Number.isNaN(draft[k]) ? "" : draft[k]}
+        onChange={(e) => set(k, e.target.value === "" ? NaN : Number(e.target.value))}
+        {...aria(k)}
+      />
+      <span className="mt-1 block text-muted">{hint}</span>
+      {err(k)}
+    </label>
+  );
+
   return (
-    <form onSubmit={(e) => void submit(e)} noValidate className="space-y-8">
-      <fieldset className="space-y-4">
-        <legend className="mb-2 font-serif text-lg font-bold">{bn.settings.identity}</legend>
+    <form onSubmit={(e) => void submit(e)} noValidate className="space-y-3">
+      <Section title={bn.settings.identity} summary={draft.siteTitle} defaultOpen forceOpen={!!(errs.siteTitle || errs.tagline || errs.authorBio)}>
         <label className="block">
           {bn.settings.siteTitle}
           <input
@@ -190,10 +210,9 @@ export function SettingsForm() {
             ))}
           </div>
         </div>
-      </fieldset>
+      </Section>
 
-      <fieldset className="space-y-4">
-        <legend className="mb-2 font-serif text-lg font-bold">{bn.settings.timeDisplay}</legend>
+      <Section title={bn.settings.timeDisplay} summary={tzLabel(draft.timezone)} forceOpen={!!(errs.timezone || errs.postsPerPage || errs.feedItems)}>
         <label className="block">
           {bn.settings.timezone}
           <select
@@ -211,85 +230,43 @@ export function SettingsForm() {
           <span className="mt-1 block text-sm text-muted">{bn.settings.timezoneHint}</span>
           {err("timezone")}
         </label>
-        <label className="block">
-          {bn.settings.postsPerPage}
-          <input
-            className={input}
-            type="number"
-            inputMode="numeric"
-            min={POSTS_PER_PAGE_RANGE.min}
-            max={POSTS_PER_PAGE_RANGE.max}
-            value={Number.isNaN(draft.postsPerPage) ? "" : draft.postsPerPage}
-            onChange={(e) => set("postsPerPage", e.target.value === "" ? NaN : Number(e.target.value))}
-            {...aria("postsPerPage")}
-          />
-          <span className="mt-1 block text-sm text-muted">{bn.settings.postsPerPageHint}</span>
-          {err("postsPerPage")}
-        </label>
-      </fieldset>
-
-      <fieldset className="space-y-4">
-        <legend className="mb-2 font-serif text-lg font-bold">{bn.settings.feed}</legend>
-        <label className="block">
-          {bn.settings.feedItems}
-          <input
-            className={input}
-            type="number"
-            inputMode="numeric"
-            min={FEED_ITEMS_RANGE.min}
-            max={FEED_ITEMS_RANGE.max}
-            value={Number.isNaN(draft.feedItems) ? "" : draft.feedItems}
-            onChange={(e) => set("feedItems", e.target.value === "" ? NaN : Number(e.target.value))}
-            {...aria("feedItems")}
-          />
-          <span className="mt-1 block text-sm text-muted">{bn.settings.feedItemsHint}</span>
-          {err("feedItems")}
-        </label>
-        <div role="radiogroup" aria-label={bn.settings.feedMode}>
-          <p>{bn.settings.feedMode}</p>
-          <div className="mt-1 flex flex-wrap gap-2">
-            {(["full", "excerpt"] as const).map((m) => (
-              <label
-                key={m}
-                className="flex min-h-11 cursor-pointer items-center gap-2 rounded-full border border-line px-4 has-[:checked]:border-accent has-[:checked]:bg-surface"
-              >
-                <input type="radio" name="feedMode" checked={draft.feedMode === m} onChange={() => set("feedMode", m)} />
-                {m === "full" ? bn.settings.feedFull : bn.settings.feedExcerpt}
-              </label>
-            ))}
-          </div>
+        <div className="grid grid-cols-2 gap-3">
+          {numField("postsPerPage", bn.settings.postsPerPage, bn.settings.postsPerPageHint, POSTS_PER_PAGE_RANGE)}
+          {numField("feedItems", bn.settings.feedItems, bn.settings.feedItemsHint, FEED_ITEMS_RANGE)}
         </div>
-      </fieldset>
+      </Section>
 
-      <fieldset className="space-y-3">
-        <legend className="mb-2 font-serif text-lg font-bold">{bn.settings.search}</legend>
-        <label className="flex min-h-11 items-start gap-3">
-          <input
-            type="checkbox"
-            className="mt-3 size-5"
-            checked={draft.allowIndexing}
-            onChange={(e) => set("allowIndexing", e.target.checked)}
+      <Section title={bn.settings.feed} summary={draft.feedMode === "full" ? bn.settings.feedFull : bn.settings.feedExcerpt}>
+        <div>
+          <p className="mb-1">{bn.settings.feedMode}</p>
+          <Segmented
+            label={bn.settings.feedMode}
+            value={draft.feedMode}
+            options={[
+              { value: "full", label: bn.settings.feedFull },
+              { value: "excerpt", label: bn.settings.feedExcerpt },
+            ]}
+            onChange={(m) => set("feedMode", m)}
           />
-          <span className="py-2">
-            {bn.settings.allowIndexing}
-            <span className="block text-sm text-muted">{bn.settings.allowIndexingHint}</span>
-          </span>
-        </label>
-        <label className="flex min-h-11 items-start gap-3">
-          <input
-            type="checkbox"
-            className="mt-3 size-5"
-            checked={draft.blockAiCrawlers}
-            onChange={(e) => set("blockAiCrawlers", e.target.checked)}
-          />
-          <span className="py-2">
-            {bn.settings.blockAiCrawlers}
-            <span className="block text-sm text-muted">{bn.settings.blockAiCrawlersHint}</span>
-          </span>
-        </label>
-      </fieldset>
+        </div>
+      </Section>
 
-      <div>
+      <Section title={bn.settings.search} summary={draft.allowIndexing ? bn.customize.enabled : bn.customize.off}>
+        <Toggle
+          checked={draft.allowIndexing}
+          onChange={(v) => set("allowIndexing", v)}
+          label={bn.settings.allowIndexing}
+          hint={bn.settings.allowIndexingHint}
+        />
+        <Toggle
+          checked={draft.blockAiCrawlers}
+          onChange={(v) => set("blockAiCrawlers", v)}
+          label={bn.settings.blockAiCrawlers}
+          hint={bn.settings.blockAiCrawlersHint}
+        />
+      </Section>
+
+      <div className="pt-2">
         <button
           type="submit"
           disabled={busy || !dirty || hasErr}

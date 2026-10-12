@@ -134,11 +134,6 @@ export function IdeaList() {
 
   return (
     <>
-      <div className="mb-4 flex justify-end">
-        <button type="button" onClick={openIdea} className={primary}>
-          {t.newIdea}
-        </button>
-      </div>
       {load.items.length === 0 ? (
         <p className="text-muted">{t.empty}</p>
       ) : (
