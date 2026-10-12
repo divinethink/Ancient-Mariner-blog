@@ -2,7 +2,7 @@
 
 // Publish/Metadata panel (Mockup §৭.৯): mobile = bottom-sheet, ≥md = ডান ড্রয়ার।
 // সব রিমোট-লেখা `engine.exclusive`-এর ভেতরে (sync-এর সাথে ক্রমানুসারে); প্রতিটা ক্রিয়ার পর রিমোট পড়ে base বসানো।
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { draftStore } from "@/data/draftStore";
 import { triggerSiteRebuild } from "@/data/rebuildClient";
 import { snapshotOnPublish } from "@/data/revisionHooks";
@@ -364,7 +364,7 @@ export function PublishPanel(p: Props) {
         )}
 
         {state === "ready" && meta && (
-          <div className="space-y-4">
+          <div className="space-y-3">
             <p className="text-sm">
               <span className="text-muted">{bn.publishPanel.state}: </span>
               <span className="rounded-full bg-line px-2 py-0.5">
@@ -394,25 +394,6 @@ export function PublishPanel(p: Props) {
               />
             </div>
 
-            <div>
-              <label htmlFor="pp-excerpt" className={field}>
-                {bn.publishPanel.excerpt}
-              </label>
-              <textarea
-                id="pp-excerpt"
-                value={p.excerpt}
-                onChange={(e) => {
-                  p.onExcerpt(e.target.value);
-                  // প্রকাশিত লেখায় সারাংশ-বদলও অপ্রকাশিত পরিবর্তন (drafts-এ যাবে)
-                  setMeta((m) => (m && m.post.status === "published" ? { ...m, hasDraft: true } : m));
-                }}
-                rows={3}
-                lang="bn"
-                className={`${input} py-2`}
-              />
-              <p className="mt-1 text-xs text-muted">{bn.publishPanel.excerptHint}</p>
-            </div>
-
             <fieldset>
               <legend className={field}>{bn.publishPanel.visibility}</legend>
               <div className="flex gap-2">
@@ -435,134 +416,140 @@ export function PublishPanel(p: Props) {
               {vis === "unlisted" && <p className="mt-1 text-xs text-muted">{bn.publishPanel.unlistedHint}</p>}
             </fieldset>
 
-            <label className="flex min-h-11 cursor-pointer items-start gap-3">
-              <input type="checkbox" checked={feat} onChange={(e) => setFeat(e.target.checked)} className="mt-1 size-5" />
-              <span>
+            <div className="grid grid-cols-2 gap-2">
+              <label title={bn.publishPanel.featuredHint} className={`flex min-h-11 cursor-pointer items-center gap-2 rounded-xl border px-3 text-sm ${feat ? "border-accent bg-line" : "border-line"}`}>
+                <input type="checkbox" checked={feat} onChange={(e) => setFeat(e.target.checked)} className="size-5 shrink-0" />
                 {bn.publishPanel.featured}
-                <span className="block text-xs text-muted">{bn.publishPanel.featuredHint}</span>
-              </span>
-            </label>
-
-            <label className="flex min-h-11 cursor-pointer items-start gap-3">
-              <input type="checkbox" checked={commentsOn} onChange={(e) => setCommentsOn(e.target.checked)} className="mt-1 size-5" />
-              <span>
-                {bn.publishPanel.commentsOn}
-                <span className="block text-xs text-muted">{bn.publishPanel.commentsOnHint}</span>
-              </span>
-            </label>
-
-            <CoverPicker value={coverIn} onChange={setCoverIn} disabled={busy} />
-
-            <GalleryPicker value={galleryIn} onChange={setGalleryIn} disabled={busy} />
-
-            <label className="block space-y-1 border-t border-line pt-4">
-              <span className="font-serif text-lg font-bold">{bn.publishPanel.place.label}</span>
-              <input
-                type="text"
-                value={placeIn}
-                maxLength={MAX_LOCATION}
-                disabled={busy}
-                placeholder={bn.publishPanel.place.placeholder}
-                onChange={(e) => setPlaceIn(e.target.value)}
-                className="min-h-11 w-full rounded-lg border border-line bg-surface px-3 text-base"
-              />
-              <span className="block text-xs text-muted">{bn.publishPanel.place.hint}</span>
-            </label>
-
-            <fieldset className="space-y-3 border-t border-line pt-4" disabled={busy}>
-              <legend className="font-serif text-lg font-bold">{bn.publishPanel.seo.title}</legend>
-              <label className="block space-y-1">
-                <span className="text-sm">{bn.publishPanel.seo.titleLabel}</span>
-                <input type="text" value={seoTitleIn} maxLength={MAX_SEO_TITLE} onChange={(e) => setSeoTitleIn(e.target.value)} className="min-h-11 w-full rounded-lg border border-line bg-surface px-3 text-base" />
-                <span className="block text-xs text-muted">{bn.publishPanel.seo.titleHint} {bn.publishPanel.seo.count(seoTitleIn.length, MAX_SEO_TITLE)}</span>
               </label>
-              <label className="block space-y-1">
-                <span className="text-sm">{bn.publishPanel.seo.descLabel}</span>
-                <textarea value={seoDescIn} maxLength={MAX_SEO_DESC} rows={3} onChange={(e) => setSeoDescIn(e.target.value)} className="w-full rounded-lg border border-line bg-surface px-3 py-2 text-base" />
-                <span className="block text-xs text-muted">{bn.publishPanel.seo.descHint} {bn.publishPanel.seo.count(seoDescIn.length, MAX_SEO_DESC)}</span>
+              <label title={bn.publishPanel.commentsOnHint} className={`flex min-h-11 cursor-pointer items-center gap-2 rounded-xl border px-3 text-sm ${commentsOn ? "border-accent bg-line" : "border-line"}`}>
+                <input type="checkbox" checked={commentsOn} onChange={(e) => setCommentsOn(e.target.checked)} className="size-5 shrink-0" />
+                {bn.publishPanel.sections.commentsShort}
               </label>
-              <label className="flex min-h-11 cursor-pointer items-start gap-3">
-                <input type="checkbox" checked={seoNoindexIn} onChange={(e) => setSeoNoindexIn(e.target.checked)} className="mt-1 size-5" />
-                <span>
-                  {bn.publishPanel.seo.noindex}
-                  <span className="block text-xs text-muted">{bn.publishPanel.seo.noindexHint}</span>
-                </span>
-              </label>
-              <CoverPicker value={ogIn} onChange={setOgIn} disabled={busy} labels={{ title: bn.publishPanel.ogImage.title, none: bn.publishPanel.ogImage.none }} />
-            </fieldset>
-
-            {org && (
-              <OrgSection
-                value={org}
-                onChange={setOrg}
-                opts={orgOpts}
-                pending={pendingTags}
-                onPending={setPendingTags}
-                orderInput={orderIn}
-                onOrderInput={setOrderIn}
-                published={published}
-                disabled={busy}
-                onRetry={() => {
-                  setOrgOpts(null);
-                  setOptsTick((n) => n + 1);
-                }}
-              />
-            )}
-
-            <div>
-              <label htmlFor="pp-date" className={field}>
-                {bn.publishPanel.publishedAt}
-              </label>
-              <input
-                id="pp-date"
-                type="datetime-local"
-                value={dateIn}
-                max={maxIn || undefined}
-                onChange={(e) => setDateIn(e.target.value)}
-                className={input}
-              />
-              <p className="mt-1 text-xs text-muted">{bn.publishPanel.publishedAtHint}</p>
             </div>
 
-            {!published && (
+            <Section title={bn.publishPanel.sections.details} hint={placeIn.trim() || undefined}>
               <div>
-                <label htmlFor="pp-sched" className={field}>
-                  {bn.publishPanel.scheduleAt}
+                <label htmlFor="pp-excerpt" className={field}>
+                  {bn.publishPanel.excerpt}
                 </label>
-                <div className="flex flex-wrap gap-2">
-                  <input id="pp-sched" type="datetime-local" value={schedIn} min={maxIn || undefined} onChange={(e) => setSchedIn(e.target.value)} className={`${input} flex-1`} />
-                  <button type="button" onClick={onSchedule} disabled={busy || !schedIn} className={btnGhost}>
-                    {bn.publishPanel.scheduleBtn}
-                  </button>
-                </div>
-                <p className="mt-1 text-xs text-muted">{bn.publishPanel.scheduleHint}</p>
-                {scheduled && (
-                  <button type="button" onClick={onUnschedule} disabled={busy} className={`${btnGhost} mt-2`}>
-                    {bn.publishPanel.scheduleCancel}
-                  </button>
-                )}
+                <textarea
+                  id="pp-excerpt"
+                  value={p.excerpt}
+                  onChange={(e) => {
+                    p.onExcerpt(e.target.value);
+                    // প্রকাশিত লেখায় সারাংশ-বদলও অপ্রকাশিত পরিবর্তন (drafts-এ যাবে)
+                    setMeta((m) => (m && m.post.status === "published" ? { ...m, hasDraft: true } : m));
+                  }}
+                  rows={3}
+                  lang="bn"
+                  className={`${input} py-2`}
+                />
+                <p className="mt-1 text-xs text-muted">{bn.publishPanel.excerptHint}</p>
               </div>
+              <label className="block">
+                <span className={field}>{bn.publishPanel.place.label}</span>
+                <input
+                  type="text"
+                  value={placeIn}
+                  maxLength={MAX_LOCATION}
+                  disabled={busy}
+                  placeholder={bn.publishPanel.place.placeholder}
+                  onChange={(e) => setPlaceIn(e.target.value)}
+                  className={input}
+                />
+                <span className="mt-1 block text-xs text-muted">{bn.publishPanel.place.hint}</span>
+              </label>
+            </Section>
+
+            <Section title={bn.publishPanel.sections.media} hint={bn.publishPanel.sections.mediaHint(!!coverIn, galleryIn.length)}>
+              <CoverPicker value={coverIn} onChange={setCoverIn} disabled={busy} />
+              <GalleryPicker value={galleryIn} onChange={setGalleryIn} disabled={busy} />
+            </Section>
+
+            {org && (
+              <Section title={bn.org.panel.title} hint={`${org.categoryName ?? "—"} · #${org.tags.length}`}>
+                <OrgSection
+                  value={org}
+                  onChange={setOrg}
+                  opts={orgOpts}
+                  pending={pendingTags}
+                  onPending={setPendingTags}
+                  orderInput={orderIn}
+                  onOrderInput={setOrderIn}
+                  published={published}
+                  disabled={busy}
+                  onRetry={() => {
+                    setOrgOpts(null);
+                    setOptsTick((n) => n + 1);
+                  }}
+                />
+              </Section>
             )}
 
-            {msg && (
-              <p role={msg.kind === "err" ? "alert" : "status"} className={msg.kind === "err" ? "text-accent-text" : "text-muted"}>
-                {msg.text}
-              </p>
-            )}
+            <Section title={bn.publishPanel.sections.seo} hint={seoNoindexIn ? "noindex" : undefined}>
+              <fieldset className="space-y-3" disabled={busy}>
+                <legend className="sr-only">{bn.publishPanel.seo.title}</legend>
+                <label className="block space-y-1">
+                  <span className="text-sm">{bn.publishPanel.seo.titleLabel}</span>
+                  <input type="text" value={seoTitleIn} maxLength={MAX_SEO_TITLE} onChange={(e) => setSeoTitleIn(e.target.value)} className={input} />
+                  <span className="block text-xs text-muted">{bn.publishPanel.seo.titleHint} {bn.publishPanel.seo.count(seoTitleIn.length, MAX_SEO_TITLE)}</span>
+                </label>
+                <label className="block space-y-1">
+                  <span className="text-sm">{bn.publishPanel.seo.descLabel}</span>
+                  <textarea value={seoDescIn} maxLength={MAX_SEO_DESC} rows={3} onChange={(e) => setSeoDescIn(e.target.value)} className={`${input} py-2`} />
+                  <span className="block text-xs text-muted">{bn.publishPanel.seo.descHint} {bn.publishPanel.seo.count(seoDescIn.length, MAX_SEO_DESC)}</span>
+                </label>
+                <label className="flex min-h-11 cursor-pointer items-start gap-3">
+                  <input type="checkbox" checked={seoNoindexIn} onChange={(e) => setSeoNoindexIn(e.target.checked)} className="mt-1 size-5" />
+                  <span>
+                    {bn.publishPanel.seo.noindex}
+                    <span className="block text-xs text-muted">{bn.publishPanel.seo.noindexHint}</span>
+                  </span>
+                </label>
+                <CoverPicker value={ogIn} onChange={setOgIn} disabled={busy} labels={{ title: bn.publishPanel.ogImage.title, none: bn.publishPanel.ogImage.none }} />
+              </fieldset>
+            </Section>
 
-            <div className="flex flex-wrap gap-2 pt-1">
-              {published ? (
-                <button type="button" onClick={onUpdate} disabled={busy || !meta.hasDraft} className={btnPrimary}>
-                  {busy ? bn.publishPanel.working : bn.publishPanel.update}
-                </button>
-              ) : (
-                <button type="button" onClick={onPublish} disabled={busy} className={btnPrimary}>
-                  {busy ? bn.publishPanel.working : bn.publishPanel.publish}
-                </button>
+            <Section title={bn.publishPanel.sections.dates} hint={dateIn ? dateIn.replace("T", " ") : undefined}>
+              <div>
+                <label htmlFor="pp-date" className={field}>
+                  {bn.publishPanel.publishedAt}
+                </label>
+                <input
+                  id="pp-date"
+                  type="datetime-local"
+                  value={dateIn}
+                  max={maxIn || undefined}
+                  onChange={(e) => setDateIn(e.target.value)}
+                  className={input}
+                />
+                <p className="mt-1 text-xs text-muted">{bn.publishPanel.publishedAtHint}</p>
+              </div>
+              {!published && (
+                <div>
+                  <label htmlFor="pp-sched" className={field}>
+                    {bn.publishPanel.scheduleAt}
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    <input id="pp-sched" type="datetime-local" value={schedIn} min={maxIn || undefined} onChange={(e) => setSchedIn(e.target.value)} className={`${input} flex-1`} />
+                    <button type="button" onClick={onSchedule} disabled={busy || !schedIn} className={btnGhost}>
+                      {bn.publishPanel.scheduleBtn}
+                    </button>
+                  </div>
+                  <p className="mt-1 text-xs text-muted">{bn.publishPanel.scheduleHint}</p>
+                  {scheduled && (
+                    <button type="button" onClick={onUnschedule} disabled={busy} className={`${btnGhost} mt-2`}>
+                      {bn.publishPanel.scheduleCancel}
+                    </button>
+                  )}
+                </div>
               )}
-              <button type="button" onClick={onDone} disabled={busy} className={btnGhost}>
-                {bn.publishPanel.done}
-              </button>
+            </Section>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <a href={`/dashboard/shares?post=${postId}`} className="inline-flex min-h-11 items-center text-accent-text underline">
+                🔗 {bn.shareLink.openPanel}
+              </a>
               {published && meta.hasDraft && (
                 <button type="button" onClick={onDiscard} disabled={busy} className={btnGhost}>
                   {bn.publishPanel.discard}
@@ -574,13 +561,51 @@ export function PublishPanel(p: Props) {
                 </button>
               )}
             </div>
-            <a href={`/dashboard/shares?post=${postId}`} className="inline-flex min-h-11 items-center text-accent-text underline">
-              🔗 {bn.shareLink.openPanel}
-            </a>
             {published && <BuildStatus />}
+
+            {/* প্রধান ক্রিয়া সবসময় নাগালে: নিচে আটকানো বার */}
+            <div className="sticky bottom-0 z-10 -mx-5 space-y-2 border-t border-line bg-surface px-5 py-3">
+              {msg && (
+                <p role={msg.kind === "err" ? "alert" : "status"} className={msg.kind === "err" ? "text-accent-text" : "text-muted"}>
+                  {msg.text}
+                </p>
+              )}
+              <div className="flex gap-2">
+                {published ? (
+                  <button type="button" onClick={onUpdate} disabled={busy || !meta.hasDraft} className={`${btnPrimary} flex-1`}>
+                    {busy ? bn.publishPanel.working : bn.publishPanel.update}
+                  </button>
+                ) : (
+                  <button type="button" onClick={onPublish} disabled={busy} className={`${btnPrimary} flex-1`}>
+                    {busy ? bn.publishPanel.working : bn.publishPanel.publish}
+                  </button>
+                )}
+                <button type="button" onClick={onDone} disabled={busy} className={btnGhost}>
+                  {bn.publishPanel.done}
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>
     </div>
+  );
+}
+
+/** ভাঁজযোগ্য কার্ড: শিরোনাম + বর্তমান মানের সংক্ষিপ্ত ইঙ্গিত; বন্ধ থাকলেও ভেতরের state/সেভ অক্ষত (<details> ভেতরের ইনপুট মুছে না) */
+function Section({ title, hint, children }: { title: string; hint?: string; children: ReactNode }) {
+  return (
+    <details className="group rounded-2xl border border-line">
+      <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 px-4 [&::-webkit-details-marker]:hidden">
+        <span className="font-semibold">{title}</span>
+        <span className="flex min-w-0 items-center gap-2 text-sm text-muted">
+          {hint && <span className="truncate">{hint}</span>}
+          <span aria-hidden="true" className="transition-transform group-open:rotate-180">
+            ▾
+          </span>
+        </span>
+      </summary>
+      <div className="space-y-4 border-t border-line px-4 py-4 [&>fieldset:first-child]:border-t-0 [&>fieldset:first-child]:pt-0">{children}</div>
+    </details>
   );
 }

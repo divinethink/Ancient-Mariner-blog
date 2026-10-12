@@ -998,6 +998,14 @@ export const bn = {
     publishedNow: "সাইট হালনাগাদ শুরু হয়েছে — ~১–২ মিনিট লাগবে।",
   },
   publishPanel: {
+    sections: {
+      details: "বিবরণ",
+      media: "কভার ও গ্যালারি",
+      seo: "SEO ও শেয়ার",
+      dates: "তারিখ ও সময়সূচি",
+      commentsShort: "মন্তব্য চালু",
+      mediaHint: (hasCover: boolean, n: number) => `${hasCover ? "কভার ✓" : "কভার নেই"} · ${n}টি ছবি`,
+    },
     seo: {
       title: "SEO (সার্চ-ইঞ্জিন)",
       titleLabel: "সার্চ-শিরোনাম (ঐচ্ছিক)",
