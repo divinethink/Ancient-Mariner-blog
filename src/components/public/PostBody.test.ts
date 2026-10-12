@@ -82,7 +82,7 @@ describe("DocView — anchors", () => {
 describe("mediaImage render", () => {
   const cv: CoverView = { cloud: "democloud", publicId: "blog/abc", w: 1600, h: 900, alt: "মিডিয়া-alt" };
   const media = new Map([["m1", cv]]);
-  const img = (attrs: object): DocNode => ({ type: "mediaImage", attrs });
+  const img = (attrs: Record<string, unknown>): DocNode => ({ type: "mediaImage", attrs });
   const doc = (...c: DocNode[]): DocNode => ({ type: "doc", content: c });
   it("figure>img: cldUrl, srcset, lazy, মাপ; কোনো raw URL পাথ নয়", () => {
     const html = renderToStaticMarkup(h(DocView, { doc: doc(img({ mediaId: "m1", alt: "নিজের alt", caption: "ক্যাপশন <b>" })), media }));
