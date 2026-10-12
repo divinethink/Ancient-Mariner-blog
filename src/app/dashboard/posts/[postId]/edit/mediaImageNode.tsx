@@ -8,7 +8,7 @@ import type { MediaWithId } from "@/data/mediaRepo";
 import { getMediaRepo } from "@/data/mediaRepo.wire";
 import { bn } from "@/i18n/bn";
 import { cldUrl, cloudFromUrl } from "@/lib/cloudinary";
-import { isSafeMediaId } from "@/lib/editor-nodes";
+import { isSafeMediaId, MEDIA_ALT_MAX, MEDIA_CAPTION_MAX } from "@/lib/editor-nodes";
 
 // একই ছবি বহুবার থাকলেও একবারই আনা; ব্যর্থ হলে cache থেকে সরে যায় (পরের বার আবার চেষ্টা)
 const cache = new Map<string, Promise<MediaWithId | null>>();
@@ -28,7 +28,7 @@ function loadMedia(id: string): Promise<MediaWithId | null> {
 
 type View = { id: string; m: MediaWithId | null };
 
-function MediaImageView({ node, selected }: NodeViewProps) {
+function MediaImageView({ node, selected, updateAttributes, deleteNode, editor }: NodeViewProps) {
   const id = typeof node.attrs.mediaId === "string" ? node.attrs.mediaId : "";
   const [view, setView] = useState<View | null>(null);
 
@@ -48,6 +48,8 @@ function MediaImageView({ node, selected }: NodeViewProps) {
   const src = m && cloud ? cldUrl(cloud, m.cloudinaryPublicId, { w: 800 }) : null;
   const alt = (typeof node.attrs.alt === "string" && node.attrs.alt) || m?.altText || "";
   const caption = typeof node.attrs.caption === "string" ? node.attrs.caption : "";
+  const ownAlt = typeof node.attrs.alt === "string" ? node.attrs.alt : "";
+  const field = "min-h-11 w-full rounded-lg border border-line bg-transparent px-3 text-sm";
 
   return (
     <NodeViewWrapper
@@ -67,7 +69,35 @@ function MediaImageView({ node, selected }: NodeViewProps) {
           {m === undefined ? bn.editor.image.loading : bn.editor.image.missing}
         </div>
       )}
-      {caption && <figcaption>{caption}</figcaption>}
+      {editor.isEditable && (
+        <div className="mt-2 space-y-2 font-sans">
+          <input
+            type="text"
+            aria-label={bn.editor.image.altLabel}
+            placeholder={bn.editor.image.altPlaceholder}
+            maxLength={MEDIA_ALT_MAX}
+            value={ownAlt}
+            onChange={(e) => updateAttributes({ alt: e.target.value })}
+            className={field}
+          />
+          <input
+            type="text"
+            aria-label={bn.editor.image.captionLabel}
+            placeholder={bn.editor.image.captionPlaceholder}
+            maxLength={MEDIA_CAPTION_MAX}
+            value={caption}
+            onChange={(e) => updateAttributes({ caption: e.target.value || null })}
+            className={field}
+          />
+          <button
+            type="button"
+            onClick={() => deleteNode()}
+            className="min-h-11 rounded-full border border-line px-4 text-sm text-accent-text"
+          >
+            🗑️ {bn.editor.image.remove}
+          </button>
+        </div>
+      )}
     </NodeViewWrapper>
   );
 }
