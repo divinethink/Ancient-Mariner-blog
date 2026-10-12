@@ -10,6 +10,7 @@ import { DEFAULT_SETTINGS, type SiteSettings } from "@/data/siteSettingsRepo";
 import { getSiteSettingsRepo } from "@/data/siteSettingsRepo.wire";
 import { getTaxonomyRepo } from "@/data/taxonomyRepo.wire";
 import type { TermWithId } from "@/data/taxonomyRepo";
+import { ItemCard } from "@/components/ui/ItemCard";
 import { bn } from "@/i18n/bn";
 import {
   FOOTER_LINKS_MAX,
@@ -69,6 +70,7 @@ export function CustomizeForm({ initialTab }: { initialTab?: Tab }) {
   const [fb, setFb] = useState("");
   const [siteLinks, setSiteLinks] = useState<Row<SiteLink>[]>([]);
   const [design, setDesign] = useState<SiteSettings["design"]>(DEFAULT_SETTINGS.design);
+  const [openK, setOpenK] = useState<number | null>(null); // কোন সারি খোলা (শুধু চেহারা)
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [tick, setTick] = useState(0);
@@ -236,7 +238,7 @@ export function CustomizeForm({ initialTab }: { initialTab?: Tab }) {
   };
 
   const rowButtons = (i: number, n: number, move: (d: -1 | 1) => void, del: () => void) => (
-    <div className="flex gap-2">
+    <div className="flex gap-1">
       <button type="button" className={iconBtn} aria-label={t.moveUp} disabled={i === 0} onClick={() => move(-1)}>
         ↑
       </button>
@@ -258,7 +260,7 @@ export function CustomizeForm({ initialTab }: { initialTab?: Tab }) {
   ) => (
     <ol className="space-y-3" aria-label={label}>
       {rows.map((r, i) => (
-        <li key={r.id} className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-line p-4">
+        <li key={r.id} className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-line bg-surface p-3">
           <label className="flex min-h-11 items-center gap-3">
             <input
               type="checkbox"
@@ -322,14 +324,14 @@ export function CustomizeForm({ initialTab }: { initialTab?: Tab }) {
 
   return (
     <div className="space-y-6">
-      <div role="tablist" aria-label={t.tabsLabel} className="flex flex-wrap gap-2">
+      <div role="tablist" aria-label={t.tabsLabel} className="-m-1 flex gap-2 overflow-x-auto p-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {(["menu", "footer", "sidebar", "home", "design"] as const).map((k) => (
           <button
             key={k}
             type="button"
             role="tab"
             aria-selected={tab === k}
-            className={`min-h-11 rounded-full border px-4 ${tab === k ? "border-accent bg-surface font-semibold" : "border-line"}`}
+            className={`min-h-11 shrink-0 grow whitespace-nowrap rounded-full border px-4 ${tab === k ? "border-accent bg-surface font-semibold" : "border-line"}`}
             onClick={() => setTab(k)}
           >
             {{ menu: t.tabMenu, footer: t.tabFooter, sidebar: t.tabSidebar, home: t.tabHome, design: t.tabDesign }[k]}
@@ -360,7 +362,7 @@ export function CustomizeForm({ initialTab }: { initialTab?: Tab }) {
               </button>
             </div>
           )}
-          <ol className="space-y-3">
+          <ol className="space-y-2">
             {menu.map((it, i) => {
               const bad = menuRowError(it);
               const patch = (p: Partial<MenuItem>) => {
@@ -368,45 +370,52 @@ export function CustomizeForm({ initialTab }: { initialTab?: Tab }) {
                 setMenu((m) => m.map((x, j) => (j === i ? { ...x, ...p } : x)));
               };
               const refLabel = it.type === "page" ? t.refPage : it.type === "category" ? t.refCategory : t.refLink;
+              const target = it.type === "link" ? it.ref : it.type === "page" ? (it.ref ? `/${it.ref}` : "") : (catOpts.find((c) => c.id === it.ref)?.name ?? "");
               return (
-                <li key={it.k} className="space-y-3 rounded-2xl border border-line p-4">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="font-semibold">{t.itemN(i + 1)}</span>
-                    {rowButtons(
-                      i,
-                      menu.length,
-                      (d) => {
-                        edit();
-                        setMenu((m) => moveAt(m, i, d));
-                      },
-                      () => {
-                        edit();
-                        setMenu((m) => removeAt(m, i));
-                      },
-                    )}
+                <ItemCard
+                  key={it.k}
+                  title={it.label.trim() || t.itemN(i + 1)}
+                  sub={bad ? (bad === "label" ? t.errLabel : t.errRef) : [TYPE_LABEL[it.type], target].filter(Boolean).join(" · ")}
+                  invalid={!!bad}
+                  open={openK === it.k}
+                  onToggle={() => setOpenK((k) => (k === it.k ? null : it.k))}
+                  actions={rowButtons(
+                    i,
+                    menu.length,
+                    (d) => {
+                      edit();
+                      setMenu((m) => moveAt(m, i, d));
+                    },
+                    () => {
+                      edit();
+                      setMenu((m) => removeAt(m, i));
+                    },
+                  )}
+                >
+                  <div className="grid grid-cols-2 gap-2">
+                    <label className="block min-w-0 text-sm">
+                      {t.labelShort}
+                      <input
+                        className={input}
+                        value={it.label}
+                        maxLength={MENU_LABEL_MAX}
+                        onChange={(e) => patch({ label: e.target.value })}
+                        aria-invalid={bad === "label" || undefined}
+                        aria-describedby={bad ? `e-${it.k}` : undefined}
+                      />
+                    </label>
+                    <label className="block min-w-0 text-sm">
+                      {t.type}
+                      <select className={input} value={it.type} onChange={(e) => changeType(i, e.target.value as MenuType)}>
+                        {(Object.keys(TYPE_LABEL) as MenuType[]).map((k) => (
+                          <option key={k} value={k}>
+                            {TYPE_LABEL[k]}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
                   </div>
-                  <label className="block">
-                    {t.label}
-                    <input
-                      className={input}
-                      value={it.label}
-                      maxLength={MENU_LABEL_MAX}
-                      onChange={(e) => patch({ label: e.target.value })}
-                      aria-invalid={bad === "label" || undefined}
-                      aria-describedby={bad ? `e-${it.k}` : undefined}
-                    />
-                  </label>
-                  <label className="block">
-                    {t.type}
-                    <select className={input} value={it.type} onChange={(e) => changeType(i, e.target.value as MenuType)}>
-                      {(Object.keys(TYPE_LABEL) as MenuType[]).map((k) => (
-                        <option key={k} value={k}>
-                          {TYPE_LABEL[k]}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <div>
+                  <div className="text-sm">
                     <label htmlFor={`ref-${it.k}`}>{refLabel}</label>
                     {refControl(it, i, bad === "ref")}
                   </div>
@@ -415,7 +424,7 @@ export function CustomizeForm({ initialTab }: { initialTab?: Tab }) {
                       {bad === "label" ? t.errLabel : t.errRef}
                     </p>
                   )}
-                </li>
+                </ItemCard>
               );
             })}
           </ol>
@@ -425,7 +434,9 @@ export function CustomizeForm({ initialTab }: { initialTab?: Tab }) {
             disabled={menu.length >= MENU_MAX}
             onClick={() => {
               edit();
-              setMenu((m) => [...m, withKey<MenuItem>({ label: "", type: "link", ref: "" })]);
+              const n = withKey<MenuItem>({ label: "", type: "link", ref: "" });
+              setMenu((m) => [...m, n]);
+              setOpenK(n.k);
             }}
           >
             + {t.addItem}
@@ -452,7 +463,7 @@ export function CustomizeForm({ initialTab }: { initialTab?: Tab }) {
             <span className="mt-1 block text-sm text-muted">{t.footerTextHint}</span>
           </label>
           <h2 className="font-serif text-lg font-bold">{t.footerLinks}</h2>
-          <ol className="space-y-3">
+          <ol className="space-y-2">
             {footLinks.map((l, i) => {
               const bad = footerLinkError(l);
               const patch = (p: Partial<FooterLink>) => {
@@ -460,27 +471,31 @@ export function CustomizeForm({ initialTab }: { initialTab?: Tab }) {
                 setFootLinks((m) => m.map((x, j) => (j === i ? { ...x, ...p } : x)));
               };
               return (
-                <li key={l.k} className="space-y-3 rounded-2xl border border-line p-4">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="font-semibold">{t.itemN(i + 1)}</span>
-                    {rowButtons(
-                      i,
-                      footLinks.length,
-                      (d) => {
-                        edit();
-                        setFootLinks((m) => moveAt(m, i, d));
-                      },
-                      () => {
-                        edit();
-                        setFootLinks((m) => removeAt(m, i));
-                      },
-                    )}
-                  </div>
-                  <label className="block">
-                    {t.label}
+                <ItemCard
+                  key={l.k}
+                  title={l.label.trim() || t.itemN(i + 1)}
+                  sub={bad ? (bad === "label" ? t.errLabel : t.errUrl) : l.url}
+                  invalid={!!bad}
+                  open={openK === l.k}
+                  onToggle={() => setOpenK((k) => (k === l.k ? null : l.k))}
+                  actions={rowButtons(
+                    i,
+                    footLinks.length,
+                    (d) => {
+                      edit();
+                      setFootLinks((m) => moveAt(m, i, d));
+                    },
+                    () => {
+                      edit();
+                      setFootLinks((m) => removeAt(m, i));
+                    },
+                  )}
+                >
+                  <label className="block text-sm">
+                    {t.labelShort}
                     <input className={input} value={l.label} maxLength={MENU_LABEL_MAX} onChange={(e) => patch({ label: e.target.value })} aria-invalid={bad === "label" || undefined} />
                   </label>
-                  <label className="block">
+                  <label className="block text-sm">
                     {t.footerUrl}
                     <input
                       className={input}
@@ -497,7 +512,7 @@ export function CustomizeForm({ initialTab }: { initialTab?: Tab }) {
                       {bad === "label" ? t.errLabel : t.errUrl}
                     </p>
                   )}
-                </li>
+                </ItemCard>
               );
             })}
           </ol>
@@ -507,7 +522,9 @@ export function CustomizeForm({ initialTab }: { initialTab?: Tab }) {
             disabled={footLinks.length >= FOOTER_LINKS_MAX}
             onClick={() => {
               edit();
-              setFootLinks((m) => [...m, withKey<FooterLink>({ label: "", url: "" })]);
+              const n = withKey<FooterLink>({ label: "", url: "" });
+              setFootLinks((m) => [...m, n]);
+              setOpenK(n.k);
             }}
           >
             + {t.addItem}
@@ -544,7 +561,7 @@ export function CustomizeForm({ initialTab }: { initialTab?: Tab }) {
           )}
           <h2 className="font-serif text-lg font-bold">{t.linkListTitle}</h2>
           <p className="text-sm text-muted">{t.linkListHint}</p>
-          <ol className="space-y-3">
+          <ol className="space-y-2">
             {siteLinks.map((l, i) => {
               const bad = siteLinkError(l);
               const patch = (p: Partial<SiteLink>) => {
@@ -552,27 +569,31 @@ export function CustomizeForm({ initialTab }: { initialTab?: Tab }) {
                 setSiteLinks((m) => m.map((x, j) => (j === i ? { ...x, ...p } : x)));
               };
               return (
-                <li key={l.k} className="space-y-3 rounded-2xl border border-line p-4">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="font-semibold">{t.itemN(i + 1)}</span>
-                    {rowButtons(
-                      i,
-                      siteLinks.length,
-                      (d) => {
-                        edit();
-                        setSiteLinks((m) => moveAt(m, i, d));
-                      },
-                      () => {
-                        edit();
-                        setSiteLinks((m) => removeAt(m, i));
-                      },
-                    )}
-                  </div>
-                  <label className="block">
-                    {t.label}
+                <ItemCard
+                  key={l.k}
+                  title={l.label.trim() || t.itemN(i + 1)}
+                  sub={bad ? (bad === "label" ? t.errLabel : t.errLinkUrl) : l.url}
+                  invalid={!!bad}
+                  open={openK === l.k}
+                  onToggle={() => setOpenK((k) => (k === l.k ? null : l.k))}
+                  actions={rowButtons(
+                    i,
+                    siteLinks.length,
+                    (d) => {
+                      edit();
+                      setSiteLinks((m) => moveAt(m, i, d));
+                    },
+                    () => {
+                      edit();
+                      setSiteLinks((m) => removeAt(m, i));
+                    },
+                  )}
+                >
+                  <label className="block text-sm">
+                    {t.labelShort}
                     <input className={input} value={l.label} maxLength={LINK_LABEL_MAX} onChange={(e) => patch({ label: e.target.value })} aria-invalid={bad === "label" || undefined} />
                   </label>
-                  <label className="block">
+                  <label className="block text-sm">
                     {t.linkUrl}
                     <input
                       className={input}
@@ -589,7 +610,7 @@ export function CustomizeForm({ initialTab }: { initialTab?: Tab }) {
                       {bad === "label" ? t.errLabel : t.errLinkUrl}
                     </p>
                   )}
-                </li>
+                </ItemCard>
               );
             })}
           </ol>
@@ -599,7 +620,9 @@ export function CustomizeForm({ initialTab }: { initialTab?: Tab }) {
             disabled={siteLinks.length >= LINKS_MAX}
             onClick={() => {
               edit();
-              setSiteLinks((m) => [...m, withKey<SiteLink>({ label: "", url: "" })]);
+              const n = withKey<SiteLink>({ label: "", url: "" });
+              setSiteLinks((m) => [...m, n]);
+              setOpenK(n.k);
             }}
           >
             + {t.addItem}

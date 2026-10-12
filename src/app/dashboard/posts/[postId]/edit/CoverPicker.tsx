@@ -13,7 +13,14 @@ type Props = {
   disabled: boolean;
   /** লেখা বদলানো (P9b-২: লোগো/ব্যানারেও একই picker); না দিলে আগের মতো 'কভার ছবি' */
   labels?: { [K in keyof typeof bn.publishPanel.cover]?: string };
+  /** প্রিভিউর আকার (ধাপ খ): লোগো = বর্গ, ব্যানার = ৩:১; না দিলে আগের মতো */
+  shape?: "default" | "square" | "banner";
 };
+const SHAPE = {
+  default: "h-16 w-28",
+  square: "size-16",
+  banner: "aspect-[3/1] w-40",
+} as const;
 type Cur = { id: string; m: MediaWithId | null };
 
 const btn = "min-h-11 rounded-full border border-line px-4 disabled:opacity-50";
@@ -23,7 +30,7 @@ const thumb = (m: MediaWithId): string | null => {
   return cloud ? cldUrl(cloud, m.cloudinaryPublicId, { w: 320 }) : null;
 };
 
-export function CoverPicker({ value, onChange, disabled, labels }: Props) {
+export function CoverPicker({ value, onChange, disabled, labels, shape = "default" }: Props) {
   const t = { ...bn.publishPanel.cover, ...labels };
   const [cur, setCur] = useState<Cur | null>(null);
   const [open, setOpen] = useState(false);
@@ -75,7 +82,7 @@ export function CoverPicker({ value, onChange, disabled, labels }: Props) {
 
       {value ? (
         <div className="flex items-center gap-3">
-          <div className="flex h-16 w-28 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-line text-xl">
+          <div className={`flex ${SHAPE[shape]} shrink-0 items-center justify-center overflow-hidden rounded-xl bg-line text-xl`}>
             {src ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={src} alt={shown?.altText || shown?.fileName || ""} className="h-full w-full object-cover" />

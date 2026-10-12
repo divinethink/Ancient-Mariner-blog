@@ -2,8 +2,9 @@
 
 // Design ট্যাব (P9b-২): রঙ/ফন্ট/card বাছাই + লোগো/ব্যানার + live preview। preview = `data-accent/font/card` সহ wrapper
 // (tokens.css-এর একই নিয়ম, তাই সাইটের সাথে মেলে); desktop-এ পাশাপাশি, মোবাইলে টগল।
-import { useState, useSyncExternalStore, type ReactNode } from "react";
+import { useState, useSyncExternalStore } from "react";
 import type { SiteSettings } from "@/data/siteSettingsRepo";
+import { Segmented } from "@/components/ui/Segmented";
 import { bn } from "@/i18n/bn";
 import { ACCENTS, CARD_STYLES, FONT_PAIRS } from "@/lib/design";
 import { CoverPicker } from "../posts/[postId]/edit/CoverPicker";
@@ -13,31 +14,25 @@ const t = bn.customize.design;
 const noSubscribe = () => () => {};
 const readTheme = () => document.documentElement.getAttribute("data-theme") ?? "light";
 
-function Group<K extends string>({
-  legend,
-  name,
-  values,
-  labels,
-  current,
-  onPick,
-}: {
-  legend: string;
-  name: string;
-  values: readonly K[];
-  labels: Record<K, string>;
-  current: K;
-  onPick: (v: K) => void;
-}): ReactNode {
+const heading = "mb-2 font-semibold";
+
+/** মূল রঙের swatch-grid: রঙ আসে বিদ্যমান টোকেন থেকে (data-accent + data-theme), নতুন hardcode নয় */
+function AccentGrid({ current, theme, onPick }: { current: Design["accent"]; theme: string; onPick: (v: Design["accent"]) => void }) {
   return (
-    <fieldset className="space-y-1">
-      <legend className="font-semibold">{legend}</legend>
-      {values.map((v) => (
-        <label key={v} className="flex min-h-11 items-center gap-3">
-          <input type="radio" className="size-5" name={name} checked={current === v} onChange={() => onPick(v)} />
-          <span>{labels[v]}</span>
-        </label>
+    <div role="group" aria-label={t.accent} className="grid grid-cols-2 gap-2 min-[420px]:grid-cols-3">
+      {ACCENTS.map((v) => (
+        <button
+          key={v}
+          type="button"
+          aria-pressed={current === v}
+          onClick={() => onPick(v)}
+          className={`flex min-h-11 items-center gap-2 rounded-2xl border bg-surface px-3 py-2 text-left ${current === v ? "border-accent font-semibold" : "border-line"}`}
+        >
+          <span aria-hidden="true" data-accent={v} data-theme={theme} className="size-7 shrink-0 rounded-full border border-line bg-accent" />
+          <span className="min-w-0 text-sm">{t.accents[v]}</span>
+        </button>
       ))}
-    </fieldset>
+    </div>
   );
 }
 
@@ -60,11 +55,32 @@ export function DesignTab({ value, onChange }: { value: Design; onChange: (d: De
       </button>
       <div className="min-[1024px]:grid min-[1024px]:grid-cols-2 min-[1024px]:gap-8">
         <div className={`space-y-5 ${preview ? "hidden min-[1024px]:block" : ""}`}>
-          <Group legend={t.accent} name="accent" values={ACCENTS} labels={t.accents} current={value.accent} onPick={(accent) => set({ accent })} />
-          <Group legend={t.font} name="font" values={FONT_PAIRS} labels={t.fonts} current={value.fontPair} onPick={(fontPair) => set({ fontPair })} />
-          <Group legend={t.card} name="card" values={CARD_STYLES} labels={t.cards} current={value.cardStyle} onPick={(cardStyle) => set({ cardStyle })} />
-          <CoverPicker value={value.logoMediaId || null} onChange={(id) => set({ logoMediaId: id ?? "" })} disabled={false} labels={t.logo} />
-          <CoverPicker value={value.bannerMediaId || null} onChange={(id) => set({ bannerMediaId: id ?? "" })} disabled={false} labels={t.banner} />
+          <div>
+            <h2 className={heading}>{t.accent}</h2>
+            <AccentGrid current={value.accent} theme={theme} onPick={(accent) => set({ accent })} />
+          </div>
+          <div>
+            <h2 className={heading}>{t.font}</h2>
+            <Segmented
+              label={t.font}
+              compact
+              value={value.fontPair}
+              options={FONT_PAIRS.map((v) => ({ value: v, label: t.fontsShort[v] }))}
+              onChange={(fontPair) => set({ fontPair })}
+            />
+          </div>
+          <div>
+            <h2 className={heading}>{t.card}</h2>
+            <Segmented
+              label={t.card}
+              compact
+              value={value.cardStyle}
+              options={CARD_STYLES.map((v) => ({ value: v, label: t.cardsShort[v] }))}
+              onChange={(cardStyle) => set({ cardStyle })}
+            />
+          </div>
+          <CoverPicker value={value.logoMediaId || null} onChange={(id) => set({ logoMediaId: id ?? "" })} disabled={false} labels={t.logo} shape="square" />
+          <CoverPicker value={value.bannerMediaId || null} onChange={(id) => set({ bannerMediaId: id ?? "" })} disabled={false} labels={t.banner} shape="banner" />
         </div>
         <div className={preview ? "" : "hidden min-[1024px]:block"}>
           <h2 className="mb-2 font-serif text-lg font-bold">{t.previewTitle}</h2>
