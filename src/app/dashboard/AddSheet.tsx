@@ -325,41 +325,36 @@ export function AddProvider({ children }: { children: ReactNode }) {
                 </label>
                 {isDiary && (
                   <div className="mb-2 space-y-2">
-                    <label className="block rounded-xl border border-line bg-bg px-3 py-1.5 focus-within:border-accent">
-                      <span className="block text-xs text-muted">{d.fieldTitle}</span>
+                    <input
+                      type="text"
+                      aria-label={d.fieldTitle}
+                      placeholder={d.fieldTitle}
+                      maxLength={120}
+                      value={diaryTitle}
+                      onChange={(e) => setDiaryTitle(e.target.value)}
+                      className="min-h-11 w-full min-w-0 rounded-xl border border-line bg-surface px-3 text-base focus-visible:outline-none focus-visible:border-accent font-semibold"
+                    />
+                    <div className="grid grid-cols-2 gap-2">
                       <input
                         type="text"
-                        maxLength={120}
-                        value={diaryTitle}
-                        onChange={(e) => setDiaryTitle(e.target.value)}
-                        className="min-h-9 w-full bg-transparent text-base font-semibold outline-none"
+                        aria-label={d.fieldPlace}
+                        placeholder={d.fieldPlace}
+                        maxLength={MAX_LOCATION}
+                        value={diaryPlace}
+                        onChange={(e) => setDiaryPlace(e.target.value)}
+                        className="min-h-11 w-full min-w-0 rounded-xl border border-line bg-surface px-3 text-base focus-visible:outline-none focus-visible:border-accent"
                       />
-                    </label>
-                    <div className="grid grid-cols-2 gap-2">
-                      <label className="block min-w-0 rounded-xl border border-line bg-bg px-3 py-1.5 focus-within:border-accent">
-                        <span className="block text-xs text-muted">📍 {d.labelPlace}</span>
-                        <input
-                          type="text"
-                          placeholder={d.optional}
-                          maxLength={MAX_LOCATION}
-                          value={diaryPlace}
-                          onChange={(e) => setDiaryPlace(e.target.value)}
-                          className="min-h-9 w-full min-w-0 bg-transparent text-base outline-none"
-                        />
-                      </label>
-                      <label className="block min-w-0 rounded-xl border border-line bg-bg px-3 py-1.5 focus-within:border-accent">
-                        <span className="block text-xs text-muted">🗓 {d.labelDay}</span>
-                        <input
-                          type="date"
-                          max={todayKey || undefined}
-                          value={diaryDay || todayKey}
-                          onChange={(e) => {
-                            setDiaryDay(e.target.value);
-                            if (status !== "saving") setStatus("idle");
-                          }}
-                          className="min-h-9 w-full min-w-0 bg-transparent text-base text-text outline-none"
-                        />
-                      </label>
+                      <input
+                        type="date"
+                        aria-label={d.labelDay}
+                        max={todayKey || undefined}
+                        value={diaryDay || todayKey}
+                        onChange={(e) => {
+                          setDiaryDay(e.target.value);
+                          if (status !== "saving") setStatus("idle");
+                        }}
+                        className="min-h-11 w-full min-w-0 rounded-xl border border-line bg-surface px-3 text-base focus-visible:outline-none focus-visible:border-accent text-text"
+                      />
                     </div>
                   </div>
                 )}

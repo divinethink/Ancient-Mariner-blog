@@ -3,30 +3,28 @@ import { bn } from "@/i18n/bn";
 import type { CardView } from "@/lib/cards";
 import { PostCardList } from "./PostCard";
 
-const link = "inline-flex min-h-11 items-center gap-1 rounded-xl border border-line bg-surface px-4 py-2";
+const link = "block min-w-0 rounded-xl border border-line bg-surface px-3 py-2";
 
 /** ← আগের | পরের → (build-ডেটার পাশের লেখা); সংশ্লিষ্ট দিকে লেখা না থাকলে সেই দিক লুকানো, দুটোই না থাকলে কিছুই না */
 export function PostPager({ older, newer }: { older?: CardView; newer?: CardView }) {
   if (!older && !newer) return null;
   return (
-    <nav aria-label={bn.public.postNavLabel} className="mt-8 flex flex-col gap-3 min-[560px]:flex-row min-[560px]:justify-between">
+    <nav aria-label={bn.public.postNavLabel} className="mt-8 grid grid-cols-2 gap-2">
       {older ? (
         <Link href={older.href} prefetch={false} rel="prev" className={link}>
-          <span>
-            <span className="block text-xs text-muted">{bn.public.prevPost}</span>
-            {older.title || bn.library.untitled}
-          </span>
+          <span className="block text-xs text-muted">{bn.public.prevPost}</span>
+          <span className="block truncate">{older.title || bn.library.untitled}</span>
         </Link>
       ) : (
         <span />
       )}
-      {newer && (
-        <Link href={newer.href} prefetch={false} rel="next" className={`${link} min-[560px]:text-end`}>
-          <span>
-            <span className="block text-xs text-muted">{bn.public.nextPost}</span>
-            {newer.title || bn.library.untitled}
-          </span>
+      {newer ? (
+        <Link href={newer.href} prefetch={false} rel="next" className={`${link} text-end`}>
+          <span className="block text-xs text-muted">{bn.public.nextPost}</span>
+          <span className="block truncate">{newer.title || bn.library.untitled}</span>
         </Link>
+      ) : (
+        <span />
       )}
     </nav>
   );

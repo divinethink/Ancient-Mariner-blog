@@ -185,7 +185,7 @@ export default async function BlogPost({ params }: Props) {
         </div>
       )}
       <ReaderBar />
-      <PostArticle toc={toc} anchors poem={post.contentType === "poetry"} title={post.title} meta={meta} links={card ? [...(card.category ? [card.category] : []), ...card.tags.map((t) => ({ ...t, name: `#${t.name}` }))] : []} body={post.body} cover={card?.cover} gallery={resolveGallery(post.gallery, media)} />
+      <PostArticle toc={toc} anchors poem={post.contentType === "poetry"} title={post.title} meta={meta} links={card?.category ? [card.category] : []} body={post.body} cover={card?.cover} gallery={resolveGallery(post.gallery, media)} />
       <div className="zen-hide">
         <ShareBar url={absoluteUrl(safeSiteUrl(), blogPath(post.slug))} />
         <AuthorBox name={siteTitle} bio={authorBio} aboutHref={pages.some((p) => p.slug === "about") ? pagePath("about") : undefined} />
