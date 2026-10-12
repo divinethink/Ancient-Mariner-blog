@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import type { SiteSettings } from "@/data/siteSettingsRepo";
 import { bn } from "@/i18n/bn";
-import { archiveMonths } from "@/lib/archive";
+import { archiveYears } from "@/lib/archive";
 import { buildDiaryMonth, DIARY_PATH, latestDay } from "@/lib/diaryCalendar";
 import { DEFAULT_SIDEBAR, resolveLayout, type SidebarWidget } from "@/lib/layout";
 import type { PopularRow } from "@/lib/popular";
@@ -16,6 +16,8 @@ import { DiaryEntries } from "./DiaryEntries";
 const RECENT_COUNT = 5;
 const box = "rounded-2xl border border-line bg-surface p-4";
 const row = "inline-flex min-h-11 w-full items-center justify-between gap-2";
+/** তালিকা-widget: সারির মাঝে পাতলা রেখা (শেষ সারি বাদে); রং থিম-টোকেন `line` */
+const list = "divide-y divide-line";
 const cta = "inline-flex min-h-11 items-center rounded-full bg-btn-bg px-4 font-semibold text-btn-tx";
 const ghost = "inline-flex min-h-11 items-center rounded-full border border-line px-4";
 const ext = { rel: "noopener noreferrer", target: "_blank" } as const;
@@ -38,23 +40,33 @@ function widget(id: SidebarWidget, s: SiteSettings, scopes: readonly Scope[], po
       // header-এর সার্চই একমাত্র সার্চ (ডুপ্লিকেট এড়াতে); id স্কিমায় থাকে — পুরনো সংরক্ষিত layout ভাঙে না
       return null;
     case "archive": {
-      // মাস-বাছাই: <details> তালিকা (JS লাগে না) → /archive/[y]/[m]
-      const months = archiveMonths(blogCards(), s.timezone);
-      return months.length ? (
+      // বছরভিত্তিক: বছর (সংখ্যাসহ) চাপলে মাস খোলে — <details>, JS লাগে না → /archive/[y]/[m]
+      const years = archiveYears(blogCards(), s.timezone);
+      return years.length ? (
         <Box title={ti(bn.public.archiveTitle)}>
-          <details>
-            <summary className="inline-flex min-h-11 w-full cursor-pointer items-center rounded-lg border border-line px-3">{bn.public.archivePick}</summary>
-            <ul className="mt-2 max-h-64 overflow-y-auto">
-              {months.map((m) => (
-                <li key={m.key}>
-                  <Link href={m.path} prefetch={false} className={row}>
-                    <span>{m.label}</span>
-                    <span className="text-sm text-muted">{m.count.toLocaleString("bn-BD")}</span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </details>
+          <div className={list}>
+            {years.map((y, i) => (
+              <details key={y.y} open={i === 0} className="group">
+                <summary className={`${row} cursor-pointer`}>
+                  <span>{y.y.toLocaleString("bn-BD", { useGrouping: false })}</span>
+                  <span className="inline-flex items-center gap-2 text-sm text-muted">
+                    {y.count.toLocaleString("bn-BD")}
+                    <span aria-hidden="true" className="transition-transform group-open:rotate-90 motion-reduce:transition-none">›</span>
+                  </span>
+                </summary>
+                <ul className="pb-2 ps-4">
+                  {y.months.map((m) => (
+                    <li key={m.key}>
+                      <Link href={m.path} prefetch={false} className={row}>
+                        <span>{m.name}</span>
+                        <span className="text-sm text-muted">{m.count.toLocaleString("bn-BD")}</span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </details>
+            ))}
+          </div>
         </Box>
       ) : null;
     }
@@ -85,7 +97,7 @@ function widget(id: SidebarWidget, s: SiteSettings, scopes: readonly Scope[], po
       const cats = scopes.filter((x) => x.kind === "category" && x.term && !x.term.parentCategoryId);
       return cats.length ? (
         <Box title={ti(bn.public.categoriesTitle)}>
-          <ul>
+          <ul className={list}>
             {cats.map((c) => (
               <li key={c.key}>
                 <Link href={c.path} prefetch={false} className={row}>
@@ -101,7 +113,7 @@ function widget(id: SidebarWidget, s: SiteSettings, scopes: readonly Scope[], po
     case "links":
       return s.links.length ? (
         <Box title={ti(bn.public.linksTitle)}>
-          <ul>
+          <ul className={list}>
             {s.links.map((l) => (
               <li key={`${l.label}|${l.url}`}>
                 <a href={l.url} {...ext} className={row}>
@@ -131,7 +143,7 @@ function widget(id: SidebarWidget, s: SiteSettings, scopes: readonly Scope[], po
       const cards = (scopes.find((x) => x.kind === "blog")?.cards ?? []).slice(0, RECENT_COUNT);
       return cards.length ? (
         <Box title={ti(bn.public.recentTitle)}>
-          <ul>
+          <ul className={list}>
             {cards.map((c) => (
               <li key={c.id}>
                 <Link href={c.href} prefetch={false} className="block min-h-11 py-2 leading-snug">
@@ -150,7 +162,7 @@ function widget(id: SidebarWidget, s: SiteSettings, scopes: readonly Scope[], po
       const cards = popular.flatMap((p) => byId.get(p.postId) ?? []);
       return cards.length ? (
         <Box title={ti(bn.public.popularTitle)}>
-          <ul>
+          <ul className={list}>
             {cards.map((c) => (
               <li key={c.id}>
                 <Link href={c.href} prefetch={false} className="block min-h-11 py-2 leading-snug">

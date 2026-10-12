@@ -1,6 +1,6 @@
 // পাবলিক Archive ও পঞ্জিকার pure সহায়ক (Arch §১৭ P10a)। build-ডেটার card (`dateISO`) থেকে সাইট-timezone-এ মাস/দিন-গ্রুপ —
 // আলাদা query/index নেই। SDK/UI-মুক্ত; তারিখ-গণনা `lib/datetime.ts` দিয়ে (Dev Rule ১৫)।
-import { dayKey, formatMonthYear } from "./datetime";
+import { dayKey, formatMonthName, formatMonthYear } from "./datetime";
 
 export type DatedRef = { dateISO?: string; href: string };
 export type MonthRef = { y: number; m: number };
@@ -53,6 +53,20 @@ export function archiveMonths(refs: readonly DatedRef[], timeZone: string): Arch
   return [...groupByMonth(refs, timeZone).values()]
     .sort((a, b) => b.y - a.y || b.m - a.m)
     .map((g) => ({ y: g.y, m: g.m, key: monthKey(g.y, g.m), path: archivePath(g.y, g.m), label: formatMonthYear(g.y, g.m), count: g.items.length }));
+}
+
+export type ArchiveYear = { y: number; count: number; months: (ArchiveMonth & { name: string })[] };
+
+/** বছরভিত্তিক আর্কাইভ (sidebar): বছর নতুন→পুরনো, প্রতি বছরের ভেতরে মাস নতুন→পুরনো; count = বছরের মোট লেখা */
+export function archiveYears(refs: readonly DatedRef[], timeZone: string): ArchiveYear[] {
+  const out = new Map<number, ArchiveYear>();
+  for (const m of archiveMonths(refs, timeZone)) {
+    const y = out.get(m.y) ?? { y: m.y, count: 0, months: [] };
+    y.count += m.count;
+    y.months.push({ ...m, name: formatMonthName(m.m) });
+    out.set(m.y, y);
+  }
+  return [...out.values()].sort((a, b) => b.y - a.y);
 }
 
 export type CalendarCell = { day: number; href?: string };

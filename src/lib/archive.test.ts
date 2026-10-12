@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { archiveMonths, archivePath, archiveScopeKey, buildCalendar, groupByMonth, parseMonthParams } from "./archive";
+import { archiveMonths, archiveYears, archivePath, archiveScopeKey, buildCalendar, groupByMonth, parseMonthParams } from "./archive";
 
 const TZ = "Asia/Dhaka";
 const r = (href: string, iso?: string) => ({ href, ...(iso && { dateISO: iso }) });
@@ -43,5 +43,14 @@ describe("archive", () => {
   it("লেখাহীন মাসেও কাজ করে; ফেব্রুয়ারি ২৮/২৯", () => {
     expect(buildCalendar([], TZ, 2028, 2).cells).toHaveLength(29);
     expect(buildCalendar([], TZ, 2026, 2).cells).toHaveLength(28);
+  });
+  it("archiveYears: বছর নতুন→পুরনো, বছরের সংখ্যা = মাসগুলোর যোগফল, মাস নতুন→পুরনো", () => {
+    const refs = [r("/1", "2026-09-12T00:00:00Z"), r("/2", "2026-09-03T00:00:00Z"), r("/3", "2026-03-01T00:00:00Z"), r("/4", "2025-12-01T00:00:00Z"), r("/5")];
+    const y = archiveYears(refs, TZ);
+    expect(y.map((x) => `${x.y}:${x.count}`)).toEqual(["2026:3", "2025:1"]);
+    expect(y[0].months.map((m) => `${m.key}:${m.count}`)).toEqual(["2026-09:2", "2026-03:1"]);
+    expect(y[0].months[0].path).toBe("/archive/2026/09");
+    expect(y[0].months[0].name.length).toBeGreaterThan(0);
+    expect(archiveYears([], TZ)).toEqual([]);
   });
 });
