@@ -6,7 +6,6 @@ import { archiveMonths } from "@/lib/archive";
 import { buildDiaryMonth, DIARY_PATH, latestDay } from "@/lib/diaryCalendar";
 import { DEFAULT_SIDEBAR, resolveLayout, type SidebarWidget } from "@/lib/layout";
 import type { PopularRow } from "@/lib/popular";
-import { SEARCH_PATH } from "@/lib/publicSearch";
 import type { Scope } from "@/lib/publicLists";
 import { FEED_PATH } from "@/lib/rss";
 import type { PublicDiary } from "@/data/publicDiary";
@@ -36,20 +35,8 @@ function widget(id: SidebarWidget, s: SiteSettings, scopes: readonly Scope[], po
   const blogCards = () => scopes.find((x) => x.kind === "blog")?.cards ?? [];
   switch (id) {
     case "search":
-      // JS ছাড়াই চলা GET ফর্ম → /search?q= (header-এর মতোই)
-      // <760px-এ লুকানো: header-এ ⌕ আছে
-      return (
-        <div className="max-[759px]:hidden">
-        <Box title={ti(bn.public.searchTitle)}>
-          <form action={SEARCH_PATH} method="get" className="flex items-center gap-1">
-            <input type="search" name="q" aria-label={bn.publicSearch.headerLabel} placeholder={bn.publicSearch.headerLabel} autoComplete="off" className="min-h-11 w-full min-w-0 rounded-lg border border-line bg-bg px-3 text-base" />
-            <button type="submit" aria-label={bn.publicSearch.button} className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-line bg-bg">
-              🔍
-            </button>
-          </form>
-        </Box>
-        </div>
-      );
+      // header-এর সার্চই একমাত্র সার্চ (ডুপ্লিকেট এড়াতে); id স্কিমায় থাকে — পুরনো সংরক্ষিত layout ভাঙে না
+      return null;
     case "archive": {
       // মাস-বাছাই: <details> তালিকা (JS লাগে না) → /archive/[y]/[m]
       const months = archiveMonths(blogCards(), s.timezone);

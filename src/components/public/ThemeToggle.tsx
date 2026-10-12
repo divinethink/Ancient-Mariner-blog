@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { Icon } from "@/components/icons";
 import { bn } from "@/i18n/bn";
 import { THEME_BG, THEME_PREFS, type ThemePref, resolveTheme } from "@/lib/comfort";
 
@@ -42,7 +43,7 @@ export function ThemeToggle({ inMenu = false }: { inMenu?: boolean }) {
   };
   return (
     <button type="button" onClick={next} aria-label={`${bn.public.themeToggle}: ${NAME[pref]}`} title={`${bn.public.themeToggle}: ${NAME[pref]}`} className={inMenu ? "inline-flex min-h-11 w-full items-center rounded-lg px-2 text-start" : "inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-line bg-surface px-2 text-sm"}>
-      🎨 <span className={inMenu ? "ms-2" : "ms-1 hidden min-[760px]:inline"}>{inMenu ? `${bn.public.themeToggle}: ${NAME[pref]}` : NAME[pref]}</span>
+      <Icon name="palette" size={20} /> <span className={inMenu ? "ms-2" : "ms-1 hidden min-[1100px]:inline"}>{inMenu ? `${bn.public.themeToggle}: ${NAME[pref]}` : NAME[pref]}</span>
     </button>
   );
 }

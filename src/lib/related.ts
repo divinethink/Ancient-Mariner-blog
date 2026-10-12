@@ -1,8 +1,8 @@
 // সম্পর্কিত লেখা ও আগের/পরের লেখা (Arch §১৭ P10a-৩) — build-ডেটা (`publishedAt desc`) থেকে মেমরিতে; নতুন query নেই। pure।
 export type RelPost = { id: string; categoryId?: string };
 
-/** একই categoryId, বর্তমান লেখা বাদ, ইনপুট-ক্রমে (নতুন আগে), সর্বোচ্চ `limit`; category না থাকলে খালি */
-export function relatedIds(posts: readonly RelPost[], id: string, limit = 3): string[] {
+/** একই categoryId, বর্তমান লেখা বাদ, ইনপুট-ক্রমে (নতুন আগে), সর্বোচ্চ `limit` (ডিফল্ট ২); category না থাকলে খালি */
+export function relatedIds(posts: readonly RelPost[], id: string, limit = 2): string[] {
   const cur = posts.find((p) => p.id === id);
   if (!cur?.categoryId) return [];
   return posts.filter((p) => p.id !== id && p.categoryId === cur.categoryId).slice(0, limit).map((p) => p.id);

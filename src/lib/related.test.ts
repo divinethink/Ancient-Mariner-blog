@@ -11,8 +11,8 @@ const posts = [
 ];
 describe("relatedIds", () => {
   it("একই category, নিজে বাদ, নতুন আগে, সর্বোচ্চ ৩", () => {
-    expect(relatedIds(posts, "a")).toEqual(["c", "d", "e"]);
-    expect(relatedIds(posts, "e")).toEqual(["a", "c", "d"]);
+    expect(relatedIds(posts, "a")).toEqual(["c", "d"]);
+    expect(relatedIds(posts, "e")).toEqual(["a", "c"]);
   });
   it("category না থাকলে বা লেখা না পেলে খালি; ফল কম হলে যা আছে", () => {
     expect(relatedIds(posts, "f")).toEqual([]);

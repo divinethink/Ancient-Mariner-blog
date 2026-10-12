@@ -18,7 +18,24 @@ function Chip({ l }: { l: CardLink }) {
 }
 
 /** পাবলিক post-card (server ও client দুই জায়গায় — hook নেই); `body` কখনো না (CardView-তে নেই) */
-export function PostCard({ c }: { c: CardView }) {
+export function PostCard({ c, compact = false }: { c: CardView; compact?: boolean }) {
+  // compact (সম্পর্কিত লেখা): লম্বালম্বি, শুধু শিরোনাম · তারিখ · সারাংশ — cover/দিন-বক্স/chip ছাড়া
+  if (compact)
+    return (
+      <article className="flex h-full flex-col rounded-2xl border border-line bg-surface p-4">
+        <h3 className="font-serif text-lg font-bold leading-snug">
+          <Link href={c.href} prefetch={false} className="inline-flex min-h-11 items-center">
+            {c.title || bn.library.untitled}
+          </Link>
+        </h3>
+        {c.dateISO && (
+          <p className="mt-1 text-sm text-muted">
+            <time dateTime={c.dateISO}>{c.dateLabel}</time>
+          </p>
+        )}
+        {c.excerpt && <p className="mt-2 line-clamp-3 text-muted">{c.excerpt}</p>}
+      </article>
+    );
   return (
     <article className="flex gap-3 rounded-2xl border border-line bg-surface p-4">
       {c.cover && (

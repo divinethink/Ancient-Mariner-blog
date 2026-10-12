@@ -36,6 +36,17 @@ export function PostArticle({
 }) {
   return (
     <article id="post-article">
+      {links[0] && (
+        <p className="mb-2">
+          {links[0].href ? (
+            <Link href={links[0].href} prefetch={false} className="inline-flex min-h-8 items-center rounded-full border border-line bg-surface px-3 text-sm text-accent-text">
+              {links[0].name}
+            </Link>
+          ) : (
+            <span className="inline-flex min-h-8 items-center rounded-full border border-line bg-surface px-3 text-sm text-muted">{links[0].name}</span>
+          )}
+        </p>
+      )}
       <h1 className="font-serif text-3xl font-bold leading-snug">{title || bn.library.untitled}</h1>
       <p className="mt-2 text-sm text-muted">{meta}</p>
       {cover && (
@@ -48,25 +59,6 @@ export function PostArticle({
         <PostBody body={body} anchors={anchors} />
       </div>
       {gallery.length > 0 && <Gallery items={gallery} />}
-      {links.length > 0 && (
-        <div className="mt-4 flex justify-center">
-        <p className="inline-block rounded-xl border border-line bg-surface px-4 py-2 text-sm text-muted">
-          {bn.public.categories}:{" "}
-          {links.map((l, i) => (
-            <span key={l.name}>
-              {i > 0 && "، "}
-              {l.href ? (
-                <Link href={l.href} prefetch={false} className="text-accent-text">
-                  {l.name}
-                </Link>
-              ) : (
-                l.name
-              )}
-            </span>
-          ))}
-        </p>
-        </div>
-      )}
     </article>
   );
 }

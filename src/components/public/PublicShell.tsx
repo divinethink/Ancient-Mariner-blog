@@ -5,6 +5,7 @@ import { sidebarContent } from "@/components/public/Sidebar";
 import { OwnerLink } from "@/components/public/OwnerLink";
 import { MobileMenu } from "@/components/public/MobileMenu";
 import { ThemeToggle } from "@/components/public/ThemeToggle";
+import { Icon } from "@/components/icons";
 import { getPopular } from "@/data/popularSnapshot";
 import { getPublicDiary } from "@/data/publicDiary";
 import { getPublicScopes } from "@/data/publicLists";
@@ -104,14 +105,15 @@ export async function PublicShell({ children, sidebar = false }: { children: Rea
               )}
                   </>
     );
-  // ≥৯০০px-এ sidebar ডানে (root `<main>`-এর max-w-3xl থেকে কেন্দ্রে-বের-করা চওড়া কন্টেইনার); নিচে লেখার তালিকার নিচে stack (Mockup §৫)
-  const wrap = side ? "min-[900px]:relative min-[900px]:left-1/2 min-[900px]:w-[min(70rem,calc(100vw-3rem))] min-[900px]:-translate-x-1/2" : "";
+  // ≥৯০০px-এ header/footer সব পেজে একই চওড়া কন্টেইনারে (root `<main>`-এর max-w-3xl থেকে বের-করা); sidebar ডানে, নিচে stack (Mockup §৫)।
+  // translate নয়, margin দিয়ে কেন্দ্রীকরণ — transform থাকলে ভেতরের `fixed` (ReadingChrome/QuoteShare) ভেঙে যায়। লেখার কলাম সরু থাকে (নিচের children-wrapper)।
+  const wrap = "min-[900px]:ml-[calc(50%-min(35rem,calc(50vw-1.5rem)))] min-[900px]:w-[min(70rem,calc(100vw-3rem))]";
   return (
     <div className={wrap}>
       <Analytics />
       <header className="zen-hide mb-6 border-b border-line pb-2">
-        <nav aria-label={bn.public.navLabel} className="flex items-center gap-x-2 min-[760px]:flex-wrap min-[760px]:gap-x-5">
-          <Link href="/" prefetch={false} className={`${nav} gap-2 font-serif text-lg font-bold`}>
+        <nav aria-label={bn.public.navLabel} className="flex items-center gap-x-2 min-[760px]:gap-x-5">
+          <Link href="/" prefetch={false} className={`${nav} shrink-0 gap-2 font-serif text-lg font-bold`}>
             {logo && logoSrc && (
               // eslint-disable-next-line @next/next/no-img-element -- Cloudinary-ই optimizer (Arch §১২); alt খালি: পাশেই নাম আছে
               <img
@@ -124,20 +126,20 @@ export async function PublicShell({ children, sidebar = false }: { children: Rea
             )}
             {settings.siteTitle}
           </Link>
-          <div className="hidden items-center gap-x-5 min-[760px]:flex min-[760px]:flex-wrap">{links(nav)}</div>
+          <div className="hidden min-w-0 items-center gap-x-5 min-[760px]:flex min-[760px]:flex-1 min-[760px]:flex-wrap">{links(nav)}</div>
           {/* JS ছাড়াই চলা GET ফর্ম → /search?q= (P10a-২) */}
-          <form role="search" action={SEARCH_PATH} method="get" className="ms-auto hidden items-center gap-1 min-[760px]:flex">
-            <input type="search" name="q" aria-label={bn.publicSearch.headerLabel} placeholder={bn.publicSearch.headerLabel} autoComplete="off" className="min-h-11 w-32 rounded-lg border border-line bg-surface px-3 text-base min-[760px]:w-56" />
+          <form role="search" action={SEARCH_PATH} method="get" className="ms-auto hidden shrink-0 items-center gap-1 min-[760px]:flex">
+            <input type="search" name="q" aria-label={bn.publicSearch.headerLabel} placeholder={bn.publicSearch.headerLabel} autoComplete="off" className="min-h-11 w-32 rounded-lg border border-line bg-surface px-3 text-base min-[900px]:w-40 min-[1100px]:w-56" />
             <button type="submit" aria-label={bn.publicSearch.button} className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-line bg-surface">
-              🔍
+              <Icon name="search" size={20} />
             </button>
           </form>
-          <div className="hidden min-[760px]:block">
+          <div className="hidden shrink-0 min-[760px]:block">
             <ThemeToggle />
           </div>
           {/* <760px: নাম · ⌕ · ☰ — এক সারি */}
-          <Link href={SEARCH_PATH} prefetch={false} aria-label={bn.publicSearch.button} className="ms-auto inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-line bg-surface text-xl min-[760px]:hidden">
-            ⌕
+          <Link href={SEARCH_PATH} prefetch={false} aria-label={bn.publicSearch.button} className="ms-auto inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-line bg-surface min-[760px]:hidden">
+            <Icon name="search" size={20} />
           </Link>
           <MobileMenu>
             {links(menuRow)}
@@ -148,11 +150,11 @@ export async function PublicShell({ children, sidebar = false }: { children: Rea
       </header>
       {side ? (
         <div className="min-[900px]:grid min-[900px]:grid-cols-[minmax(0,1fr)_18.75rem] min-[900px]:gap-10">
-          <div>{children}</div>
+          <div className="min-w-0">{children}</div>
           <div className="mt-10 min-[900px]:mt-0">{side}</div>
         </div>
       ) : (
-        children
+        <div className="mx-auto max-w-[42rem]">{children}</div>
       )}
       <footer className="zen-hide mt-10 flex flex-col items-center gap-1 border-t border-line pt-4 text-center text-sm text-muted">
         <span>{foot.text}</span>
