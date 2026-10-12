@@ -1,12 +1,11 @@
 "use client";
 
-// Publish panel-এর 'সংগঠন' সেকশন (Mockup §৭.৯): ধরন, ক্যাটাগরি, ট্যাগ, সিরিজ + পর্ব #।
+// Publish panel-এর 'সংগঠন' সেকশন (Mockup §৭.৯): ক্যাটাগরি, ট্যাগ, সিরিজ + পর্ব #। ধরন (contentType) বাছাই নেই — ছাঁচ/Diary Entry বসায়, নইলে বিদ্যমান মান অক্ষত।
 // state parent-এ (PublishPanel) — সেভ/প্রকাশে `lib/postOrg.orgPatch` দিয়ে শুধু বদলানো ফিল্ড লেখা হয়।
 import { useState } from "react";
 import type { TermWithId } from "@/data/taxonomyRepo";
 import { TERM_NAME_MAX } from "@/data/taxonomyRepo";
 import { bn } from "@/i18n/bn";
-import { CONTENT_TYPE, type ContentType } from "@/lib/enums";
 import { newId } from "@/lib/id";
 import { addTag, type OrgState } from "@/lib/postOrg";
 import { buildCategoryTree } from "@/lib/taxonomy";
@@ -72,24 +71,7 @@ export function OrgSection(p: Props) {
     <fieldset className="space-y-4" disabled={p.disabled}>
       <legend className="sr-only">{t.title}</legend>
 
-      <div className="grid grid-cols-2 gap-2">
-        <div className="min-w-0 rounded-xl border border-line bg-bg px-3 py-1.5 focus-within:border-accent">
-          <label htmlFor="org-type" className="block text-xs text-muted">
-            {t.type}
-          </label>
-          <select
-            id="org-type"
-            className="field-clean min-h-9 w-full bg-transparent text-base"
-            value={v.contentType}
-            onChange={(e) => p.onChange({ ...v, contentType: e.target.value as ContentType })}
-          >
-            {CONTENT_TYPE.map((c) => (
-              <option key={c} value={c}>
-                {bn.org.types[c] ?? c}
-              </option>
-            ))}
-          </select>
-        </div>
+      <div className="grid grid-cols-1 gap-2">
         <div className="min-w-0 rounded-xl border border-line bg-bg px-3 py-1.5 focus-within:border-accent">
           <label htmlFor="org-cat" className="block text-xs text-muted">
             {t.category}

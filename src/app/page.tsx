@@ -57,8 +57,8 @@ export default async function Home() {
         if (id === "hero")
           return (
             <section key={id}>
-              <h1 className="font-serif text-3xl font-bold">{settings.siteTitle}</h1>
-              {settings.tagline && <p className="mt-1 text-muted">{settings.tagline}</p>}
+              {/* নাম হেডারে আছে — hero-তে শুধু স্লোগান (একই নাম বারবার নয়); স্লোগান না থাকলে h1 = সাইটের নাম */}
+              <h1 className="font-serif text-2xl font-bold leading-snug min-[640px]:text-3xl">{settings.tagline || settings.siteTitle}</h1>
             </section>
           );
         if (id === "featured") return featured ? <section key={id} className="mt-6"><FeaturedCard c={featured} /></section> : null;
