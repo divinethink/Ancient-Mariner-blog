@@ -8,6 +8,7 @@ import type { Editor } from "@tiptap/react";
 import { applyComfort, applyEditorAids, readComfort, readFocus, saveFocus } from "@/data/comfortStore";
 import { draftStore, type EditorPos } from "@/data/draftStore";
 import { goalStore } from "@/data/goalStore";
+import { triggerSiteRebuild } from "@/data/rebuildClient";
 import { getTemplateRepo } from "@/data/templateRepo.wire";
 import { bn } from "@/i18n/bn";
 import { dayKey } from "@/lib/datetime";
@@ -95,6 +96,43 @@ export function EditorSurface({ postId, data }: { postId: string; data: Loaded }
       setNote(bn.editor.tpl.saveFailed);
     } finally {
       tplBusy.current = false;
+    }
+  }
+  /** ⋯ মেনু: খসড়া/আর্কাইভ/ট্র্যাশ — PublishPanel-এর run()-এর একই ক্রম (flush → sync → conflict-গার্ড → exclusive লেখা);
+   *  প্রকাশিত লেখায় confirm + সফলে rebuild; অপ্রকাশিত সম্পাদনা আগে posts-এ কপি (কিছু হারায় না); double-tap-এ দ্বিতীয়টা বাদ */
+  const statusBusy = useRef(false);
+  async function changeStatus(kind: "draft" | "archive" | "trash") {
+    setMoreOpen(false);
+    if (statusBusy.current) return;
+    const wasPublished = pub.status === "published";
+    const ask = { draft: bn.editor.status.confirmDraft, archive: bn.editor.status.confirmArchive, trash: bn.editor.status.confirmTrash }[kind];
+    if (wasPublished && !confirm(ask)) return;
+    statusBusy.current = true;
+    try {
+      await flushAsync();
+      await engine.syncNow();
+      if (engine.status === "conflict" || engine.status === "trashed") return setNote(bn.publishPanel.conflictFirst);
+      await engine.exclusive(async (repo) => {
+        if (kind === "trash") return repo.trash(postId); // থাকা drafts নিজেই posts-এ কপি করে
+        await repo.applyDraft(postId, (await draftStore.loadDraft(postId))?.wordCount ?? words);
+        await repo.update(postId, { status: kind === "archive" ? "archived" : "draft" });
+        const post = await repo.get(postId);
+        if (post) await engine.adoptBase(post.updatedAt.getTime()); // নিজের লেখা যেন পরের sync-এ conflict না হয়
+      });
+      if (wasPublished) await triggerSiteRebuild(); // ব্যর্থ হলেও অবস্থা বদল সফল; সাইট পরের build-এ ঠিক হবে
+      if (kind === "trash") {
+        blockedRef.current = true; // ট্র্যাশের পর লোকাল ড্রাফট আর লেখা নয়
+        clearTimeout(timerRef.current);
+        await draftStore.deleteDraft(postId).catch(() => undefined);
+        router.push("/dashboard");
+        return;
+      }
+      setPub({ status: "draft", hasUnpublished: false });
+      setNote(kind === "archive" ? bn.editor.status.doneArchive : bn.editor.status.doneDraft);
+    } catch {
+      setNote(bn.editor.status.failed);
+    } finally {
+      statusBusy.current = false;
     }
   }
   async function copyAs(mode: "plain" | "md") {
@@ -407,6 +445,18 @@ export function EditorSurface({ postId, data }: { postId: string; data: Loaded }
               </button>
               <button type="button" onClick={() => void copyAs("md")} className="min-h-11 whitespace-nowrap px-4 text-left">
                 {bn.editor.tpl.copyMd}
+              </button>
+              <div role="separator" className="my-1 border-t border-line" />
+              {pub.status === "published" && (
+                <button type="button" onClick={() => void changeStatus("draft")} className="min-h-11 whitespace-nowrap px-4 text-left">
+                  {bn.editor.status.draft}
+                </button>
+              )}
+              <button type="button" onClick={() => void changeStatus("archive")} className="min-h-11 whitespace-nowrap px-4 text-left">
+                {bn.editor.status.archive}
+              </button>
+              <button type="button" onClick={() => void changeStatus("trash")} className="min-h-11 whitespace-nowrap px-4 text-left">
+                {bn.editor.status.trash}
               </button>
             </div>
           )}
