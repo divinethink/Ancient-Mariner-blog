@@ -324,15 +324,42 @@ export function AddProvider({ children }: { children: ReactNode }) {
                   {isDiary ? d.quickLabel : t.quickLabel}
                 </label>
                 {isDiary && (
-                  <input
-                    type="text"
-                    aria-label={d.fieldTitle}
-                    placeholder={d.fieldTitle}
-                    maxLength={120}
-                    value={diaryTitle}
-                    onChange={(e) => setDiaryTitle(e.target.value)}
-                    className="mb-2 min-h-11 w-full rounded-lg border border-line bg-surface px-3 text-base"
-                  />
+                  <details className="mb-2 rounded-lg border border-line px-3 py-1">
+                    <summary className="flex min-h-11 cursor-pointer items-center text-sm font-semibold text-accent-text">{d.moreFields}</summary>
+                    <div className="space-y-2 pb-3">
+                      <input
+                        type="text"
+                        aria-label={d.fieldTitle}
+                        placeholder={d.fieldTitle}
+                        maxLength={120}
+                        value={diaryTitle}
+                        onChange={(e) => setDiaryTitle(e.target.value)}
+                        className="min-h-11 w-full rounded-lg border border-line bg-surface px-3 text-base"
+                      />
+                      <input
+                        type="text"
+                        aria-label={d.fieldPlace}
+                        placeholder={d.fieldPlace}
+                        maxLength={MAX_LOCATION}
+                        value={diaryPlace}
+                        onChange={(e) => setDiaryPlace(e.target.value)}
+                        className="min-h-11 w-full rounded-lg border border-line bg-surface px-3 text-base"
+                      />
+                      <label className="block text-sm text-muted">
+                        {d.fieldDay}
+                        <input
+                          type="date"
+                          max={todayKey || undefined}
+                          value={diaryDay}
+                          onChange={(e) => {
+                            setDiaryDay(e.target.value);
+                            if (status !== "saving") setStatus("idle");
+                          }}
+                          className="mt-1 min-h-11 w-full rounded-lg border border-line bg-surface px-3 text-base text-text"
+                        />
+                      </label>
+                    </div>
+                  </details>
                 )}
                 <textarea
                   id="quick-idea-text"
@@ -369,35 +396,6 @@ export function AddProvider({ children }: { children: ReactNode }) {
                     <span className="text-muted">{t.counter(curText.length, curMax)}</span>
                   )}
                 </div>
-                {isDiary && (
-                  <details className="mt-2 rounded-lg border border-line px-3 py-1">
-                    <summary className="flex min-h-11 cursor-pointer items-center text-sm font-semibold text-accent-text">{d.moreFields}</summary>
-                    <div className="space-y-2 pb-3">
-                      <input
-                        type="text"
-                        aria-label={d.fieldPlace}
-                        placeholder={d.fieldPlace}
-                        maxLength={MAX_LOCATION}
-                        value={diaryPlace}
-                        onChange={(e) => setDiaryPlace(e.target.value)}
-                        className="min-h-11 w-full rounded-lg border border-line bg-surface px-3 text-base"
-                      />
-                      <label className="block text-sm text-muted">
-                        {d.fieldDay}
-                        <input
-                          type="date"
-                          max={todayKey || undefined}
-                          value={diaryDay}
-                          onChange={(e) => {
-                            setDiaryDay(e.target.value);
-                            if (status !== "saving") setStatus("idle");
-                          }}
-                          className="mt-1 min-h-11 w-full rounded-lg border border-line bg-surface px-3 text-base text-text"
-                        />
-                      </label>
-                    </div>
-                  </details>
-                )}
                 <button
                   type="submit"
                   aria-disabled={status === "saving"}
