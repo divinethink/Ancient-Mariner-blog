@@ -47,7 +47,7 @@ export default async function Home() {
   // featured কার্ড recent তালিকায় আবার দেখানো হয় না
   const recent = all.filter((c) => c.id !== featured?.id).slice(0, settings.postsPerPage);
   return (
-    <PublicShell sidebar>
+    <PublicShell sidebar home>
       {banner && (
         <div className="relative mb-6 aspect-[3/1] overflow-hidden rounded-2xl bg-line">
           <Cover cover={banner} sizes="(min-width: 900px) 700px, 100vw" priority />
@@ -56,9 +56,10 @@ export default async function Home() {
       {sections.map(({ id }) => {
         if (id === "hero")
           return (
-            <section key={id}>
-              {/* নাম হেডারে আছে — hero-তে শুধু স্লোগান (একই নাম বারবার নয়); স্লোগান না থাকলে h1 = সাইটের নাম */}
-              <h1 className="font-serif text-2xl font-bold leading-snug min-[640px]:text-3xl">{settings.tagline || settings.siteTitle}</h1>
+            <section key={id} className="text-center">
+              {/* ব্যানার → নাম (h1) → স্লোগান; header-এ নাম আবার আসে না (PublicShell home) */}
+              <h1 className="font-serif text-3xl font-bold leading-snug min-[640px]:text-4xl">{settings.siteTitle}</h1>
+              {settings.tagline && <p className="mt-1 text-base text-muted">{settings.tagline}</p>}
             </section>
           );
         if (id === "featured") return featured ? <section key={id} className="mt-6"><FeaturedCard c={featured} /></section> : null;

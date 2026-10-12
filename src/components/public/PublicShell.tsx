@@ -38,7 +38,8 @@ function NavLink({ l, className }: { l: ResolvedLink; className: string }) {
 }
 
 /** পাবলিক পেজের header/footer (Arch §১৭ P4a, P9a)। `siteSettings.menu/footer` খালি হলে আগের default; নইলে owner-এর মেনু (draft/মোছা আইটেম লুকানো)। */
-export async function PublicShell({ children, sidebar = false }: { children: ReactNode; sidebar?: boolean }) {
+/** home=true: নাম হোমপেজে ব্যানারের নিচে দেখানো হয়, তাই header-এ লোগো থাকলে নাম শুধু screen-reader-এর জন্য */
+export async function PublicShell({ children, sidebar = false, home = false }: { children: ReactNode; sidebar?: boolean; home?: boolean }) {
   const [settings, scopes, pages, media, popular, diary] = await Promise.all([getPublicSettings(), getPublicScopes(), getPublicPages(), getPublicMedia(), getPopular(), getPublicDiary()]);
   // P9b-২: লোগো (media না পেলে/অবৈধ হলে শুধু সাইটের নাম — আগের মতো)
   const logo = resolveCover(settings.design.logoMediaId || undefined, media);
@@ -124,7 +125,7 @@ export async function PublicShell({ children, sidebar = false }: { children: Rea
                 className="h-8 w-auto"
               />
             )}
-            {settings.siteTitle}
+            {home && logo && logoSrc ? <span className="sr-only">{settings.siteTitle}</span> : settings.siteTitle}
           </Link>
           <div className="hidden min-w-0 items-center gap-x-5 min-[760px]:flex min-[760px]:flex-1 min-[760px]:flex-wrap">{links(nav)}</div>
           {/* JS ছাড়াই চলা GET ফর্ম → /search?q= (P10a-২) */}
@@ -134,7 +135,8 @@ export async function PublicShell({ children, sidebar = false }: { children: Rea
               <Icon name="search" size={20} />
             </button>
           </form>
-          <div className="hidden shrink-0 min-[760px]:block">
+          <div className="hidden shrink-0 items-center gap-2 min-[760px]:flex">
+            <OwnerLink className={nav} />
             <ThemeToggle />
           </div>
           {/* <760px: নাম · ⌕ · ☰ — এক সারি */}
@@ -159,7 +161,6 @@ export async function PublicShell({ children, sidebar = false }: { children: Rea
       <footer className="zen-hide mt-10 flex flex-col items-center gap-1 border-t border-line pt-4 text-center text-sm text-muted">
         <span>{foot.text}</span>
         <div className="flex flex-wrap items-center justify-center gap-x-5">
-        <OwnerLink className={footLink} />
         {foot.links ? (
           foot.links.map((l, i) => <NavLink key={`${i}-${l.href}`} l={l} className={footLink} />)
         ) : (
