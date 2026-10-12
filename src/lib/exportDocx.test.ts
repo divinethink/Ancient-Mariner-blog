@@ -56,4 +56,16 @@ describe("buildDocx (P13c)", () => {
     );
     await expect(buildDocx([], meta)).resolves.toBeInstanceOf(ArrayBuffer);
   });
+  it("ছবি-সহ লেখায় throw করে না (embed নয়, টেক্সট-স্থানধারক)", async () => {
+    const withImg = JSON.stringify({
+      type: "doc",
+      content: [
+        { type: "paragraph", content: [t("আগে")] },
+        { type: "mediaImage", attrs: { mediaId: "m1", alt: "সৈকত", caption: "ঢেউ" } },
+        { type: "blockquote", content: [{ type: "mediaImage", attrs: { mediaId: "m2", alt: "" } }] },
+      ],
+    });
+    const buf = await buildDocx([post({ body: withImg })], meta);
+    expect(String.fromCharCode(...new Uint8Array(buf, 0, 2))).toBe("PK");
+  });
 });

@@ -126,3 +126,27 @@ describe("readAllPosts", () => {
     await expect(readAllPosts(mk(5), { signal: ac.signal })).rejects.toThrow();
   });
 });
+
+describe("ছবি — export-এ স্থানধারক (P6-গ২)", () => {
+  const img = (attrs: object) => ({ type: "mediaImage", attrs });
+  const withImg = body(para("আগে"), img({ mediaId: "m1", alt: "সৈকত", caption: "<b>ঢেউ</b> & আলো" }), img({ mediaId: "m2", alt: "" }), para("পরে"));
+  const posts = [{ id: "1", title: "T", body: withImg, category: "ক", whenMs: null }];
+
+  it("Markdown: [ছবি: ক্যাপশন] (escape-সহ), ছবি-হীন আচরণ অক্ষত", () => {
+    const md = buildMarkdown(posts, meta);
+    expect(md).toContain("\\[ছবি: <b>ঢেউ</b> & আলো\\]");
+    expect(md).toContain("\\[ছবি\\]");
+    expect(md).not.toContain("![");
+    expect(md).toContain("আগে\n\n\\[ছবি:");
+  });
+  it("HTML: self-contained — <img>/url নেই, স্থানধারক escape করা", () => {
+    const html = buildHtml(posts, meta);
+    expect(html).toContain('<p class="img-ph">[ছবি: &lt;b&gt;ঢেউ&lt;/b&gt; &amp; আলো]</p>');
+    expect(html).toContain('<p class="img-ph">[ছবি]</p>');
+    expect(html).not.toMatch(/<img|https?:\/\/res\.cloudinary/);
+  });
+  it("RSS-এর bodyToHtml ডিফল্টে ছবি-স্থানধারক দেয় না", async () => {
+    const { bodyToHtml } = await import("./docHtml");
+    expect(bodyToHtml(withImg)).toBe("<p>আগে</p><p>পরে</p>");
+  });
+});

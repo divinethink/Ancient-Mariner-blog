@@ -83,7 +83,7 @@ const CSS =
   ":root{color-scheme:light dark}body{margin:0;font:18px/1.9 'Noto Serif Bengali',Georgia,serif;background:#faf9f5;color:#1f1e1d}" +
   "@media(prefers-color-scheme:dark){body{background:#1c1b19;color:#ece8df}a{color:#ee9b7d}}" +
   "main{max-width:720px;margin:0 auto;padding:24px 20px 64px}h1,h2,h3{line-height:1.4}h2{margin-top:2.2em;border-bottom:1px solid #8884;padding-bottom:.2em}" +
-  "article{margin-top:2em}.meta{opacity:.7;font-size:.9em}.body h2,.body h3{font-size:1.1em}blockquote{margin:1em 0;padding-left:16px;border-left:3px solid #c96442}a{color:#a94e2f}" +
+  "article{margin-top:2em}.meta{opacity:.7;font-size:.9em}.body h2,.body h3{font-size:1.1em}.img-ph{opacity:.7;font-style:italic}blockquote{margin:1em 0;padding-left:16px;border-left:3px solid #c96442}a{color:#a94e2f}" +
   "nav ul{padding-left:1.2em}nav li{margin:.2em 0}";
 
 export function buildHtml(posts: ExportPost[], meta: BundleMeta): string {
@@ -104,7 +104,7 @@ export function buildHtml(posts: ExportPost[], meta: BundleMeta): string {
             const d = dateOf(p, meta.timeZone);
             return `<article id="p${gi}-${pi}"><h3>${escapeHtml(postTitle(p))}</h3>${
               d ? `<p class="meta">${escapeHtml(d)}</p>` : ""
-            }<div class="body">${bodyToHtml(p.body)}</div></article>`;
+            }<div class="body">${bodyToHtml(p.body, { imagePlaceholders: true })}</div></article>`;
           })
           .join("")}</section>`,
     )

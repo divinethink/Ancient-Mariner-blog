@@ -4,6 +4,7 @@
 import type { Paragraph } from "docx";
 import { formatDate } from "./datetime";
 import { isSafeHref } from "./editor-nodes";
+import { imagePlaceholder } from "./imageText";
 import { parseBody, type DocNode } from "./editorDoc";
 import { bundleNote, groupByCategory, type BundleMeta, type ExportPost } from "./exportBundle";
 
@@ -88,6 +89,14 @@ function blockToParas(ctx: Ctx, n: DocNode, o: Opts): Paragraph[] {
       const h = Number(n.attrs?.level) === 3 ? d.HeadingLevel.HEADING_4 : d.HeadingLevel.HEADING_3;
       return [new d.Paragraph({ heading: h, children: inlineRuns(d, n) })];
     }
+    case "mediaImage":
+      // ছবি embed নয় (Cloudinary থেকে bytes নামাতে CSP/ব্যর্থতার ঝুঁকি) — শুধু টেক্সট-স্থানধারক
+      return [
+        new d.Paragraph({
+          children: [new d.TextRun({ text: imagePlaceholder(n.attrs), italics: true, italicsComplexScript: true })],
+          ...quoteLook,
+        }),
+      ];
     case "horizontalRule":
       return [
         new d.Paragraph({

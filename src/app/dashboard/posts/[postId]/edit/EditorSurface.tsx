@@ -12,8 +12,9 @@ import { triggerSiteRebuild } from "@/data/rebuildClient";
 import { getTemplateRepo } from "@/data/templateRepo.wire";
 import { bn } from "@/i18n/bn";
 import { dayKey } from "@/lib/datetime";
-import { countWords, docToText, makeExcerpt, sanitizeDoc, type DocNode } from "@/lib/editorDoc";
+import { collectMediaIds, countWords, docToText, makeExcerpt, sanitizeDoc, type DocNode } from "@/lib/editorDoc";
 import { serializePost } from "@/lib/export/serialize";
+import { resolveMediaUrls } from "./mediaUrls";
 import { newId } from "@/lib/id";
 import { cleanTemplateName } from "@/lib/templates";
 import { useSiteTimezone } from "../../../SiteSettingsProvider";
@@ -140,7 +141,24 @@ export function EditorSurface({ postId, data }: { postId: string; data: Loaded }
     const ed = editorRef.current;
     if (!ed) return;
     try {
-      await navigator.clipboard.writeText(serializePost(titleRef.current, sanitizeDoc(ed.getJSON()), mode));
+      const title = titleRef.current;
+      const doc = sanitizeDoc(ed.getJSON());
+      const ids = mode === "md" ? collectMediaIds(doc) : [];
+      if (!ids.length) {
+        await navigator.clipboard.writeText(serializePost(title, doc, mode)); // ছবি নেই/সাধারণ কপি: আগের মতোই সঙ্গে সঙ্গে
+      } else {
+        // ছবির URL আনতে নেটওয়ার্ক লাগে — iOS Safari-র user-gesture নিয়ম মানতে ClipboardItem-এ promise দেওয়া (না থাকলে await করে writeText)
+        const make = async () => {
+          const urls = await resolveMediaUrls(ids);
+          return serializePost(title, doc, mode, { mediaUrl: (id) => urls.get(id) });
+        };
+        if (typeof ClipboardItem !== "undefined" && navigator.clipboard.write) {
+          const blob = make().then((t) => new Blob([t], { type: "text/plain" }));
+          await navigator.clipboard.write([new ClipboardItem({ "text/plain": blob })]);
+        } else {
+          await navigator.clipboard.writeText(await make());
+        }
+      }
       setNote(bn.editor.tpl.copied);
     } catch {
       setNote(bn.editor.tpl.copyFailed);
