@@ -160,6 +160,9 @@ describe("subscribeUrl (ইমেইল-সাবস্ক্রাইব)", () 
     expect(parseSiteSettings({}).subscribeUrl ?? "").toBe("");
     expect(SiteSettingsInputSchema.safeParse(valid).success).toBe(true);
   });
+  it("নেই হলে key-ই থাকে না (Firestore undefined নেয় না)", () => {
+    expect("subscribeUrl" in parseSiteSettings({})).toBe(false);
+  });
   it("বৈধ follow.it ঠিকানা রাখে; অন্য host/অবৈধ মান পড়ায় বাদ, সেভে প্রত্যাখ্যান", () => {
     expect(parseSiteSettings({ ...valid, subscribeUrl: ` ${ok} ` }).subscribeUrl).toBe(ok);
     expect(parseSiteSettings({ ...valid, subscribeUrl: "https://evil.com/x" }).subscribeUrl ?? "").toBe("");

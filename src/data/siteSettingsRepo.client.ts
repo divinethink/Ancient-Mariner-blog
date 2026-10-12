@@ -17,7 +17,9 @@ export function createSiteSettingsRepoClient(db: Firestore, ownerUid: string): S
       return parseSiteSettings(snap.exists() ? snap.data() : undefined);
     },
     async save(input: SiteSettings): Promise<SiteSettings> {
-      const data = SiteSettingsInputSchema.parse(input);
+      const parsed = SiteSettingsInputSchema.parse(input);
+      // ঐচ্ছিক ফিল্ড undefined হলে বাদ — Firestore `undefined` মান প্রত্যাখ্যান করে
+      const data = Object.fromEntries(Object.entries(parsed).filter(([, v]) => v !== undefined)) as SiteSettings;
       // merge: পরের phase-এর ফিল্ড (menu/layout/…) অক্ষত; `createdAt` শুধু প্রথম লেখায়
       await runTransaction(db, async (tx) => {
         const exists = (await tx.get(ref)).exists();

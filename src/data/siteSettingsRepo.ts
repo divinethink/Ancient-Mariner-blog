@@ -115,7 +115,7 @@ export function parseSiteSettings(raw: unknown): SiteSettings {
   const out: Record<string, unknown> = { ...DEFAULT_SETTINGS };
   for (const [k, schema] of Object.entries(fields)) {
     const r = schema.safeParse(o[k]);
-    if (r.success) out[k] = r.data;
+    if (r.success && r.data !== undefined) out[k] = r.data; // ঐচ্ছিক ফিল্ড অনুপস্থিত হলে key-ই থাকে না (Firestore undefined নেয় না)
   }
   return out as SiteSettings;
 }
