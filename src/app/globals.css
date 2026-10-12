@@ -229,6 +229,11 @@ main:has(.dash-shell) {
 .reading-poem p:empty::before {
   content: "\00a0";
 }
+/* কবিতার শেষে জমে থাকা ফাঁকা অনুচ্ছেদ লুকানো (নিচের অংশ উপরে ওঠে); মাঝে পরপর ফাঁকা হলেও একটাই ফাঁক */
+.reading-poem p:empty:not(:has(~ :not(:empty))),
+.reading-poem p:empty + p:empty {
+  display: none;
+}
 .reading-poem p:has(br) {
   margin-bottom: 1em;
 }

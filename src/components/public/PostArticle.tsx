@@ -49,7 +49,8 @@ export function PostArticle({
       </div>
       {gallery.length > 0 && <Gallery items={gallery} />}
       {links.length > 0 && (
-        <p className="mt-8 rounded-xl border border-line bg-surface px-4 py-2 text-sm text-muted">
+        <div className="mt-4 flex justify-center">
+        <p className="inline-block rounded-xl border border-line bg-surface px-4 py-2 text-sm text-muted">
           {bn.public.categories}:{" "}
           {links.map((l, i) => (
             <span key={l.name}>
@@ -64,6 +65,7 @@ export function PostArticle({
             </span>
           ))}
         </p>
+        </div>
       )}
     </article>
   );
