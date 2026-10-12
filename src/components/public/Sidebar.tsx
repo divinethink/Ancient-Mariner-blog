@@ -22,10 +22,23 @@ const cta = "inline-flex min-h-11 items-center rounded-full bg-btn-bg px-4 font-
 const ghost = "inline-flex min-h-11 items-center rounded-full border border-line px-4";
 const ext = { rel: "noopener noreferrer", target: "_blank" } as const;
 
-function Box({ title, children }: { title: string; children: ReactNode }) {
+const boxHead = "relative pb-2 font-serif text-lg font-bold text-accent-text after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-10 after:rounded-full after:bg-accent";
+
+/** collapsible: শিরোনাম চাপলে পুরো বক্স খোলে/বন্ধ (<details>, JS লাগে না); ডিফল্টে বন্ধ */
+function Box({ title, children, collapsible = false }: { title: string; children: ReactNode; collapsible?: boolean }) {
+  if (collapsible)
+    return (
+      <details className={`${box} group`}>
+        <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 [&::-webkit-details-marker]:hidden">
+          <h2 className={boxHead}>{title}</h2>
+          <span aria-hidden="true" className="text-muted transition-transform group-open:rotate-90 motion-reduce:transition-none">›</span>
+        </summary>
+        <div className="mt-3">{children}</div>
+      </details>
+    );
   return (
     <section className={box}>
-      <h2 className="relative mb-3 pb-2 font-serif text-lg font-bold text-accent-text after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-10 after:rounded-full after:bg-accent">{title}</h2>
+      <h2 className={`${boxHead} mb-3`}>{title}</h2>
       {children}
     </section>
   );
@@ -43,10 +56,10 @@ function widget(id: SidebarWidget, s: SiteSettings, scopes: readonly Scope[], po
       // বছরভিত্তিক: বছর (সংখ্যাসহ) চাপলে মাস খোলে — <details>, JS লাগে না → /archive/[y]/[m]
       const years = archiveYears(blogCards(), s.timezone);
       return years.length ? (
-        <Box title={ti(bn.public.archiveTitle)}>
+        <Box title={ti(bn.public.archiveTitle)} collapsible>
           <div className={list}>
-            {years.map((y, i) => (
-              <details key={y.y} open={i === 0} className="group">
+            {years.map((y) => (
+              <details key={y.y} className="group">
                 <summary className={`${row} cursor-pointer`}>
                   <span>{y.y.toLocaleString("bn-BD", { useGrouping: false })}</span>
                   <span className="inline-flex items-center gap-2 text-sm text-muted">

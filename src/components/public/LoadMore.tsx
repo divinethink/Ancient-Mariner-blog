@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { Icon } from "@/components/icons";
 import { bn } from "@/i18n/bn";
 import { cardChunkPath, type CardView } from "@/lib/cards";
 import { PostCardList } from "./PostCard";
@@ -51,14 +52,17 @@ export function LoadMore({ scopeKey, chunks, initial = [], exclude = [] }: { sco
         </p>
       )}
       {(pending.length > 0 || next <= chunks + 1) && (
-        <button
-          type="button"
-          onClick={more}
-          disabled={busy}
-          className="mt-4 inline-flex min-h-11 items-center rounded-full bg-btn-bg px-5 text-btn-tx disabled:opacity-60"
-        >
-          {busy ? bn.public.loading : failed ? bn.public.retry : bn.public.loadMore}
-        </button>
+        <div className="mt-4 flex justify-end">
+          <button
+            type="button"
+            onClick={more}
+            disabled={busy}
+            className="inline-flex min-h-11 items-center gap-1 rounded-full bg-btn-bg ps-5 pe-4 text-btn-tx disabled:opacity-60"
+          >
+            {busy ? bn.public.loading : failed ? bn.public.retry : bn.public.loadMore}
+            <Icon name="chevron" size={18} />
+          </button>
+        </div>
       )}
     </>
   );

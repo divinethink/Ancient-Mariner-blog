@@ -3,9 +3,9 @@ import { bn } from "@/i18n/bn";
 import type { DiaryMonthView } from "@/lib/diaryCalendar";
 import { TodayMark } from "./TodayMark";
 
-// হিটম্যাপ: accent-এর স্বচ্ছতা বাড়ে (০ = লেখা নেই); আজ = উল্টো রং (text/bg) — দুটো কখনো এক রঙ নয়
+// হিটম্যাপ: accent-এর স্বচ্ছতা বাড়ে (০ = লেখা নেই); আজ = accent রিং + বোল্ড (ভরাট নয়), নির্বাচিত = accent-ভরা, লেখার দিন = টিন্ট — তিনটা আলাদা
 const HEAT = ["", "bg-accent/15", "bg-accent/30", "bg-accent/50", "bg-accent/70"] as const;
-const base = "flex min-h-11 items-center justify-center rounded-lg data-[today=true]:bg-text data-[today=true]:text-bg data-[today=true]:font-bold";
+const base = "flex min-h-11 items-center justify-center rounded-lg data-[today=true]:ring-2 data-[today=true]:ring-accent-text data-[today=true]:font-bold data-[today=true]:text-accent-text";
 const nav = "inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg";
 
 /** "দিনলিপি পঞ্জিকা": লেখা-আছে এমন দিন হিটম্যাপ-রঙে ও লিংক; নির্বাচিত দিনে রিং; আজ আলাদা রঙে ভরা (TodayMark)। সাইডবার ও /diary দুই জায়গায় একই */
@@ -54,7 +54,7 @@ export function DiaryCalendar({ view, selected, timeZone }: { view: DiaryMonthVi
                         prefetch={false}
                         data-day={c.key}
                         aria-current={selected === c.key ? "page" : undefined}
-                        className={`${base} ${HEAT[c.level]} font-semibold ${selected === c.key ? "ring-2 ring-accent-text" : ""}`}
+                        className={`${base} ${HEAT[c.level]} font-semibold ${selected === c.key ? "bg-btn-bg! text-btn-tx!" : ""}`}
                       >
                         {c.day.toLocaleString("bn-BD")}
                       </Link>
@@ -75,7 +75,7 @@ export function DiaryCalendar({ view, selected, timeZone }: { view: DiaryMonthVi
           <span key={h} className={`inline-block size-3 rounded-sm border border-line ${h}`} />
         ))}
         {bn.public.diaryMore}
-        <span className="ms-2 inline-block size-3 rounded-sm bg-text" />
+        <span className="ms-2 inline-block size-3 rounded-sm border-2 border-accent-text" />
         {bn.public.diaryToday}
       </p>
     </div>

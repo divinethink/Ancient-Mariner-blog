@@ -34,7 +34,7 @@ export function DiaryYear({ view, years, timeZone }: { view: YearView; years: re
             {view.weeks.flatMap((w, wi) =>
               w.map((c, ci) =>
                 c ? (
-                  <span key={c.key} data-day={c.key} title={c.key} className={`rounded-[3px] ${HEAT[c.level]} data-[today=true]:bg-text`} />
+                  <span key={c.key} data-day={c.key} title={c.key} className={`rounded-[3px] ${HEAT[c.level]} data-[today=true]:ring-2 data-[today=true]:ring-accent-text`} />
                 ) : (
                   <span key={`${wi}-${ci}`} />
                 ),
