@@ -153,3 +153,18 @@ describe("design (P9b)", () => {
     expect(r.success && r.data.design.logoMediaId).toBe("blog-1");
   });
 });
+
+describe("subscribeUrl (ইমেইল-সাবস্ক্রাইব)", () => {
+  const ok = "https://api.follow.it/subscription-form/AbC123/8";
+  it("পুরনো doc-এ নেই ⇒ crash নয়, ফর্ম লুকানো (খালি/undefined)", () => {
+    expect(parseSiteSettings({}).subscribeUrl ?? "").toBe("");
+    expect(SiteSettingsInputSchema.safeParse(valid).success).toBe(true);
+  });
+  it("বৈধ follow.it ঠিকানা রাখে; অন্য host/অবৈধ মান পড়ায় বাদ, সেভে প্রত্যাখ্যান", () => {
+    expect(parseSiteSettings({ ...valid, subscribeUrl: ` ${ok} ` }).subscribeUrl).toBe(ok);
+    expect(parseSiteSettings({ ...valid, subscribeUrl: "https://evil.com/x" }).subscribeUrl ?? "").toBe("");
+    expect(SiteSettingsInputSchema.safeParse({ ...valid, subscribeUrl: "https://evil.com/x" }).success).toBe(false);
+    expect(SiteSettingsInputSchema.safeParse({ ...valid, subscribeUrl: "" }).success).toBe(true);
+    expect(SiteSettingsInputSchema.parse({ ...valid, subscribeUrl: ok }).subscribeUrl).toBe(ok);
+  });
+});

@@ -11,6 +11,18 @@ export const DEFAULT_POSTS_PER_PAGE = 10;
 export const LINKS_MAX = 20;
 export const URL_MAX = 300;
 
+/** ইমেইল-সাবস্ক্রাইব ফর্মের গন্তব্য: শুধু follow.it-এর সাবস্ক্রিপশন-ফর্ম ঠিকানা (CSP `form-action`-এর সাথে মেলে; অন্য host-এ ইমেইল পাঠানো যায় না) */
+export const FOLLOWIT_FORM_PREFIX = "https://api.follow.it/subscription-form/";
+export function isFollowItAction(u: string): boolean {
+  if (!u.startsWith(FOLLOWIT_FORM_PREFIX) || u.length <= FOLLOWIT_FORM_PREFIX.length || u.length > URL_MAX) return false;
+  try {
+    const p = new URL(u);
+    return p.protocol === "https:" && p.hostname === "api.follow.it" && !/[\s"'<>]/.test(u);
+  } catch {
+    return false;
+  }
+}
+
 /** সাইটের লিংক/ফেসবুক URL শুধু http/https (javascript:/data: নয়) */
 export function isHttpUrl(u: string): boolean {
   try {

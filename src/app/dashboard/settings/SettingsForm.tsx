@@ -18,6 +18,7 @@ import {
   SITE_TITLE_MAX,
   TAGLINE_MAX,
   timezoneChoices,
+  URL_MAX,
 } from "@/lib/siteSettings";
 import { useSiteSettings } from "../SiteSettingsProvider";
 
@@ -36,6 +37,7 @@ function validate(v: SiteSettings): Errs {
     postsPerPage: bn.settings.errPosts,
     authorBio: bn.settings.errAuthorBio,
     feedItems: bn.settings.errFeedItems,
+    subscribeUrl: bn.settings.errSubscribe,
     timezone: bn.settings.errTimezone,
   };
   const errs: Errs = {};
@@ -261,6 +263,24 @@ export function SettingsForm() {
             onChange={(m) => set("feedMode", m)}
           />
         </div>
+      </Section>
+
+      <Section title={bn.settings.subscribe} summary={draft.subscribeUrl ? bn.customize.enabled : bn.customize.off} forceOpen={!!errs.subscribeUrl}>
+        <label className="block">
+          {bn.settings.subscribeUrl}
+          <input
+            className={input}
+            value={draft.subscribeUrl ?? ""}
+            maxLength={URL_MAX}
+            inputMode="url"
+            autoCapitalize="none"
+            spellCheck={false}
+            onChange={(e) => set("subscribeUrl", e.target.value)}
+            {...aria("subscribeUrl")}
+          />
+          <span className="mt-1 block text-sm text-muted">{bn.settings.subscribeHint}</span>
+          {err("subscribeUrl")}
+        </label>
       </Section>
 
       <Section title={bn.settings.search} summary={draft.allowIndexing ? bn.customize.enabled : bn.customize.off}>

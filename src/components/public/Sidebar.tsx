@@ -10,6 +10,7 @@ import type { Scope } from "@/lib/publicLists";
 import { FEED_PATH } from "@/lib/rss";
 import type { PublicDiary } from "@/data/publicDiary";
 import { AuthorBox } from "./AuthorBox";
+import { SubscribeBox } from "./SubscribeBox";
 import { DiaryCalendar } from "./DiaryCalendar";
 import { DiaryEntries } from "./DiaryEntries";
 
@@ -150,6 +151,7 @@ function widget(id: SidebarWidget, s: SiteSettings, scopes: readonly Scope[], po
               </a>
             )}
           </div>
+          <SubscribeBox action={s.subscribeUrl} id="side" boxed={false} />
         </Box>
       );
     case "recent": {

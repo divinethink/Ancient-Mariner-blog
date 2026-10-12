@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { TIMEZONE_CHOICES, applyDefaultTheme, isValidTimeZone, timezoneChoices } from "./siteSettings";
+import { TIMEZONE_CHOICES, applyDefaultTheme, isFollowItAction, isValidTimeZone, timezoneChoices } from "./siteSettings";
 
 describe("isValidTimeZone", () => {
   it("বৈধ IANA id মানে", () => {
@@ -34,5 +34,19 @@ describe("applyDefaultTheme", () => {
   });
   it("marker না থাকলে throw", () => {
     expect(() => applyDefaultTheme("var A = 1;", "dark")).toThrow();
+  });
+});
+
+describe("isFollowItAction", () => {
+  const ok = "https://api.follow.it/subscription-form/AbC123_-=/8";
+  it("শুধু api.follow.it সাবস্ক্রিপশন-ফর্ম ঠিকানা", () => {
+    expect(isFollowItAction(ok)).toBe(true);
+    expect(isFollowItAction("http://api.follow.it/subscription-form/x/8")).toBe(false);
+    expect(isFollowItAction("https://api.follow.it.evil.com/subscription-form/x/8")).toBe(false);
+    expect(isFollowItAction("https://evil.com/?https://api.follow.it/subscription-form/x")).toBe(false);
+    expect(isFollowItAction("https://api.follow.it/subscription-form/")).toBe(false);
+    expect(isFollowItAction('https://api.follow.it/subscription-form/x"onload=1')).toBe(false);
+    expect(isFollowItAction("javascript:alert(1)")).toBe(false);
+    expect(isFollowItAction("")).toBe(false);
   });
 });
