@@ -711,7 +711,7 @@ export const bn = {
     nextPost: "পরের লেখা →",
     postCount: (n: number) => `${n.toLocaleString("bn-BD")}টি লেখা`,
     readMinutes: (n: number) => `${n.toLocaleString("bn-BD")} মিনিটে পড়া যায়`,
-    loadMore: "আরও দেখান",
+    loadMore: "আরও দেখুন",
     loading: "আসছে…",
     loadFailed: "আরও লেখা আনা যায়নি। নেট দেখে আবার চেষ্টা করুন।",
     retry: "আবার চেষ্টা",
