@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { PostBody } from "@/components/public/PostBody";
 import { PublicShell } from "@/components/public/PublicShell";
 import { ReadingChrome } from "@/components/public/ReadingChrome";
-import { ReaderFont, ReaderSize, ZenToggle } from "@/components/public/ReaderTools";
+import { ReaderBar } from "@/components/public/ReaderTools";
 import { findWork, safeSiteUrl } from "@/components/public/worksRoute";
 import { hasDefaultOgImage } from "@/data/publicAssets";
 import { getPublicSettings } from "@/data/publicSnapshot";
@@ -59,11 +59,7 @@ export default async function BookPage({ params }: Props) {
       <Link href={worksPath(project.slug)} prefetch={false} className="zen-hide mb-3 inline-flex min-h-11 items-center text-accent-text">
         ← {project.title}
       </Link>
-      <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
-        <ReaderSize />
-        <ReaderFont />
-        <ZenToggle />
-      </div>
+      <ReaderBar />
       <article id="book-article" className="mt-4">
         <p className="text-sm text-muted">{typeLabel(project.type, bn.works.types)}</p>
         <h1 className="font-serif text-3xl font-bold leading-snug">{project.title}</h1>

@@ -3,17 +3,15 @@ import { Cover } from "@/components/public/Cover";
 import { bn } from "@/i18n/bn";
 import type { CardLink, CardView } from "@/lib/cards";
 
-const chip = "inline-flex min-h-11 items-center rounded-full border border-line px-3 text-sm";
+const chip = "inline-flex min-h-10 items-center rounded-full border border-line px-3 text-sm";
 
-function Chip({ l, prefix = "" }: { l: CardLink; prefix?: string }) {
+function Chip({ l }: { l: CardLink }) {
   return l.href ? (
     <Link href={l.href} prefetch={false} className={`${chip} text-accent-text`}>
-      {prefix}
       {l.name}
     </Link>
   ) : (
     <span className={`${chip} text-muted`}>
-      {prefix}
       {l.name}
     </span>
   );
@@ -51,12 +49,9 @@ export function PostCard({ c }: { c: CardView }) {
           {c.minutes > 0 && ` · ${bn.public.readMinutes(c.minutes)}`}
         </p>
         {c.excerpt && <p className="mt-2 line-clamp-2 text-muted">{c.excerpt}</p>}
-        {(c.category || c.tags.length > 0) && (
-          <div className="mt-2 flex flex-wrap gap-2">
-            {c.category && <Chip l={c.category} />}
-            {c.tags.map((t) => (
-              <Chip key={t.name} l={t} prefix="#" />
-            ))}
+        {c.category && (
+          <div className="mt-2">
+            <Chip l={c.category} />
           </div>
         )}
       </div>

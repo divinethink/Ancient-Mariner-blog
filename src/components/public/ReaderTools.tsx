@@ -25,17 +25,14 @@ export function ReaderSize() {
     }
   };
   return (
-    <div role="group" aria-label={t.sizeLabel} className="inline-flex items-center gap-1">
-      <span aria-hidden="true" className="px-1 font-serif text-sm text-muted">
-        Aa
-      </span>
+    <div role="group" aria-label={t.sizeLabel} className="flex w-full rounded-full border border-line bg-bg p-0.5">
       {READER_SIZES.map((s) => (
         <button
           key={s}
           type="button"
           onClick={() => pick(s)}
           aria-pressed={size === s}
-          className={`inline-flex min-h-11 min-w-11 items-center justify-center rounded-full border px-3 text-sm ${size === s ? "border-accent bg-accent/10 font-semibold" : "border-line"}`}
+          className={`inline-flex min-h-10 flex-1 items-center justify-center rounded-full px-3 text-sm ${size === s ? "bg-surface font-semibold text-accent-text shadow-sm" : "text-muted"}`}
         >
           {label[s]}
         </button>
@@ -65,9 +62,9 @@ export function ReaderFont() {
     }
   };
   return (
-    <label className="inline-flex items-center gap-2 text-sm text-muted">
+    <label className="flex items-center justify-between gap-3 text-sm text-muted">
       {t.fontLabel}
-      <select value={font} onChange={(e) => pick(e.target.value)} className="min-h-11 rounded-full border border-line bg-surface px-3 text-text">
+      <select value={font} onChange={(e) => pick(e.target.value)} className="min-h-10 min-w-0 flex-1 rounded-full border border-line bg-bg px-3 text-text">
         <option value="">{t.fontDefault}</option>
         {FONT_IDS.map((id) => (
           <option key={id} value={id}>
@@ -99,7 +96,7 @@ export function ZenToggle() {
         type="button"
         onClick={() => setOn((v) => !v)}
         aria-pressed={on}
-        className={`inline-flex min-h-11 items-center rounded-full border px-4 text-sm ${on ? "border-accent bg-accent/10 font-semibold" : "border-line"}`}
+        className={`inline-flex min-h-10 items-center rounded-full px-3 text-sm ${on ? "bg-accent/10 font-semibold text-accent-text" : "text-muted"}`}
       >
         ⌗ {t.zenOn}
       </button>
@@ -139,5 +136,38 @@ export function CopyLink({ url }: { url: string }) {
         {state === "ok" ? t.copied : state === "fail" ? t.copyFailed : ""}
       </span>
     </>
+  );
+}
+
+/** একত্র টুলবার: [Aa পড়ার সেটিং ▾] [জেন মোড] এক কার্ডে; আকার ও ফন্ট বোতামে খুললে দেখায় (পাতার শুরু পরিচ্ছন্ন থাকে) */
+export function ReaderBar() {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="mt-3 rounded-2xl border border-line bg-surface">
+      <div className="flex items-center justify-between gap-2 p-1">
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          aria-expanded={open}
+          aria-controls="reader-settings"
+          className="inline-flex min-h-10 items-center gap-2 rounded-full px-3 text-sm"
+        >
+          <span aria-hidden="true" className="font-serif text-base text-accent-text">
+            Aa
+          </span>
+          {t.readerSettings}
+          <span aria-hidden="true" className="text-xs text-muted">
+            {open ? "▴" : "▾"}
+          </span>
+        </button>
+        <ZenToggle />
+      </div>
+      {open && (
+        <div id="reader-settings" className="space-y-3 border-t border-line p-3">
+          <ReaderSize />
+          <ReaderFont />
+        </div>
+      )}
+    </div>
   );
 }

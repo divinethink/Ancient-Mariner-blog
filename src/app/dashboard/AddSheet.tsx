@@ -324,42 +324,44 @@ export function AddProvider({ children }: { children: ReactNode }) {
                   {isDiary ? d.quickLabel : t.quickLabel}
                 </label>
                 {isDiary && (
-                  <details className="mb-2 rounded-lg border border-line px-3 py-1">
-                    <summary className="flex min-h-11 cursor-pointer items-center text-sm font-semibold text-accent-text">{d.moreFields}</summary>
-                    <div className="space-y-2 pb-3">
+                  <div className="mb-2 space-y-2">
+                    <label className="block rounded-xl border border-line bg-bg px-3 py-1.5 focus-within:border-accent">
+                      <span className="block text-xs text-muted">{d.fieldTitle}</span>
                       <input
                         type="text"
-                        aria-label={d.fieldTitle}
-                        placeholder={d.fieldTitle}
                         maxLength={120}
                         value={diaryTitle}
                         onChange={(e) => setDiaryTitle(e.target.value)}
-                        className="min-h-11 w-full rounded-lg border border-line bg-surface px-3 text-base"
+                        className="min-h-9 w-full bg-transparent text-base font-semibold outline-none"
                       />
-                      <input
-                        type="text"
-                        aria-label={d.fieldPlace}
-                        placeholder={d.fieldPlace}
-                        maxLength={MAX_LOCATION}
-                        value={diaryPlace}
-                        onChange={(e) => setDiaryPlace(e.target.value)}
-                        className="min-h-11 w-full rounded-lg border border-line bg-surface px-3 text-base"
-                      />
-                      <label className="block text-sm text-muted">
-                        {d.fieldDay}
+                    </label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <label className="block min-w-0 rounded-xl border border-line bg-bg px-3 py-1.5 focus-within:border-accent">
+                        <span className="block text-xs text-muted">📍 {d.labelPlace}</span>
+                        <input
+                          type="text"
+                          placeholder={d.optional}
+                          maxLength={MAX_LOCATION}
+                          value={diaryPlace}
+                          onChange={(e) => setDiaryPlace(e.target.value)}
+                          className="min-h-9 w-full min-w-0 bg-transparent text-base outline-none"
+                        />
+                      </label>
+                      <label className="block min-w-0 rounded-xl border border-line bg-bg px-3 py-1.5 focus-within:border-accent">
+                        <span className="block text-xs text-muted">🗓 {d.labelDay}</span>
                         <input
                           type="date"
                           max={todayKey || undefined}
-                          value={diaryDay}
+                          value={diaryDay || todayKey}
                           onChange={(e) => {
                             setDiaryDay(e.target.value);
                             if (status !== "saving") setStatus("idle");
                           }}
-                          className="mt-1 min-h-11 w-full rounded-lg border border-line bg-surface px-3 text-base text-text"
+                          className="min-h-9 w-full min-w-0 bg-transparent text-base text-text outline-none"
                         />
                       </label>
                     </div>
-                  </details>
+                  </div>
                 )}
                 <textarea
                   id="quick-idea-text"

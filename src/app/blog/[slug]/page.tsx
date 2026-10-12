@@ -9,7 +9,7 @@ import { SeriesBanner } from "@/components/public/SeriesBanner";
 import { PostPager, RelatedPosts } from "@/components/public/PostFooterNav";
 import { PublicShell } from "@/components/public/PublicShell";
 import { QuoteShare } from "@/components/public/QuoteShare";
-import { ReaderFont, ReaderSize, ZenToggle } from "@/components/public/ReaderTools";
+import { ReaderBar } from "@/components/public/ReaderTools";
 import { ViewBeacon } from "@/components/public/ViewBeacon";
 import { ShareBar } from "@/components/public/ShareBar";
 import { Comments, type CommentView } from "@/components/public/Comments";
@@ -184,11 +184,7 @@ export default async function BlogPost({ params }: Props) {
           <SeriesBanner name={seriesScope.term!.name} path={seriesScope.path} index={sp.index} total={sp.total} prev={sp.prev} next={sp.next} />
         </div>
       )}
-      <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
-        <ReaderSize />
-        <ReaderFont />
-        <ZenToggle />
-      </div>
+      <ReaderBar />
       <PostArticle toc={toc} anchors poem={post.contentType === "poetry"} title={post.title} meta={meta} links={card ? [...(card.category ? [card.category] : []), ...card.tags.map((t) => ({ ...t, name: `#${t.name}` }))] : []} body={post.body} cover={card?.cover} gallery={resolveGallery(post.gallery, media)} />
       <div className="zen-hide">
         <ShareBar url={absoluteUrl(safeSiteUrl(), blogPath(post.slug))} />
