@@ -17,7 +17,9 @@ type Status = "loading" | "error" | "ready";
 const ghost = "min-h-11 rounded-full border border-line px-4 disabled:opacity-50";
 const primary = "min-h-11 rounded-full bg-btn-bg px-5 font-semibold text-btn-tx disabled:opacity-50";
 const field = "w-full rounded-lg border border-line bg-surface px-3 text-base";
-const acceptAll = ["image/jpeg", "image/png", "image/webp", "image/gif", ...FILE_EXT.map((e) => `.${e}`)].join(",");
+// শুধু ছবির MIME দিলে মোবাইলে গ্যালারি/ফটো-পিকার আসে; এক্সটেনশন মেশালে সাধারণ ফাইল-চুজার আসে।
+const acceptImages = "image/jpeg,image/png,image/webp,image/gif";
+const acceptFiles = FILE_EXT.map((e) => `.${e}`).join(",");
 
 const nf = new Intl.NumberFormat("bn-BD", { maximumFractionDigits: 1 });
 const sizeText = (b: number) => (b >= 1048576 ? `${nf.format(b / 1048576)} MB` : `${nf.format(Math.max(1, b / 1024))} KB`);
@@ -43,6 +45,7 @@ export function MediaManager() {
   const [opened, setOpened] = useState<{ id: string; url: string } | null>(null);
   const galleryRef = useRef<HTMLInputElement>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     let dead = false;
@@ -162,7 +165,11 @@ export function MediaManager() {
         <button type="button" className={ghost} disabled={!!progress} onClick={() => cameraRef.current?.click()}>
           {t.camera}
         </button>
-        <input ref={galleryRef} type="file" multiple accept={acceptAll} onChange={onFiles} className="hidden" />
+        <button type="button" className={ghost} disabled={!!progress} onClick={() => fileRef.current?.click()}>
+          {t.pickFile}
+        </button>
+        <input ref={galleryRef} type="file" multiple accept={acceptImages} onChange={onFiles} className="hidden" />
+        <input ref={fileRef} type="file" multiple accept={acceptFiles} onChange={onFiles} className="hidden" />
         <input ref={cameraRef} type="file" accept="image/*" capture="environment" onChange={onFiles} className="hidden" />
         <fieldset className="flex items-center gap-1" aria-label={t.visibility}>
           {(["public", "private"] as const).map((v) => (
