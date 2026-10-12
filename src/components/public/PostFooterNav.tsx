@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { bn } from "@/i18n/bn";
 import type { CardView } from "@/lib/cards";
-import { PostCard } from "./PostCard";
 
 const link = "block min-w-0 rounded-xl border border-line bg-surface px-3 py-2";
 
@@ -30,7 +29,7 @@ export function PostPager({ older, newer }: { older?: CardView; newer?: CardView
   );
 }
 
-/** সম্পর্কিত লেখা (একই ক্যাটাগরি, ≤২; ≥sm-এ পাশাপাশি সমান-প্রস্থ); না থাকলে সেকশনই নেই */
+/** সম্পর্কিত লেখা (একই ক্যাটাগরি, ≤২): ফোনেও ২ কলাম, প্রতি কার্ডে শুধু শিরোনাম (সর্বোচ্চ ৩ লাইন, তারপর …); ১টা থাকলে ১টাই; না থাকলে সেকশনই নেই */
 export function RelatedPosts({ cards }: { cards: readonly CardView[] }) {
   if (cards.length === 0) return null;
   return (
@@ -38,10 +37,12 @@ export function RelatedPosts({ cards }: { cards: readonly CardView[] }) {
       <h2 id="related-h" className="mb-3 font-serif text-xl font-bold">
         {bn.public.relatedTitle}
       </h2>
-      <ul className="grid gap-4 sm:grid-cols-2">
+      <ul className="grid grid-cols-2 gap-3">
         {cards.map((c) => (
           <li key={c.id} className="min-w-0">
-            <PostCard c={c} compact />
+            <Link href={c.href} prefetch={false} className="flex h-full min-h-11 rounded-xl border border-line bg-surface p-3 font-serif font-bold leading-snug transition-colors hover:border-accent">
+              <span className="line-clamp-3 break-words">{c.title || bn.library.untitled}</span>
+            </Link>
           </li>
         ))}
       </ul>
