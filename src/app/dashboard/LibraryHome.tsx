@@ -62,6 +62,17 @@ const statusLabel = (it: Item) =>
         : bn.library.draft;
 type Found = { key: string; items: Item[] | null }; // items=null ⇒ ব্যর্থ
 type Filter = "all" | "draft" | "published" | "archived" | "trash";
+const FILTER_ORDER: readonly Filter[] = ["draft", "published", "archived", "all", "trash"];
+const FILTER_KEY = "lib.filter"; // শেষ বাছা ফিল্টার (শুধু per-device সুবিধা; না থাকলে "draft")
+function readFilter(): Filter {
+  try {
+    const v = localStorage.getItem(FILTER_KEY) as Filter | null;
+    if (v && FILTER_ORDER.includes(v)) return v;
+  } catch {
+    /* private mode ইত্যাদি — ডিফল্ট */
+  }
+  return "draft";
+}
 type Loaded = { items: Item[]; trashed: TrashItem[]; remoteFailed: boolean };
 type State = { kind: "loading" } | ({ kind: "ready" } & Loaded);
 
@@ -169,9 +180,7 @@ function LibraryHeader({
   onToggleSelect: () => void;
 }) {
   const hc = useHomeCards();
-  const [menu, setMenu] = useState(false);
   const iconBtn = "flex size-11 shrink-0 items-center justify-center rounded-full border border-line";
-  const item = "flex min-h-11 w-full items-center whitespace-nowrap px-4 text-left";
   return (
     <div className="mb-4 flex items-start gap-2">
       <div className="min-w-0 flex-1">
@@ -193,34 +202,6 @@ function LibraryHeader({
       >
         <Icon name="check" size={20} />
       </button>
-      <div className="relative">
-        <button
-          type="button"
-          aria-label={bn.library.moreMenu}
-          aria-haspopup="menu"
-          aria-expanded={menu}
-          onClick={() => setMenu((o) => !o)}
-          className={iconBtn}
-        >
-          <Icon name="more" size={20} strokeWidth={2.6} />
-        </button>
-        {menu && (
-          <>
-            <button
-              type="button"
-              aria-label={bn.org.find.close}
-              tabIndex={-1}
-              onClick={() => setMenu(false)}
-              className="fixed inset-0 z-10 cursor-default"
-            />
-            <div role="menu" className="absolute right-0 top-12 z-20 flex flex-col rounded-xl border border-line bg-surface py-1 shadow">
-              <Link href="/dashboard/library" role="menuitem" className={item}>
-                {bn.dashboard.organize}
-              </Link>
-            </div>
-          </>
-        )}
-      </div>
     </div>
   );
 }
@@ -230,7 +211,7 @@ export function LibraryHome() {
   const [state, setState] = useState<State>({ kind: "loading" });
   const [attempt, setAttempt] = useState(0);
   const bgSynced = useRef(false);
-  const [filter, setFilter] = useState<Filter>("draft");
+  const [filter, setFilter] = useState<Filter>(readFilter);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   // Bulk select-mode (P3b-ক)
@@ -238,6 +219,32 @@ export function LibraryHome() {
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
   const [progress, setProgress] = useState<{ d: number; t: number } | null>(null);
   const [lastReq, setLastReq] = useState<BulkRequest | null>(null);
+  const touch = useRef<{ x: number; y: number } | null>(null);
+  function pickFilter(k: Filter) {
+    setFilter(k);
+    setSelected(new Set()); // অন্য দৃশ্যের লেখা নির্বাচনে থাকে না
+    setLastReq(null);
+    try {
+      localStorage.setItem(FILTER_KEY, k);
+    } catch {
+      /* সুবিধা মাত্র — ব্যর্থ হলে চুপ */
+    }
+  }
+  // তালিকায় বাঁ/ডানে সোয়াইপ ⇒ পাশের ফিল্টার (চিপ-সারি/নির্বাচন-মোডে নয়)
+  const swipeStart = (e: React.TouchEvent) => {
+    const t = e.touches[0];
+    touch.current = t && !selecting && !(e.target as HTMLElement).closest("[data-noswipe],input,select,textarea") ? { x: t.clientX, y: t.clientY } : null;
+  };
+  const swipeEnd = (e: React.TouchEvent) => {
+    const s0 = touch.current;
+    const t = e.changedTouches[0];
+    touch.current = null;
+    if (!s0 || !t) return;
+    const dx = t.clientX - s0.x;
+    if (Math.abs(dx) < 80 || Math.abs(t.clientY - s0.y) > 40) return;
+    const next = FILTER_ORDER[FILTER_ORDER.indexOf(filter) + (dx < 0 ? 1 : -1)];
+    if (next) pickFilter(next);
+  };
   // 🔍 খোঁজ ও Type/Category ফিল্টার (P3a-২খ): শর্ত থাকলে সার্ভার-query-র ফল দেখায় (প্রথম ~৫০টা), নইলে স্বাভাবিক তালিকা
   const [searchOpen] = useState(false); // মেনু থেকে "খুঁজুন" সরানো হয়েছে (বাম পাশে সার্চ-আইকন আছে); panel সুপ্ত
   const [q, setQ] = useState("");
@@ -544,6 +551,8 @@ export function LibraryHome() {
   );
   return (
     <div
+      onTouchStart={swipeStart}
+      onTouchEnd={swipeEnd}
       className={`${selecting ? "pb-64" : ""} ${mode === "list" || filter === "trash" ? "mx-auto max-w-3xl" : ""}`}
     >
       <LibraryHeader
@@ -584,18 +593,19 @@ export function LibraryHome() {
         <ResumeGoalCard latest={latest ? { id: latest.id, title: latest.title } : null} />
       )}
       {filter !== "trash" && !selecting && <HomeCards />}
-      <div role="group" aria-label={bn.library.filters} className="mb-4 grid grid-cols-5 gap-1.5">
+      <div
+        role="group"
+        aria-label={bn.library.filters}
+        data-noswipe
+        className="-mx-6 mb-4 flex snap-x gap-1.5 overflow-x-auto px-6 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      >
         {chips.map(([key, label]) => (
           <button
             key={key}
             type="button"
             aria-pressed={filter === key}
-            onClick={() => {
-              setFilter(key);
-              setSelected(new Set()); // অন্য দৃশ্যের লেখা নির্বাচনে থাকে না
-              setLastReq(null);
-            }}
-            className={`min-h-11 truncate rounded-full border px-1 text-sm ${
+            onClick={() => pickFilter(key)}
+            className={`min-h-11 shrink-0 snap-start whitespace-nowrap rounded-full border px-4 text-sm ${
               filter === key ? "border-transparent bg-btn-bg text-btn-tx" : "border-line"
             }`}
           >

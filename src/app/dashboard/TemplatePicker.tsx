@@ -1,6 +1,6 @@
 "use client";
 
-// ⊕-sheet-এর 'ছাঁচ থেকে শুরু' (P7b-২): তৈরি চারটি (কোডে) + নিজের সেভ-করা (`templates`, lazy-load)।
+// ⊕-sheet-এর 'টেমপ্লেট থেকে লিখুন' (P7b-২): তৈরি চারটি (কোডে) + নিজের সেভ-করা (`templates`, lazy-load)।
 import { useEffect, useMemo, useRef, useState } from "react";
 import { getTemplateRepo } from "@/data/templateRepo.wire";
 import type { TemplateWithId } from "@/data/templateRepo";

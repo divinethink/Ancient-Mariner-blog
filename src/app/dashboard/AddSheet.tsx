@@ -294,7 +294,10 @@ export function AddProvider({ children }: { children: ReactNode }) {
                 </Link>
                 <button type="button" onClick={() => setMode("templates")} className={row}>
                   <span aria-hidden>📄</span>
-                  {t.fromTemplate}
+                  <span className="flex flex-col">
+                    {t.fromTemplate}
+                    <span className="text-xs font-normal text-muted">{t.fromTemplateHint}</span>
+                  </span>
                 </button>
                 <button type="button" onClick={() => setMode("idea")} className={row}>
                   <span aria-hidden>💡</span>

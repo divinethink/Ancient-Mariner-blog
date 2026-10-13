@@ -430,6 +430,9 @@ export function EditorSurface({ postId, data }: { postId: string; data: Loaded }
           </button>
           {moreOpen && (
             <div className="absolute right-0 top-11 z-30 flex flex-col rounded-xl border border-line bg-surface shadow">
+              <p className="px-4 pt-2 text-xs text-muted">
+                {bn.editor.statusLabel}: {pub.status === "published" ? bn.library.published : bn.library.draft}
+              </p>
               <button
                 type="button"
                 aria-pressed={focus}
