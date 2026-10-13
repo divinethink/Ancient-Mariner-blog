@@ -861,7 +861,6 @@ export const bn = {
     titlePlaceholder: "শিরোনাম (ঐচ্ছিক)",
     back: "ফিরুন",
     moreOpen: "আরও",
-    statusLabel: "অবস্থা",
     history: "ইতিহাস",
     tpl: {
       save: "টেমপ্লেট হিসেবে সেভ",
@@ -903,7 +902,7 @@ export const bn = {
     focusOff: "ফোকাস মোড বন্ধ করুন",
     // ⋯ মেনুর অবস্থা-অপশন (প্রকাশিত লেখায় confirm + সাইট rebuild)
     status: {
-      draft: "খসড়ায় ফেরান",
+      draft: "খসড়ায় রাখুন",
       archive: "আর্কাইভ",
       trash: "ট্র্যাশে পাঠান",
       confirmDraft: "লেখাটি পাবলিক সাইট থেকে সরে খসড়া হবে — নিশ্চিত?",

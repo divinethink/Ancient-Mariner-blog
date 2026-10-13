@@ -430,9 +430,6 @@ export function EditorSurface({ postId, data }: { postId: string; data: Loaded }
           </button>
           {moreOpen && (
             <div className="absolute right-0 top-11 z-30 flex flex-col rounded-xl border border-line bg-surface shadow">
-              <p className="px-4 pt-2 text-xs text-muted">
-                {bn.editor.statusLabel}: {pub.status === "published" ? bn.library.published : bn.library.draft}
-              </p>
               <button
                 type="button"
                 aria-pressed={focus}
@@ -468,11 +465,9 @@ export function EditorSurface({ postId, data }: { postId: string; data: Loaded }
                 {bn.editor.tpl.copyMd}
               </button>
               <div role="separator" className="my-1 border-t border-line" />
-              {pub.status === "published" && (
-                <button type="button" onClick={() => void changeStatus("draft")} className="min-h-11 whitespace-nowrap px-4 text-left">
-                  {bn.editor.status.draft}
-                </button>
-              )}
+              <button type="button" onClick={() => void changeStatus("draft")} className="min-h-11 whitespace-nowrap px-4 text-left">
+                {bn.editor.status.draft}
+              </button>
               <button type="button" onClick={() => void changeStatus("archive")} className="min-h-11 whitespace-nowrap px-4 text-left">
                 {bn.editor.status.archive}
               </button>
