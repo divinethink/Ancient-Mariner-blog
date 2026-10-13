@@ -66,7 +66,7 @@ export function SubscribeBox({
         {bn.public.subscribeLinkCta}
       </a>
     );
-    return post ? <div className="mt-6">{btn}</div> : btn;
+    return <div className={post ? "mt-6 flex justify-center" : "flex justify-center"}>{btn}</div>;
   }
   return null;
 }
