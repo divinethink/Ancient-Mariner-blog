@@ -23,6 +23,17 @@ export function isFollowItAction(u: string): boolean {
   }
 }
 
+/** follow.it-এর পাবলিক সাবস্ক্রাইব-পেজের লিংক (বোতাম-সংস্করণ): শুধু https://follow.it/… (বা www.) */
+export function isFollowItPage(u: string): boolean {
+  if (u.length > URL_MAX || /[\s"'<>]/.test(u)) return false;
+  try {
+    const p = new URL(u);
+    return p.protocol === "https:" && (p.hostname === "follow.it" || p.hostname === "www.follow.it") && p.pathname.length > 1;
+  } catch {
+    return false;
+  }
+}
+
 /** সাইটের লিংক/ফেসবুক URL শুধু http/https (javascript:/data: নয়) */
 export function isHttpUrl(u: string): boolean {
   try {

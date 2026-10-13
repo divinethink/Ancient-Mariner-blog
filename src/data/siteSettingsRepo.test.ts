@@ -171,3 +171,14 @@ describe("subscribeUrl (ইমেইল-সাবস্ক্রাইব)", () 
     expect(SiteSettingsInputSchema.parse({ ...valid, subscribeUrl: ok }).subscribeUrl).toBe(ok);
   });
 });
+
+describe("subscribeLink (সাবস্ক্রাইব-পেজের লিংক)", () => {
+  const ok = "https://follow.it/abc-def";
+  it("নেই হলে key-ই থাকে না; বৈধ লিংক রাখে; অন্য host প্রত্যাখ্যান", () => {
+    expect("subscribeLink" in parseSiteSettings({})).toBe(false);
+    expect(parseSiteSettings({ ...valid, subscribeLink: ok }).subscribeLink).toBe(ok);
+    expect(parseSiteSettings({ ...valid, subscribeLink: "https://evil.com/x" }).subscribeLink ?? "").toBe("");
+    expect(SiteSettingsInputSchema.safeParse({ ...valid, subscribeLink: "https://evil.com/x" }).success).toBe(false);
+    expect(SiteSettingsInputSchema.safeParse({ ...valid, subscribeLink: "" }).success).toBe(true);
+  });
+});

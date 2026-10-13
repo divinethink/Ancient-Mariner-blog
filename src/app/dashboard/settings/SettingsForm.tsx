@@ -38,6 +38,7 @@ function validate(v: SiteSettings): Errs {
     authorBio: bn.settings.errAuthorBio,
     feedItems: bn.settings.errFeedItems,
     subscribeUrl: bn.settings.errSubscribe,
+    subscribeLink: bn.settings.errSubscribeLink,
     timezone: bn.settings.errTimezone,
   };
   const errs: Errs = {};
@@ -265,7 +266,7 @@ export function SettingsForm() {
         </div>
       </Section>
 
-      <Section title={bn.settings.subscribe} summary={draft.subscribeUrl ? bn.customize.enabled : bn.customize.off} forceOpen={!!errs.subscribeUrl}>
+      <Section title={bn.settings.subscribe} summary={draft.subscribeLink || draft.subscribeUrl ? bn.customize.enabled : bn.customize.off} forceOpen={!!errs.subscribeUrl || !!errs.subscribeLink}>
         <label className="block">
           {bn.settings.subscribeUrl}
           <input
@@ -280,6 +281,21 @@ export function SettingsForm() {
           />
           <span className="mt-1 block text-sm text-muted">{bn.settings.subscribeHint}</span>
           {err("subscribeUrl")}
+        </label>
+        <label className="block">
+          {bn.settings.subscribeLink}
+          <input
+            className={input}
+            value={draft.subscribeLink ?? ""}
+            maxLength={URL_MAX}
+            inputMode="url"
+            autoCapitalize="none"
+            spellCheck={false}
+            onChange={(e) => set("subscribeLink", e.target.value)}
+            {...aria("subscribeLink")}
+          />
+          <span className="mt-1 block text-sm text-muted">{bn.settings.subscribeLinkHint}</span>
+          {err("subscribeLink")}
         </label>
       </Section>
 

@@ -1,16 +1,41 @@
 import { bn } from "@/i18n/bn";
-import { isFollowItAction } from "@/lib/siteSettings";
+import { isFollowItAction, isFollowItPage } from "@/lib/siteSettings";
 
 /**
  * ইমেইল-সাবস্ক্রাইব ফর্ম (follow.it): সাধারণ HTML form — JS/iframe/script নেই, static পেজেই বসে।
  * জমা দিলে ইমেইল সরাসরি follow.it-এ যায় (পাবলিক CSP `form-action` শুধু api.follow.it-কে দেয়); আমাদের সার্ভারে কিছু জমা হয় না।
  * `action` খালি/অবৈধ হলে কিছুই দেখায় না (fail-closed)। variant: "side" = শুধু ইমেইল-ঘর + বোতাম (বক্সের শিরোনাম আগে থেকেই আছে); "post" = লেখার শেষে ছোট শিরোনামসহ কার্ড।
  */
-export function SubscribeBox({ action, id, variant = "side" }: { action: string | undefined; id: string; variant?: "side" | "post" }) {
+export function SubscribeBox({
+  action,
+  link,
+  id,
+  variant = "side",
+}: {
+  action: string | undefined;
+  link?: string | undefined;
+  id: string;
+  variant?: "side" | "post";
+}) {
+  const l = (link ?? "").trim();
   const a = (action ?? "").trim();
+  const post = variant === "post";
+  // লিংক থাকলে (বৈধ হলে) ফর্মের বদলে বোতাম — follow.it-এর নিজের পেজে নেয়, নতুন ট্যাবে
+  if (isFollowItPage(l)) {
+    const btn = (
+      <a
+        href={l}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex min-h-11 w-full items-center justify-center rounded-full bg-btn-bg px-5 font-semibold text-btn-tx"
+      >
+        {bn.public.subscribeLinkCta}
+      </a>
+    );
+    return post ? <div className="mt-10 rounded-2xl border border-line bg-surface p-4">{btn}</div> : btn;
+  }
   if (!isFollowItAction(a)) return null;
   const inputId = `sub-email-${id}`;
-  const post = variant === "post";
   return (
     <form
       action={a}

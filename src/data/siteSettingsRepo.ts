@@ -13,6 +13,7 @@ import {
   LINKS_MAX,
   URL_MAX,
   isFollowItAction,
+  isFollowItPage,
   isHttpUrl,
   POSTS_PER_PAGE_RANGE,
   SITE_TITLE_MAX,
@@ -34,6 +35,7 @@ import {
 
 const HttpUrl = z.string().trim().max(URL_MAX).refine(isHttpUrl, "http/https URL দরকার");
 const FollowItUrl = z.string().trim().max(URL_MAX).refine(isFollowItAction, "follow.it ফর্ম-ঠিকানা দরকার");
+const FollowItPageUrl = z.string().trim().max(URL_MAX).refine(isFollowItPage, "follow.it সাবস্ক্রাইব-পেজের লিংক দরকার");
 const LayoutItem = z.object({ id: z.string().min(1).max(40), enabled: z.boolean(), title: z.string().max(LAYOUT_TITLE_MAX).optional() }); // title: owner-দেওয়া নিজের নাম (ঐচ্ছিক; পুরনো doc-এ নেই)
 
 const SafeHref = z.string().trim().max(URL_MAX).refine(isSafeHref, "http/https বা '/' দিয়ে শুরু পথ দরকার");
@@ -71,6 +73,7 @@ const fields = {
   feedItems: z.number().int().min(FEED_ITEMS_RANGE.min).max(FEED_ITEMS_RANGE.max),
   feedMode: FeedMode,
   subscribeUrl: z.union([z.literal(""), FollowItUrl]).optional(), // ইমেইল-সাবস্ক্রাইব (follow.it); খালি/নেই = ফর্ম লুকানো; পুরনো doc-এ নেই
+  subscribeLink: z.union([z.literal(""), FollowItPageUrl]).optional(), // সাবস্ক্রাইব-পেজের লিংক (বোতাম); থাকলে ফর্মের বদলে এটাই দেখায়
   socialLinks: z.object({ facebook: z.union([z.literal(""), HttpUrl]) }),
   links: z.array(z.object({ label: z.string().trim().min(1).max(60), url: HttpUrl })).max(LINKS_MAX),
   layout: z.object({ sidebar: z.array(LayoutItem).max(30), home: z.array(LayoutItem).max(30) }),
