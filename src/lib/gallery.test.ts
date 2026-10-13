@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { mediaIdsOf, moveId, resolveGallery, resolveMediaMap, sameIds, toggleId } from "./gallery";
+import { addIds, mediaIdsOf, moveId, resolveGallery, resolveMediaMap, sameIds, toggleId } from "./gallery";
 
 const m = (id: string) => ({ cloudinaryPublicId: `blog/${id}`, cloudinaryUrl: `https://res.cloudinary.com/demo/image/upload/v1/blog/${id}.jpg`, width: 800, height: 600, altText: id });
 
@@ -32,5 +32,15 @@ describe("gallery", () => {
     expect(moveId(["a", "b"], 0, -1)).toEqual(["a", "b"]);
     expect(sameIds(["a"], ["a"])).toBe(true);
     expect(sameIds(["a", "b"], ["b", "a"])).toBe(false);
+  });
+});
+
+describe("addIds", () => {
+  it("ডুপ্লিকেট বাদ, সীমা পর্যন্ত শেষে যোগ, মূল তালিকা অপরিবর্তিত", () => {
+    const base = ["a"];
+    expect(addIds(base, ["b", "a", "c"])).toEqual(["a", "b", "c"]);
+    expect(addIds(base, ["b", "c", "d"], 3)).toEqual(["a", "b", "c"]);
+    expect(addIds(["a", "b"], ["c"], 2)).toEqual(["a", "b"]);
+    expect(base).toEqual(["a"]);
   });
 });

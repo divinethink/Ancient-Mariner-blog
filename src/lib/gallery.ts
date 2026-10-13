@@ -42,6 +42,13 @@ export function toggleId(list: readonly string[], id: string, max = MAX_GALLERY_
   return list.length >= max ? [...list] : [...list, id];
 }
 
+/** একসাথে অনেক ছবি যোগ (আপলোডের পর): ডুপ্লিকেট বাদ, সীমা পর্যন্ত */
+export function addIds(list: readonly string[], ids: readonly string[], max = MAX_GALLERY_ITEMS): string[] {
+  const out = [...list];
+  for (const id of ids) if (out.length < max && !out.includes(id)) out.push(id);
+  return out;
+}
+
 /** ক্রম বদল: i-তম আইটেম d (±1) ঘর সরে; সীমার বাইরে হলে অপরিবর্তিত */
 export function moveId(list: readonly string[], i: number, d: -1 | 1): string[] {
   const j = i + d;

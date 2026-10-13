@@ -7,7 +7,8 @@ import type { MediaWithId } from "@/data/mediaRepo";
 import { getMediaRepo } from "@/data/mediaRepo.wire";
 import { bn } from "@/i18n/bn";
 import { cldUrl, cloudFromUrl } from "@/lib/cloudinary";
-import { MAX_GALLERY_ITEMS, moveId, toggleId } from "@/lib/gallery";
+import { addIds, MAX_GALLERY_ITEMS, moveId, toggleId } from "@/lib/gallery";
+import { ImagePickerSheet } from "./ImagePickerSheet";
 
 type Props = { value: string[]; onChange: (ids: string[]) => void; disabled: boolean };
 type Meta = MediaWithId | null; // null = পাওয়া যায়নি
@@ -24,9 +25,6 @@ export function GalleryPicker({ value, onChange, disabled }: Props) {
   const t = bn.publishPanel.gallery;
   const [metas, setMetas] = useState<Record<string, Meta>>({});
   const [open, setOpen] = useState(false);
-  const [items, setItems] = useState<MediaWithId[] | null>(null);
-  const [next, setNext] = useState<Date | undefined>();
-  const [err, setErr] = useState(false);
 
   // নির্বাচিতদের মেটা (এখনো-না-আনা id-গুলো)
   useEffect(() => {
@@ -43,17 +41,9 @@ export function GalleryPicker({ value, onChange, disabled }: Props) {
     };
   }, [value, metas]);
 
-  async function load(after?: Date) {
-    setErr(false);
-    try {
-      const p = await (await getMediaRepo()).list({ type: "image", after });
-      const pub = p.items.filter((m) => m.visibility === "public" && thumb(m));
-      setItems((a) => (after && a ? [...a, ...pub] : pub));
-      setNext(p.next);
-      setMetas((m) => ({ ...Object.fromEntries(pub.map((x) => [x.id, x])), ...m }));
-    } catch {
-      setErr(true);
-    }
+  function addMedia(ms: MediaWithId[]) {
+    setMetas((m) => ({ ...m, ...Object.fromEntries(ms.map((x) => [x.id, x])) }));
+    onChange(addIds(value, ms.map((x) => x.id)));
   }
 
   const full = value.length >= MAX_GALLERY_ITEMS;
@@ -96,64 +86,20 @@ export function GalleryPicker({ value, onChange, disabled }: Props) {
       )}
 
       <div className="flex flex-wrap items-center gap-2">
-        <button
-          type="button"
-          className={btn}
-          aria-expanded={open}
-          onClick={() => {
-            const o = !open;
-            setOpen(o);
-            if (o && items === null) void load();
-          }}
-        >
-          {open ? t.close : t.choose}
+        <button type="button" className={btn} aria-haspopup="dialog" disabled={full} onClick={() => setOpen(true)}>
+          {t.choose}
         </button>
         <span className="text-sm text-muted">{full ? t.full : t.count(value.length, MAX_GALLERY_ITEMS)}</span>
       </div>
 
       {open && (
-        <div>
-          {err && (
-            <p role="alert" className="text-sm text-accent-text">
-              {t.error}{" "}
-              <button type="button" className="min-h-11 underline" onClick={() => load()}>
-                {bn.media.retry}
-              </button>
-            </p>
-          )}
-          {items === null && !err && <p className="text-sm text-muted">{t.loading}</p>}
-          {items?.length === 0 && <p className="text-sm text-muted">{t.empty}</p>}
-          <ul className="grid grid-cols-3 gap-2">
-            {items?.map((m) => {
-              const on = value.includes(m.id);
-              return (
-                <li key={m.id}>
-                  <button
-                    type="button"
-                    aria-pressed={on}
-                    aria-label={m.altText || m.fileName}
-                    disabled={!on && full}
-                    onClick={() => onChange(toggleId(value, m.id))}
-                    className={`relative block aspect-square w-full overflow-hidden rounded-xl border-2 disabled:opacity-40 ${on ? "border-accent" : "border-line"}`}
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={thumb(m) ?? ""} alt="" loading="lazy" className="h-full w-full object-cover" />
-                    {on && (
-                      <span aria-hidden className="absolute right-1 top-1 rounded-full bg-btn-bg px-2 text-xs text-btn-tx">
-                        {value.indexOf(m.id) + 1}
-                      </span>
-                    )}
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-          {next && (
-            <button type="button" className={`${btn} mt-2`} onClick={() => load(next)}>
-              {bn.media.more}
-            </button>
-          )}
-        </div>
+        <ImagePickerSheet
+          hint={t.hint}
+          max={MAX_GALLERY_ITEMS - value.length}
+          onClose={() => setOpen(false)}
+          onPick={(m) => addMedia([m])}
+          onPickMany={addMedia}
+        />
       )}
       <p className="text-xs text-muted">{t.hint}</p>
     </fieldset>

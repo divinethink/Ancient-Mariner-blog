@@ -10,14 +10,23 @@ import { bn } from "@/i18n/bn";
 import { cldUrl, cloudFromUrl } from "@/lib/cloudinary";
 import { IMAGE_MIME } from "@/lib/media";
 
-type Props = { onClose: () => void; onPick: (m: MediaWithId) => void };
+type Props = {
+  onClose: () => void;
+  onPick: (m: MediaWithId) => void;
+  /** একাধিক ফাইল বাছা (গ্যালারি): দিলে ফাইল-ইনপুট multiple হয় ও আপলোড-শেষে সবগুলো একসাথে আসে */
+  onPickMany?: (ms: MediaWithId[]) => void;
+  /** onPickMany-এর সর্বোচ্চ ফাইল-সংখ্যা (বাকি সীমা) */
+  max?: number;
+  /** নিচের হিন্ট বদলানো (কভার/গ্যালারিতে 'কার্সারের জায়গায়' খাটে না) */
+  hint?: string;
+};
 
 const thumb = (m: MediaWithId): string | null => {
   const cloud = cloudFromUrl(m.cloudinaryUrl);
   return cloud ? cldUrl(cloud, m.cloudinaryPublicId, { w: 320 }) : null;
 };
 
-export function ImagePickerSheet({ onClose, onPick }: Props) {
+export function ImagePickerSheet({ onClose, onPick, onPickMany, max = 1, hint }: Props) {
   const t = bn.editor.image;
   const [items, setItems] = useState<MediaWithId[] | null>(null);
   const [next, setNext] = useState<Date | undefined>();
@@ -30,22 +39,31 @@ export function ImagePickerSheet({ onClose, onPick }: Props) {
 
   // বিদ্যমান আপলোড-পথ (resize ≤২০০০px, EXIF মোছা, SVG নিষিদ্ধ, ≤১০MB, sign route) — public হিসেবে; সফল হলে সরাসরি কার্সারে
   async function onFile(e: ChangeEvent<HTMLInputElement>) {
-    const f = e.target.files?.[0];
+    const files = Array.from(e.target.files ?? []).slice(0, onPickMany ? Math.max(1, max) : 1);
     e.target.value = ""; // একই ফাইল আবার বাছা যাবে
-    if (!f || busyRef.current) return;
+    if (files.length === 0 || busyRef.current) return;
     busyRef.current = true;
     setBusy(true);
     setUpErr("");
+    const done: MediaWithId[] = [];
+    let code: keyof typeof bn.media.err | null = null;
     try {
-      const m = await uploadMedia(await getMediaRepo(), f, "public");
-      onPick(m);
-      onClose();
+      const repo = await getMediaRepo();
+      for (const f of files) done.push(await uploadMedia(repo, f, "public")); // একটার পর একটা — ব্যর্থ হলে থামে, আগেরগুলো থাকে
     } catch (err) {
-      const code = err instanceof UploadError ? err.code : "upload";
+      code = err instanceof UploadError ? err.code : "upload";
+    }
+    if (done.length > 0) {
+      if (onPickMany) onPickMany(done);
+      else onPick(done[0]!);
+    }
+    if (code) {
       setUpErr(bn.media.err[code]);
       busyRef.current = false;
       setBusy(false);
+      return;
     }
+    onClose();
   }
   const close = () => {
     if (!busyRef.current) onClose(); // আপলোড চলার সময় বন্ধ নয় — নইলে সফল ছবি বসত না
@@ -124,7 +142,7 @@ export function ImagePickerSheet({ onClose, onPick }: Props) {
           >
             {busy ? t.uploading : t.upload}
           </button>
-          <input ref={fileRef} type="file" accept={IMAGE_MIME.join(",")} onChange={onFile} className="hidden" />
+          <input ref={fileRef} type="file" accept={IMAGE_MIME.join(",")} multiple={!!onPickMany && max > 1} onChange={onFile} className="hidden" />
           {upErr && (
             <p role="alert" className="mt-2 text-sm text-accent-text">
               {upErr}
@@ -167,7 +185,7 @@ export function ImagePickerSheet({ onClose, onPick }: Props) {
             </button>
           )}
         </div>
-        <p className="mt-3 text-xs text-muted">{t.hint}</p>
+        <p className="mt-3 text-xs text-muted">{hint ?? t.hint}</p>
       </div>
     </div>
   );
