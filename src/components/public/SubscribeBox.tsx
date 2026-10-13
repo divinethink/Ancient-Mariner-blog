@@ -27,12 +27,12 @@ export function SubscribeBox({
         href={l}
         target="_blank"
         rel="noopener noreferrer"
-        className="inline-flex min-h-11 w-full items-center justify-center rounded-full bg-btn-bg px-5 font-semibold text-btn-tx"
+        className="inline-flex min-h-11 items-center justify-center rounded-full bg-btn-bg px-5 font-semibold text-btn-tx"
       >
         {bn.public.subscribeLinkCta}
       </a>
     );
-    return post ? <div className="mt-10 rounded-2xl border border-line bg-surface p-4">{btn}</div> : btn;
+    return post ? <div className="mt-6">{btn}</div> : btn; // কম জায়গা: কার্ড/বড় ফাঁক ছাড়া, ছোট বোতাম
   }
   if (!isFollowItAction(a)) return null;
   const inputId = `sub-email-${id}`;
