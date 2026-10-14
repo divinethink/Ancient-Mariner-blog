@@ -57,6 +57,35 @@ export async function createUploadTicket(
   return { mediaId, publicId, uploadUrl: api(cfg, o.kind, "upload"), fields };
 }
 
+export type ImportedImage = { mediaId: string; publicId: string; secureUrl: string; width?: number; height?: number; bytes: number };
+
+/** বাইরের ছবির URL ⇒ Cloudinary নিজে নামিয়ে নেয় (আমাদের সার্ভার বাইরের সাইট খোলে না — SSRF নেই); ≤২০০০px, শুধু অনুমোদিত ফরম্যাট, public।
+ *  public_id নির্দিষ্ট ⇒ retry-তে একই asset (duplicate নয়)। Firestore-doc বানানো ক্লায়েন্টের কাজ (uploadMedia-র মতো) */
+export async function importRemoteImage(cfg: CloudinaryConfig, o: { url: string; mediaId?: string }): Promise<ImportedImage> {
+  const u = new URL(o.url);
+  if (u.protocol !== "https:" && u.protocol !== "http:") throw new Error("অবৈধ URL");
+  const mediaId = o.mediaId ?? newId();
+  const publicId = `blog/${mediaId}`;
+  if (!PUBLIC_ID_RE.test(publicId)) throw new Error("অবৈধ mediaId");
+  const f = cfg.fetchImpl ?? fetch;
+  return withRetry(
+    async (signal) => {
+      const signed = { allowed_formats: ALLOWED_IMAGE_FORMATS, public_id: publicId, timestamp: now(cfg), transformation: "c_limit,h_2000,w_2000", type: "upload" };
+      const signature = await signParams(signed, cfg.apiSecret); // `file` স্বাক্ষরে ধরা হয় না
+      const res = await f(api(cfg, "image", "upload"), {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({ ...signed, timestamp: String(signed.timestamp), file: o.url, api_key: cfg.apiKey, signature }),
+        signal,
+      });
+      const j = (await res.json().catch(() => ({}))) as { public_id?: string; secure_url?: string; width?: number; height?: number; bytes?: number; error?: { message?: string } };
+      if (!res.ok || j.public_id !== publicId || !j.secure_url) throw new CloudinaryError(res.status, j.error?.message ?? "");
+      return { mediaId, publicId, secureUrl: j.secure_url, ...(j.width && j.height ? { width: j.width, height: j.height } : {}), bytes: j.bytes ?? 0 };
+    },
+    { timeoutMs: 25000, retries: 2 },
+  );
+}
+
 /** idempotent: asset আগেই না থাকলেও সফল (`not found`) */
 export async function destroyAsset(
   cfg: CloudinaryConfig,

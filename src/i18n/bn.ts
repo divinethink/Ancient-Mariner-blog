@@ -885,6 +885,8 @@ export const bn = {
       hint: "শুধু পাবলিক ছবি বাছা যায়। ছবি কার্সারের জায়গায় বসবে।",
       upload: "📷 ডিভাইস থেকে আপলোড",
       uploading: "আপলোড হচ্ছে…",
+      importing: (i: number, n: number) => `ছবি আনা হচ্ছে… (${i.toLocaleString("bn-BD")}/${n.toLocaleString("bn-BD")})`,
+      importFailed: (f: number, n: number) => `${n.toLocaleString("bn-BD")}টির মধ্যে ${f.toLocaleString("bn-BD")}টি ছবি আনা যায়নি — সেগুলো বাদ দেওয়া হয়েছে।`,
       altLabel: "বিকল্প-লেখা (alt)",
       altPlaceholder: "ছবিতে কী আছে (সংক্ষেপে)",
       captionLabel: "ক্যাপশন",

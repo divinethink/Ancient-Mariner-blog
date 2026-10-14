@@ -1,10 +1,26 @@
 import { describe, expect, it, vi } from "vitest";
 import { signParams } from "@/lib/cloudinarySign";
-import { createUploadTicket, destroyAsset, privateDownloadUrl, type CloudinaryConfig } from "./cloudinaryAdmin";
+import { createUploadTicket, destroyAsset, importRemoteImage, privateDownloadUrl, type CloudinaryConfig } from "./cloudinaryAdmin";
 
 const cfg = (f?: typeof fetch): CloudinaryConfig => ({ cloudName: "demo", apiKey: "123456", apiSecret: "topsecret123", nowSec: () => 1000, fetchImpl: f });
 
 describe("cloudinaryAdmin", () => {
+  it("importRemoteImage: file=URL + স্বাক্ষর (file বাদে), secret যায় না; ফল ঠিক", async () => {
+    const f = vi.fn(async () => new Response(JSON.stringify({ public_id: "blog/abc123", secure_url: "https://res.cloudinary.com/demo/image/upload/blog/abc123.jpg", width: 800, height: 600, bytes: 1234 }))) as unknown as typeof fetch;
+    const r = await importRemoteImage(cfg(f), { url: "https://a.com/x.jpg", mediaId: "abc123" });
+    expect(r).toEqual({ mediaId: "abc123", publicId: "blog/abc123", secureUrl: "https://res.cloudinary.com/demo/image/upload/blog/abc123.jpg", width: 800, height: 600, bytes: 1234 });
+    const [url, init] = (f as unknown as { mock: { calls: [string, RequestInit][] } }).mock.calls[0];
+    expect(url).toBe("https://api.cloudinary.com/v1_1/demo/image/upload");
+    const body = String(init.body);
+    expect(body).toContain("file=https%3A%2F%2Fa.com%2Fx.jpg");
+    expect(body).not.toContain("topsecret123");
+    const expected = await signParams({ allowed_formats: "jpg,jpeg,png,webp,gif", public_id: "blog/abc123", timestamp: 1000, transformation: "c_limit,h_2000,w_2000", type: "upload" }, "topsecret123");
+    expect(body).toContain(`signature=${expected}`);
+  });
+  it("importRemoteImage: অবৈধ URL প্রত্যাখ্যাত", async () => {
+    await expect(importRemoteImage(cfg(), { url: "ftp://a.com/x.jpg" })).rejects.toThrow();
+    await expect(importRemoteImage(cfg(), { url: "not a url" })).rejects.toThrow();
+  });
   it("upload ticket: public_id/type/স্বাক্ষর সঠিক; secret ফেরে না", async () => {
     const t = await createUploadTicket(cfg(), { kind: "image", visibility: "public", mediaId: "abc123" });
     expect(t.publicId).toBe("blog/abc123");

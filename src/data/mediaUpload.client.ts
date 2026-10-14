@@ -103,6 +103,40 @@ export async function uploadMedia(repo: MediaRepo, file: File, visibility: "publ
   throw new UploadError("save", last instanceof Error ? last.message : "");
 }
 
+type Imported = { mediaId: string; publicId: string; secureUrl: string; width?: number; height?: number; bytes: number };
+
+/** বাইরের ছবির URL ⇒ সার্ভার Cloudinary-কে দিয়ে নামায় (/api/owner/media/import); সফল হলে তবেই Firestore doc (idempotent create, ৩ বার)। ছবি public */
+export async function importMediaFromUrl(repo: MediaRepo, url: string): Promise<MediaWithId> {
+  const r = await postJson<Imported>("/api/owner/media/import", { url }, "upload");
+  let name = "image";
+  try {
+    name = decodeURIComponent(new URL(url).pathname.split("/").filter(Boolean).pop() ?? "") || name;
+  } catch {
+    /* ডিফল্ট নাম */
+  }
+  const input = {
+    id: r.mediaId,
+    cloudinaryPublicId: r.publicId,
+    cloudinaryUrl: r.secureUrl,
+    deliveryType: "upload" as const,
+    visibility: "public" as const,
+    fileName: name.slice(0, 200),
+    type: "image" as const,
+    size: r.bytes,
+    ...(r.width && r.height ? { width: r.width, height: r.height } : {}),
+  };
+  let last: unknown;
+  for (let i = 0; i < 3; i++) {
+    try {
+      return await repo.create(input);
+    } catch (e) {
+      last = e;
+      await new Promise((ok) => setTimeout(ok, 400 * (i + 1)));
+    }
+  }
+  throw new UploadError("save", last instanceof Error ? last.message : "");
+}
+
 /** আগে Cloudinary asset (idempotent), সফল হলে তবেই Firestore doc — মাঝপথে ব্যর্থ হলে আবার চাপলে নিরাপদ */
 export async function deleteMedia(repo: MediaRepo, m: MediaWithId): Promise<void> {
   await postJson("/api/owner/media/delete", { publicId: m.cloudinaryPublicId, kind: m.type, delivery: m.deliveryType }, "upload");

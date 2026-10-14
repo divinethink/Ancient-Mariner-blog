@@ -7,12 +7,13 @@ import StarterKit from "@tiptap/starter-kit";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { MediaWithId } from "@/data/mediaRepo";
 import { getMediaRepo } from "@/data/mediaRepo.wire";
-import { UploadError, uploadMedia } from "@/data/mediaUpload.client";
+import { importMediaFromUrl, UploadError, uploadMedia } from "@/data/mediaUpload.client";
 import { bn } from "@/i18n/bn";
 import type { EditorPos } from "@/data/draftStore";
 import { typewriterDelta } from "@/lib/comfort";
 import { HEADING_LEVELS, MEDIA_ALT_MAX, isSafeHref } from "@/lib/editor-nodes";
 import type { DocNode } from "@/lib/editorDoc";
+import { pasteToken, prepareImport } from "@/lib/pasteImages";
 import { ImagePickerSheet } from "./ImagePickerSheet";
 import { MediaImage } from "./mediaImageNode";
 import { ParaFocus } from "./paraFocus";
@@ -38,6 +39,9 @@ export default function TiptapEditor({
   const initialPos = useRef(pos);
   // কপি-করা ছবি/স্ক্রিনশট পেস্ট (ধাপ ক): handlePaste editor তৈরির আগে বাঁধা, তাই ref-এর মাধ্যমে
   const pasteImages = useRef<(files: File[]) => void>(() => undefined);
+  // অন্য সাইট/ব্লগ থেকে কপি-করা লেখার ছবি (ধাপ খ): পেস্টে ছবির জায়গায় চিহ্ন বসে, আমদানি শেষে mediaImage দিয়ে বদলায়
+  const importJob = useRef<{ tag: string; urls: string[]; alts: string[] } | null>(null);
+  const runImport = useRef<() => void>(() => undefined);
   const editor = useEditor({
     immediatelyRender: false,
     extensions: [
@@ -56,7 +60,16 @@ export default function TiptapEditor({
     editorProps: {
       attributes: { class: "pm", lang: "bn", spellcheck: "false" },
       // শুধু বিশুদ্ধ ছবি-পেস্ট (ক্লিপবোর্ডে ছবির ফাইল আছে, লেখা নেই) আটকে আপলোড করি; লেখা/HTML থাকলে আগের মতোই (Word/ওয়েব কপিতে ছবির "রেন্ডার" থাকলেও লেখা নষ্ট হয় না)
+      transformPastedHTML: (html) => {
+        const r = prepareImport(html, Date.now().toString(36));
+        if (r.urls.length > 0) importJob.current = { tag: r.tag, urls: r.urls, alts: r.alts };
+        return r.html;
+      },
       handlePaste: (_view, event) => {
+        if (importJob.current) {
+          setTimeout(() => runImport.current(), 0); // সাধারণ পেস্ট শেষ হওয়ার পর; লেখা আগের মতোই বসে
+          return false;
+        }
         const cd = event.clipboardData;
         if (!cd || cd.getData("text/plain").trim() || cd.getData("text/html").trim()) return false;
         const imgs = Array.from(cd.files).filter((f) => f.type.startsWith("image/"));
@@ -134,6 +147,39 @@ export default function TiptapEditor({
     };
   });
 
+  useEffect(() => {
+    runImport.current = () => {
+      const job = importJob.current;
+      importJob.current = null;
+      if (!editor || !job) return;
+      void (async () => {
+        const total = job.urls.length;
+        let failed = 0;
+        let repo: Awaited<ReturnType<typeof getMediaRepo>> | null = null;
+        try {
+          repo = await getMediaRepo();
+        } catch {
+          failed = total;
+        }
+        // একটার পর একটা; কোনোটা ব্যর্থ হলে সেটার চিহ্ন মুছে বাকিগুলো চলে — লেখা কখনো হারায় না
+        for (let i = 0; i < total; i++) {
+          let media: MediaWithId | null = null;
+          if (repo) {
+            setPasteMsg(bn.editor.image.importing(i + 1, total));
+            try {
+              media = await importMediaFromUrl(repo, job.urls[i]!);
+            } catch {
+              media = null;
+            }
+            if (!media) failed++;
+          }
+          replaceToken(editor, pasteToken(job.tag, i), media, job.alts[i] ?? "");
+        }
+        setPasteMsg(failed > 0 ? bn.editor.image.importFailed(failed, total) : "");
+      })();
+    };
+  });
+
   return (
     <>
       <EditorContent editor={editor} />
@@ -146,6 +192,26 @@ export default function TiptapEditor({
       {picker && <ImagePickerSheet onClose={closePicker} onPick={insertImage} />}
     </>
   );
+}
+
+/** doc-এ চিহ্নটি (সব জায়গায়) খুঁজে mediaImage দিয়ে বদলায়; media না থাকলে (ব্যর্থ) চিহ্ন মুছে দেয়। ব্যবহারকারী মুছে ফেললে কিছুই হয় না */
+function replaceToken(ed: Editor, token: string, m: MediaWithId | null, alt: string) {
+  const hits: { from: number; to: number }[] = [];
+  ed.state.doc.descendants((n, pos) => {
+    if (!n.isText || !n.text) return;
+    let k = n.text.indexOf(token);
+    while (k >= 0) {
+      hits.push({ from: pos + k, to: pos + k + token.length });
+      k = n.text.indexOf(token, k + token.length);
+    }
+  });
+  const a = Array.from((m?.altText ?? alt).trim()).slice(0, MEDIA_ALT_MAX).join("");
+  for (const h of hits.reverse()) {
+    const c = ed.chain();
+    if (m) c.insertContentAt(h, { type: "mediaImage", attrs: { mediaId: m.id, alt: a } });
+    else c.deleteRange(h);
+    c.run();
+  }
 }
 
 function Toolbar({ editor, onImage }: { editor: Editor; onImage: () => void }) {
