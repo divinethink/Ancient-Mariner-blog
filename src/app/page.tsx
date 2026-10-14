@@ -61,22 +61,22 @@ export default async function Home() {
   const shownIds = recent.map((c) => c.id);
   const initialMore = rest.slice(HOME_RECENT).filter((c) => firstIds.has(c.id));
   const hasMore = !!blogScope && (initialMore.length > 0 || chunks.length > 0);
+  // ব্যানার সবার উপরে, নিচে নাম+স্লোগান — দুটোই PublicShell-এর header-এ বসে (ধাপ ১)
+  const bannerEl = banner ? (
+    <div className="relative aspect-[3/1] overflow-hidden rounded-2xl bg-line min-[900px]:rounded-b-none min-[900px]:rounded-t-xl">
+      <Cover cover={banner} sizes="(min-width: 900px) 1120px, 100vw" priority />
+    </div>
+  ) : null;
+  const heroEl = sections.some((x) => x.id === "hero") ? (
+    <>
+      <h1 style={headFontStyle(settings.design.titleFont)} className={`font-serif font-bold leading-snug ${TITLE_SIZE[settings.design.titleSize]}`}>{settings.siteTitle}</h1>
+      {settings.tagline && <p style={headFontStyle(settings.design.taglineFont)} className={`mt-1 text-muted ${TAGLINE_SIZE[settings.design.taglineSize]}`}>{settings.tagline}</p>}
+    </>
+  ) : null;
   return (
-    <PublicShell sidebar home>
-      {banner && (
-        <div className="relative mb-6 aspect-[3/1] overflow-hidden rounded-2xl bg-line">
-          <Cover cover={banner} sizes="(min-width: 900px) 700px, 100vw" priority />
-        </div>
-      )}
+    <PublicShell sidebar home banner={bannerEl} hero={heroEl}>
       {sections.map(({ id }) => {
-        if (id === "hero")
-          return (
-            <section key={id} className="text-center">
-              {/* ব্যানার → নাম (h1) → স্লোগান; header-এ নাম আবার আসে না (PublicShell home) */}
-              <h1 style={headFontStyle(settings.design.titleFont)} className={`font-serif font-bold leading-snug ${TITLE_SIZE[settings.design.titleSize]}`}>{settings.siteTitle}</h1>
-              {settings.tagline && <p style={headFontStyle(settings.design.taglineFont)} className={`mt-1 text-muted ${TAGLINE_SIZE[settings.design.taglineSize]}`}>{settings.tagline}</p>}
-            </section>
-          );
+        if (id === "hero") return null; // header-এ বসেছে
         if (id === "featured") return featured ? <section key={id} className="mt-6"><FeaturedCard c={featured} /></section> : null;
         return (
           <section key={id}>
