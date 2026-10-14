@@ -62,42 +62,27 @@ export function SidePanel({
     `flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm ${collapsed ? "justify-center" : ""} ${
       path === p ? "bg-line font-semibold text-accent-text" : "text-muted hover:bg-line"
     }`;
-  const links: { href: string; icon: IconName; label: string }[] = [
+  // ক্রম: খুঁজুন → লাইব্রেরি → প্রজেক্ট → নতুন লেখা → দ্রুত ভাবনা → দিনলিপি → মেনু (পূর্ণ-লেখা খোঁজ প্যালেটের ভেতরে)
+  const linksTop: { href: string; icon: IconName; label: string }[] = [
     { href: "/dashboard", icon: "library", label: bn.nav.library },
     { href: "/dashboard/projects", icon: "projects", label: bn.nav.projects },
     { href: "/dashboard/posts/new", icon: "plus", label: bn.nav.newPost },
+  ];
+  const linksBottom: { href: string; icon: IconName; label: string }[] = [
     { href: "/dashboard/diary", icon: "diary", label: bn.nav.diary },
-    { href: "/dashboard/search", icon: "search", label: bn.search.navLabel },
     { href: "/dashboard/menu", icon: "menu", label: bn.nav.menu },
   ];
+  const renderLink = (l: { href: string; icon: IconName; label: string }) => (
+    <Link key={l.href} href={l.href} aria-label={l.label} title={l.label} className={side(l.href)}>
+      <Icon name={l.icon} size={20} />
+      {!collapsed && <span>{l.label}</span>}
+    </Link>
+  );
   return (
     <nav
       aria-label={bn.nav.label}
       className="chrome fixed inset-y-0 left-0 z-30 hidden w-[var(--nav-w)] flex-col gap-1 border-r border-line bg-surface p-3 lg:flex"
     >
-      {links.map((l) => (
-        <Link
-          key={l.href}
-          href={l.href}
-          aria-label={l.label}
-          title={l.label}
-          className={side(l.href)}
-        >
-          <Icon name={l.icon} size={20} />
-          {!collapsed && <span>{l.label}</span>}
-        </Link>
-      ))}
-      <button
-        type="button"
-        onClick={openIdea}
-        aria-haspopup="dialog"
-        aria-label={bn.nav.quickIdea}
-        title={bn.nav.quickIdea}
-        className={`flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm text-muted hover:bg-line ${collapsed ? "justify-center" : ""}`}
-      >
-        <Icon name="idea" size={20} />
-        {!collapsed && <span>{bn.nav.quickIdea}</span>}
-      </button>
       <button
         type="button"
         onClick={onSearch}
@@ -109,6 +94,19 @@ export function SidePanel({
         <Icon name="search" size={20} />
         {!collapsed && <span>{bn.nav.searchLabel}</span>}
       </button>
+      {linksTop.map(renderLink)}
+      <button
+        type="button"
+        onClick={openIdea}
+        aria-haspopup="dialog"
+        aria-label={bn.nav.quickIdea}
+        title={bn.nav.quickIdea}
+        className={`flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm text-muted hover:bg-line ${collapsed ? "justify-center" : ""}`}
+      >
+        <Icon name="idea" size={20} />
+        {!collapsed && <span>{bn.nav.quickIdea}</span>}
+      </button>
+      {linksBottom.map(renderLink)}
       <button
         type="button"
         onClick={onToggle}
