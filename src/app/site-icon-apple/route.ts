@@ -1,8 +1,6 @@
-import { ICON_HEADERS, loadSiteIcon } from "@/data/siteIcon";
-
-// build-সময়ে একবার তৈরি (static); লোগো বদলালে নতুন deploy-এ হালনাগাদ
+// পুরনো পথ — আইকন এখন static ফাইল (scripts/build-site-icon.ts); ফাইলটি নিরাপদে মুছে ফেলা যায়
 export const dynamic = "force-static";
 
-export async function GET() {
-  return new Response(Buffer.from(await loadSiteIcon("apple")), { headers: ICON_HEADERS });
+export function GET() {
+  return new Response(null, { status: 308, headers: { Location: "/icons/site-icon-apple.png" } });
 }
