@@ -6,6 +6,8 @@ import { EditorContent, useEditor, useEditorState, type Editor } from "@tiptap/r
 import StarterKit from "@tiptap/starter-kit";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { MediaWithId } from "@/data/mediaRepo";
+import { getMediaRepo } from "@/data/mediaRepo.wire";
+import { UploadError, uploadMedia } from "@/data/mediaUpload.client";
 import { bn } from "@/i18n/bn";
 import type { EditorPos } from "@/data/draftStore";
 import { typewriterDelta } from "@/lib/comfort";
@@ -34,6 +36,8 @@ export default function TiptapEditor({
   onEditor,
 }: Props) {
   const initialPos = useRef(pos);
+  // কপি-করা ছবি/স্ক্রিনশট পেস্ট (ধাপ ক): handlePaste editor তৈরির আগে বাঁধা, তাই ref-এর মাধ্যমে
+  const pasteImages = useRef<(files: File[]) => void>(() => undefined);
   const editor = useEditor({
     immediatelyRender: false,
     extensions: [
@@ -49,7 +53,19 @@ export default function TiptapEditor({
     ],
     content: initialDoc,
     // spellcheck বন্ধ: বাংলা শব্দে ভুল লাল-দাগ ও "Add to dictionary" মেনু এড়াতে
-    editorProps: { attributes: { class: "pm", lang: "bn", spellcheck: "false" } },
+    editorProps: {
+      attributes: { class: "pm", lang: "bn", spellcheck: "false" },
+      // শুধু বিশুদ্ধ ছবি-পেস্ট (ক্লিপবোর্ডে ছবির ফাইল আছে, লেখা নেই) আটকে আপলোড করি; লেখা/HTML থাকলে আগের মতোই (Word/ওয়েব কপিতে ছবির "রেন্ডার" থাকলেও লেখা নষ্ট হয় না)
+      handlePaste: (_view, event) => {
+        const cd = event.clipboardData;
+        if (!cd || cd.getData("text/plain").trim() || cd.getData("text/html").trim()) return false;
+        const imgs = Array.from(cd.files).filter((f) => f.type.startsWith("image/"));
+        if (imgs.length === 0) return false;
+        event.preventDefault();
+        pasteImages.current(imgs);
+        return true;
+      },
+    },
     onUpdate: ({ editor: ed }) => {
       onContentChange();
       // Typewriter scroll (P7b-১): টাইপের পর caret-কে স্থির উচ্চতায় রাখে; শুধু টাইপে, ট্যাপে নয়
@@ -96,9 +112,36 @@ export default function TiptapEditor({
     editor.chain().focus().insertContent({ type: "mediaImage", attrs: { mediaId: m.id, alt } }).run();
   }
 
+  // একটার পর একটা আপলোড (বিদ্যমান পথ: resize, EXIF মোছা); ব্যর্থ হলে থামে, আগেরগুলো বসে থাকে
+  const [pasteMsg, setPasteMsg] = useState("");
+  const pasteBusy = useRef(false);
+  useEffect(() => {
+    pasteImages.current = (files) => {
+      if (!editor || pasteBusy.current) return;
+      pasteBusy.current = true;
+      setPasteMsg(bn.editor.image.uploading);
+      void (async () => {
+        let msg = "";
+        try {
+          const repo = await getMediaRepo();
+          for (const f of files) insertImage(await uploadMedia(repo, f, "public"));
+        } catch (err) {
+          msg = bn.media.err[err instanceof UploadError ? err.code : "upload"];
+        }
+        pasteBusy.current = false;
+        setPasteMsg(msg);
+      })();
+    };
+  });
+
   return (
     <>
       <EditorContent editor={editor} />
+      {pasteMsg && (
+        <p role="status" className="mt-2 text-sm text-muted">
+          {pasteMsg}
+        </p>
+      )}
       {editor && <Toolbar editor={editor} onImage={() => setPicker(true)} />}
       {picker && <ImagePickerSheet onClose={closePicker} onPick={insertImage} />}
     </>
