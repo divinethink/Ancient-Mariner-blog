@@ -131,13 +131,11 @@ export async function PublicShell({ children, sidebar = false, home = false, ban
                 <SearchBox className="flex px-1 pb-1" />
                 {links(menuRow)}
                 <ThemeToggle inMenu />
-                <OwnerLink className={menuRow} />
               </MobileMenu>
             </div>
             <nav aria-label={bn.public.navLabel} className="mt-4 hidden items-center gap-x-5 border-y border-line bg-bg px-4 min-[760px]:flex min-[900px]:px-8">
               <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-5">{links(nav)}</div>
               <div className="flex shrink-0 items-center gap-2">
-                <OwnerLink className={nav} />
                 <ThemeToggle />
               </div>
             </nav>
@@ -150,7 +148,6 @@ export async function PublicShell({ children, sidebar = false, home = false, ban
             <div className="hidden min-w-0 items-center gap-x-5 min-[760px]:flex min-[760px]:flex-1 min-[760px]:flex-wrap">{links(nav)}</div>
             <SearchBox className="ms-auto hidden w-44 min-[760px]:flex min-[1100px]:w-56" />
             <div className="hidden shrink-0 items-center gap-2 min-[760px]:flex">
-              <OwnerLink className={nav} />
               <ThemeToggle />
             </div>
             <div className="ms-auto min-[760px]:hidden">
@@ -158,7 +155,6 @@ export async function PublicShell({ children, sidebar = false, home = false, ban
                 <SearchBox className="flex px-1 pb-1" />
                 {links(menuRow)}
                 <ThemeToggle inMenu />
-                <OwnerLink className={menuRow} />
               </MobileMenu>
             </div>
           </nav>
@@ -176,6 +172,8 @@ export async function PublicShell({ children, sidebar = false, home = false, ban
       <footer className="zen-hide mt-10 flex flex-col items-center gap-1 border-t border-line pt-4 text-center text-sm text-muted">
         <span>{foot.text}</span>
         <div className="flex flex-wrap items-center justify-center gap-x-5">
+        {/* owner-এর ব্রাউজারেই দেখায়; গোপনীয়তা-নীতির বামে */}
+        <OwnerLink className={footLink} />
         {foot.links ? (
           foot.links.map((l, i) => <NavLink key={`${i}-${l.href}`} l={l} className={footLink} />)
         ) : (
