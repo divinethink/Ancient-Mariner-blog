@@ -4,13 +4,16 @@ import { Analytics } from "@/components/public/Analytics";
 import { hasFollowWidget, sidebarContent } from "@/components/public/Sidebar";
 import { OwnerLink } from "@/components/public/OwnerLink";
 import { MobileMenu } from "@/components/public/MobileMenu";
+import { SearchBox } from "@/components/public/SearchBox";
 import { ThemeToggle } from "@/components/public/ThemeToggle";
 import { getPopular } from "@/data/popularSnapshot";
 import { getPublicDiary } from "@/data/publicDiary";
 import { getPublicScopes } from "@/data/publicLists";
-import { getPublicPages, getPublicSettings } from "@/data/publicSnapshot";
+import { getPublicMedia, getPublicPages, getPublicSettings } from "@/data/publicSnapshot";
 import { bn } from "@/i18n/bn";
+import { resolveCover } from "@/lib/cards";
 import { headFontStyle } from "@/lib/design";
+import { cldIconUrl } from "@/lib/cloudinary";
 import { resolveFooter, resolveMenu, type ResolvedLink } from "@/lib/menu";
 import { DIARY_PATH } from "@/lib/diaryCalendar";
 import { pagePath } from "@/lib/pages";
@@ -37,7 +40,11 @@ function NavLink({ l, className }: { l: ResolvedLink; className: string }) {
 /** পাবলিক পেজের header/footer (Arch §১৭ P4a, P9a)। `siteSettings.menu/footer` খালি হলে আগের default; নইলে owner-এর মেনু (draft/মোছা আইটেম লুকানো)। */
 /** home=true: header = ব্যানার (সবার উপরে) → নাম+স্লোগান (`hero`; মোবাইলে ডানে ☰) → ডেস্কটপে নেভ বার। অন্য পেজে সাইটের নাম + নেভ। ≥৯০০px-এ পুরো সাইট ওয়ার্ডপ্রেসের মতো একটি বক্স-পেজে (ধাপ ১) */
 export async function PublicShell({ children, sidebar = false, home = false, banner = null, hero = null }: { children: ReactNode; sidebar?: boolean; home?: boolean; banner?: ReactNode; hero?: ReactNode }) {
-  const [settings, scopes, pages, popular, diary] = await Promise.all([getPublicSettings(), getPublicScopes(), getPublicPages(), getPopular(), getPublicDiary()]);
+  const [settings, scopes, pages, media, popular, diary] = await Promise.all([getPublicSettings(), getPublicScopes(), getPublicPages(), getPublicMedia(), getPopular(), getPublicDiary()]);
+  // লোগো → ব্রাউজার-ট্যাবের favicon (ওয়ার্ডপ্রেসের মতো); লোগো না থাকলে/অবৈধ হলে আগের স্ট্যাটিক আইকন
+  const logo = resolveCover(settings.design.logoMediaId || undefined, media);
+  const iconSm = logo ? cldIconUrl(logo.cloud, logo.publicId, 64) : null;
+  const iconApple = logo ? cldIconUrl(logo.cloud, logo.publicId, 180) : null;
   // default মেনু/footer: শুধু published system পেজের লিংক
   const about = pages.find((p) => p.slug === "about");
   const privacy = pages.find((p) => p.slug === "privacy");
@@ -111,6 +118,8 @@ export async function PublicShell({ children, sidebar = false, home = false, ban
       <Analytics />
       {/* feed-reader/ব্রাউজারের স্বয়ংক্রিয় শনাক্তি (React 19 <head>-এ তোলে) */}
       <link rel="alternate" type="application/rss+xml" title={settings.siteTitle} href={FEED_PATH} />
+      <link rel="icon" type="image/png" href={iconSm ?? "/icons/icon-192.png"} />
+      <link rel="apple-touch-icon" href={iconApple ?? "/icons/apple-touch-icon.png"} />
       <header className="zen-hide">
         {home ? (
           <>
@@ -119,6 +128,7 @@ export async function PublicShell({ children, sidebar = false, home = false, ban
             <div className="flex items-start gap-3 min-[900px]:px-8 min-[900px]:pt-6">
               <div className="min-w-0 flex-1 text-start min-[760px]:text-center">{hero}</div>
               <MobileMenu>
+                <SearchBox className="flex px-1 pb-1" />
                 {links(menuRow)}
                 <ThemeToggle inMenu />
                 <OwnerLink className={menuRow} />
@@ -138,12 +148,14 @@ export async function PublicShell({ children, sidebar = false, home = false, ban
               {settings.siteTitle}
             </Link>
             <div className="hidden min-w-0 items-center gap-x-5 min-[760px]:flex min-[760px]:flex-1 min-[760px]:flex-wrap">{links(nav)}</div>
-            <div className="ms-auto hidden shrink-0 items-center gap-2 min-[760px]:flex">
+            <SearchBox className="ms-auto hidden w-44 min-[760px]:flex min-[1100px]:w-56" />
+            <div className="hidden shrink-0 items-center gap-2 min-[760px]:flex">
               <OwnerLink className={nav} />
               <ThemeToggle />
             </div>
             <div className="ms-auto min-[760px]:hidden">
               <MobileMenu>
+                <SearchBox className="flex px-1 pb-1" />
                 {links(menuRow)}
                 <ThemeToggle inMenu />
                 <OwnerLink className={menuRow} />
@@ -156,7 +168,7 @@ export async function PublicShell({ children, sidebar = false, home = false, ban
       {side ? (
         <div className="min-[900px]:grid min-[900px]:grid-cols-[minmax(0,1fr)_18.75rem] min-[900px]:gap-10">
           <div className="min-w-0">{children}</div>
-          <div className="mt-10 min-[900px]:mt-0">{side}</div>
+          <div className="mt-10 min-[900px]:mt-0"><SearchBox className="mb-4 hidden min-[760px]:flex" />{side}</div>
         </div>
       ) : (
         <div className="mx-auto max-w-[42rem]">{children}</div>

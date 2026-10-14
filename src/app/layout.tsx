@@ -14,7 +14,7 @@ export const metadata: Metadata = {
   manifest: "/manifest.json",
   // Search Console (P6-৩ক): build-সময়ের env; না থাকলে/অবৈধ হলে meta বসে না
   ...(gsc ? { verification: { google: gsc } } : {}),
-  icons: { icon: "/icons/icon-192.png", apple: "/icons/apple-touch-icon.png" },
+  // favicon/apple-touch-icon: PublicShell বসায় (লোগো থেকে; না থাকলে স্ট্যাটিক আইকন)
 };
 
 export const viewport: Viewport = { themeColor: "#faf9f5" };

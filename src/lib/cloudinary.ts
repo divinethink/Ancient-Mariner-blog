@@ -25,6 +25,13 @@ export function cldUrl(cloud: string, publicId: string, o: { w?: number } = {}):
   return `https://res.cloudinary.com/${cloud}/image/upload/${t}/${publicId}`;
 }
 
+/** favicon/apple-touch-icon — বর্গাকার PNG (স্বচ্ছ padding, লোগো কাটা পড়ে না); ছোট ফিক্সড আকার ⇒ ২টি derived ছবি */
+export function cldIconUrl(cloud: string, publicId: string, size: number): string | null {
+  if (!isValidCloudName(cloud) || !isValidPublicId(publicId)) return null;
+  const n = Math.min(512, Math.max(16, Math.round(size)));
+  return `https://res.cloudinary.com/${cloud}/image/upload/f_png,q_auto,c_pad,b_transparent,w_${n},h_${n}/${publicId}`;
+}
+
 /** responsive `srcset` (`<w>w` ধাপ); `max` পর্যন্ত — মূল ছবির প্রস্থ জানা থাকলে তার বেশি নয় */
 export function cldSrcSet(cloud: string, publicId: string, max: number = CLD_WIDTHS[CLD_WIDTHS.length - 1]): string | null {
   if (!isValidCloudName(cloud) || !isValidPublicId(publicId)) return null;
