@@ -11,12 +11,14 @@ import {
   orderBy,
   query,
   setDoc,
+  startAfter,
   where,
   updateDoc,
   writeBatch,
   type DocumentData,
   type Firestore,
   type Query,
+  type QueryDocumentSnapshot,
 } from "firebase/firestore";
 import {
   parseDraft,
@@ -43,6 +45,8 @@ import {
 } from "@/lib/slug";
 
 const MAX_SLUG_ATTEMPTS = 50;
+const LIST_PAGE = 100; // `list({all:true})`-এর পাতা-আকার
+const ALL_CAP = 2000; // নিরাপত্তা-সীমা (read-খরচ)
 
 // Firestore `undefined` মান নেয় না
 const compact = <T extends Record<string, unknown>>(o: T): Record<string, unknown> =>
@@ -58,17 +62,29 @@ export function createPostRepoClient(db: Firestore, ownerUid: string): PostRepo 
     return snap.exists() ? parsePost(id, snap.data()) : null;
   }
 
-  async function list(opts: { limit?: number } = {}): Promise<PostWithId[]> {
+  // `all` = সব লেখা পাতায় পাতায় (লাইব্রেরির গণনা/ফিল্টার যেন ২০টায় না কাটে); সীমা ALL_CAP
+  async function list(opts: { limit?: number; all?: boolean } = {}): Promise<PostWithId[]> {
     // single-field index (auto); status-ফিল্টার UI-তে, composite index ছাড়াই
-    const q = query(collection(db, "posts"), orderBy("updatedAt", "desc"), limit(opts.limit ?? 20));
-    const snap = await getDocs(q);
     const out: PostWithId[] = [];
-    for (const d of snap.docs) {
-      try {
-        out.push(parsePost(d.id, d.data()));
-      } catch {
-        // একটা বিকৃত doc যেন পুরো তালিকা না ভাঙে
+    const pageSize = opts.all ? LIST_PAGE : (opts.limit ?? 20);
+    let cursor: QueryDocumentSnapshot | undefined;
+    for (;;) {
+      const q = query(
+        collection(db, "posts"),
+        orderBy("updatedAt", "desc"),
+        ...(cursor ? [startAfter(cursor)] : []),
+        limit(pageSize),
+      );
+      const snap = await getDocs(q);
+      for (const d of snap.docs) {
+        try {
+          out.push(parsePost(d.id, d.data()));
+        } catch {
+          // একটা বিকৃত doc যেন পুরো তালিকা না ভাঙে
+        }
       }
+      if (!opts.all || snap.docs.length < pageSize || out.length >= ALL_CAP) break;
+      cursor = snap.docs[snap.docs.length - 1];
     }
     return out;
   }

@@ -222,7 +222,7 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
                     {i + 1}. {c.title}
                   </span>
                   <span className="block text-sm text-muted">
-                    {t.statusNames[c.status === "published" ? "published" : "draft"]} · {t.vis[c.visibility]} · {c.wordCount} {t.words}
+                    {t.statusNames[c.status === "published" ? "published" : "draft"]} · {t.vis[c.visibility]} · {c.wordCount.toLocaleString("bn-BD", { useGrouping: false })} {t.words}
                   </span>
                 </Link>
                 <button type="button" disabled={busy || i === 0} onClick={() => void onMove(c.id, "up")} aria-label={t.moveUp} className={small}>

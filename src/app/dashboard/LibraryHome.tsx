@@ -80,7 +80,7 @@ async function loadItems(): Promise<Loaded> {
   const [locals, remote] = await Promise.all([
     draftStore.listDrafts().catch(() => []),
     getPostRepo()
-      .then(async (r) => ({ posts: await r.list(), trashedPosts: await r.listTrashed() }))
+      .then(async (r) => ({ posts: await r.list({ all: true }), trashedPosts: await r.listTrashed() }))
       .catch(() => null),
   ]);
   const now = Date.now();
@@ -783,7 +783,7 @@ export function LibraryHome() {
                   <td className="whitespace-nowrap p-3 text-muted">
                     {formatDate(new Date(it.updatedAt), tz)}
                   </td>
-                  <td className="p-3 text-muted">{it.wordCount}</td>
+                  <td className="p-3 text-muted">{bnNum(it.wordCount)}</td>
                   {!selecting && (
                     <td className="p-1">
                       <PostMenu id={it.id} disabled={busy} onTrash={() => void trashPost(it.id)} />

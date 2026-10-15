@@ -21,6 +21,7 @@ import {
   DEFAULT_CATEGORY_NAME,
   type PropagateResult,
   type TaxonomyOps,
+  type TermPost,
 } from "@/data/taxonomyOps";
 import type { TaxonomyKind } from "@/lib/enums";
 import { SETTINGS_DOC_ID, SETTINGS_SCHEMA_VERSION } from "@/lib/siteSettings";
@@ -114,6 +115,29 @@ export function createTaxonomyOpsClient(db: Firestore, ownerUid: string): Taxono
     return propagateName(kind, id);
   }
 
+  async function listPosts(kind: TaxonomyKind, id: string): Promise<TermPost[]> {
+    const snap = await getDocs(usageQuery(kind, id)); // single-field query (auto index); trashed-সহ (সংখ্যার সাথে মেলে); updatedAt-ক্রম কোডে
+    return snap.docs
+      .map((d) => {
+        const x = d.data();
+        const t = x.updatedAt && typeof x.updatedAt.toMillis === "function" ? (x.updatedAt.toMillis() as number) : 0;
+        return { id: d.id, title: typeof x.title === "string" ? x.title : "", status: String(x.status ?? ""), published: isPublic(x), t };
+      })
+      .sort((a, b) => b.t - a.t)
+      .map(({ id: pid, title, status, published }) => ({ id: pid, title, status, published }));
+  }
+
+  async function moveToCategory(list: readonly TermPost[], categoryId: string): Promise<PropagateResult> {
+    const term = await repo("categories").get(categoryId);
+    if (!term) throw new TermNotFoundError(categoryId);
+    const ups: PostUpdate[] = list.map((p) => ({
+      id: p.id,
+      data: { categoryId: term.id, categoryName: term.name },
+      published: p.published,
+    }));
+    return commitPostUpdates(db, ups);
+  }
+
   async function remove(kind: TaxonomyKind, id: string): Promise<void> {
     if (kind === "categories" && (id === DEFAULT_CATEGORY_ID || id === (await getDefaultCategoryId()))) {
       throw new TermRuleError("ডিফল্ট ক্যাটাগরি মোছা যায় না");
@@ -130,6 +154,8 @@ export function createTaxonomyOpsClient(db: Firestore, ownerUid: string): Taxono
     usage,
     rename,
     propagateName,
+    listPosts,
+    moveToCategory,
     remove,
     backfillDefaultCategory: (opts) => backfillDefaultCategory(db, ensureDefaultCategory, opts),
   };

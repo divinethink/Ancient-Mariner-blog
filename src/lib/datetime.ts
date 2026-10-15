@@ -33,6 +33,18 @@ export function formatShortDateTime(d: DateInput, timeZone = DEFAULT_TIMEZONE): 
   return `${date}, ${time}`;
 }
 
+/** তারিখ + সময়, বাংলা অঙ্কে: "১২ অক্টোবর ২০২৬, ৫:৪১ PM" (প্রকাশ প্যানেল ইত্যাদি; ISO-ধরন নয়) */
+export function formatLongDateTime(d: DateInput, timeZone = DEFAULT_TIMEZONE): string {
+  const date = formatDate(d, timeZone);
+  const time = new Intl.DateTimeFormat("bn-BD", { timeZone, hour: "numeric", minute: "2-digit" }).format(toDate(d)).replace(/\s/g, "\u00A0");
+  return `${date}, ${time}`;
+}
+
+/** সংখ্যা বাংলা অঙ্কে (গ্রুপিং ছাড়া): 69 → "৬৯" */
+export function formatBnNumber(n: number): string {
+  return n.toLocaleString("bn-BD", { useGrouping: false });
+}
+
 /** সাইট-timezone-এর 'দিন'-key: ASCII "YYYY-MM-DD" (দৈনিক-লক্ষ্য, diary, archive, D1 dedupe-এর ভিত্তি) */
 export function dayKey(d: DateInput, timeZone = DEFAULT_TIMEZONE): string {
   const parts = new Intl.DateTimeFormat("en-US", {

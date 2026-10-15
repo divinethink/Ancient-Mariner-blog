@@ -4,7 +4,7 @@
 // একসময়ে একটাই চলমান কাজ (`working`) — rename-propagation চলাকালীন বাকি বোতাম disabled।
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { triggerSiteRebuild } from "@/data/rebuildClient";
-import type { PropagateResult, TaxonomyOps } from "@/data/taxonomyOps";
+import type { PropagateResult, TaxonomyOps, TermPost } from "@/data/taxonomyOps";
 import { getTaxonomyOps } from "@/data/taxonomyOps.wire";
 import {
   TERM_NAME_MAX,
@@ -43,6 +43,7 @@ export function TaxonomyManager() {
   const [retry, setRetry] = useState<Retry>(null);
   const [editing, setEditing] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [openPosts, setOpenPosts] = useState<string | null>(null); // যে term-এর লেখা-তালিকা খোলা
 
   // kind বদলালে/retry-তে তালিকা ও (সংখ্যা ছোট হলে) ব্যবহার-সংখ্যা আনা
   useEffect(() => {
@@ -88,6 +89,7 @@ export function TaxonomyManager() {
     setRetry(null);
     setEditing(null);
     setDeleting(null);
+    setOpenPosts(null);
     setLoad({ kind: "loading" });
   }
 
@@ -278,6 +280,15 @@ export function TaxonomyManager() {
                           {working === term.id && <span className="ml-2">{bn.org.updating}</span>}
                         </span>
                       </span>
+                      <button
+                        type="button"
+                        aria-expanded={openPosts === term.id}
+                        disabled={!!working}
+                        onClick={() => setOpenPosts(openPosts === term.id ? null : term.id)}
+                        className="min-h-11 shrink-0 px-2 text-sm text-accent-text underline disabled:opacity-50"
+                      >
+                        {openPosts === term.id ? bn.org.hidePosts : bn.org.showPosts}
+                      </button>
                       {deleting === term.id ? (
                         <span className="flex items-center gap-1">
                           <span className="text-sm">{bn.org.confirmDelete}</span>
@@ -303,6 +314,22 @@ export function TaxonomyManager() {
                         />
                       )}
                     </div>
+                  )}
+                  {openPosts === term.id && editing !== term.id && (
+                    <TermPosts
+                      key={`${term.id}-${tick}`}
+                      kind={kind}
+                      term={term}
+                      categories={kind === "categories" ? load.terms : []}
+                      disabled={!!working}
+                      onMoved={(text, ok, publishedAffected) => {
+                        void (async () => {
+                          const extra = await maybeRebuild({ updated: 0, publishedAffected, failed: 0 });
+                          setNote({ ok, text: `${text}${extra}` });
+                          reload();
+                        })();
+                      }}
+                    />
                   )}
                 </li>
               );
@@ -444,6 +471,116 @@ function EditRow(props: {
         </button>
       </div>
     </form>
+  );
+}
+
+/** term-এর লেখা-তালিকা; ক্যাটাগরিতে প্রতিটি/সব লেখার ক্যাটাগরি বদল (ডুপ্লিকেট ক্যাটাগরি মেটানোরও পথ) */
+function TermPosts(props: {
+  kind: TaxonomyKind;
+  term: TermWithId;
+  categories: TermWithId[];
+  disabled: boolean;
+  onMoved: (text: string, ok: boolean, publishedAffected: number) => void;
+}) {
+  const [posts, setPosts] = useState<TermPost[] | null>(null);
+  const [failed, setFailed] = useState(false);
+  const [target, setTarget] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+  const canMove = props.kind === "categories";
+  const choices = props.categories.filter((c) => c.id !== props.term.id);
+
+  useEffect(() => {
+    let dead = false;
+    (async () => {
+      try {
+        const ops = await getTaxonomyOps();
+        const list = await ops.listPosts(props.kind, props.term.id);
+        if (!dead) setPosts(list);
+      } catch {
+        if (!dead) setFailed(true);
+      }
+    })();
+    return () => {
+      dead = true;
+    };
+  }, [props.kind, props.term.id]);
+
+  async function move(list: TermPost[]) {
+    if (busy || props.disabled || !target || list.length === 0) return;
+    const to = props.categories.find((c) => c.id === target);
+    if (!to) return;
+    if (list.length > 1 && !window.confirm(bn.org.moveAllConfirm(list.length, to.name))) return;
+    setBusy(true);
+    setMsg(null);
+    try {
+      const r = await (await getTaxonomyOps()).moveToCategory(list, target);
+      props.onMoved(r.failed > 0 ? bn.org.movePartial(r.failed) : bn.org.moveDone(r.updated), r.failed === 0, r.publishedAffected);
+    } catch {
+      setMsg(bn.org.moveFailed);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="mt-2 space-y-2 rounded-2xl border border-line bg-surface p-3">
+      {failed && (
+        <p role="alert" className="text-sm text-accent-text">
+          {bn.org.postsFailed}
+        </p>
+      )}
+      {!failed && posts === null && (
+        <p role="status" className="text-sm text-muted">
+          {bn.org.postsLoading}
+        </p>
+      )}
+      {posts && posts.length === 0 && <p className="text-sm text-muted">{bn.org.postsEmpty}</p>}
+      {posts && posts.length > 0 && (
+        <>
+          {canMove && choices.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2">
+              <select
+                aria-label={bn.org.moveTo}
+                className={`${input} max-w-xs text-base text-text`}
+                value={target}
+                onChange={(e) => setTarget(e.target.value)}
+              >
+                <option value="">{bn.org.moveChoose}</option>
+                {choices.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+              <button type="button" disabled={!target || busy || props.disabled} onClick={() => void move(posts)} className={ghost}>
+                {bn.org.moveAll}
+              </button>
+            </div>
+          )}
+          <ul className="divide-y divide-line">
+            {posts.map((p) => (
+              <li key={p.id} className="flex items-center gap-2 py-1">
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate">{p.title || bn.library.untitled}</span>
+                  {p.status === "trashed" && <span className="text-xs text-muted">{bn.org.inTrash}</span>}
+                </span>
+                {canMove && choices.length > 0 && (
+                  <button type="button" disabled={!target || busy || props.disabled} onClick={() => void move([p])} className={ghost}>
+                    {bn.org.moveOne}
+                  </button>
+                )}
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+      {msg && (
+        <p role="alert" className="text-sm text-accent-text">
+          {msg}
+        </p>
+      )}
+    </div>
   );
 }
 

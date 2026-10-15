@@ -16,6 +16,9 @@ export type PropagateResult = {
   failed: number;
 };
 
+/** সংগঠনের তালিকায় দেখানো লেখা (trashed-সহ — ব্যবহার-সংখ্যার সাথে মেলে; status=trashed দেখে UI চিহ্নিত করে) */
+export type TermPost = { id: string; title: string; status: string; published: boolean };
+
 export type BackfillResult = PropagateResult & { missing: number };
 
 export interface TaxonomyOps {
@@ -30,6 +33,10 @@ export interface TaxonomyOps {
   rename(kind: TaxonomyKind, id: string, name: string): Promise<PropagateResult>;
   /** শুধু পোস্টের denormalized নাম term-এর বর্তমান নামে মেলায় — "আবার চেষ্টা"; idempotent */
   propagateName(kind: TaxonomyKind, id: string): Promise<PropagateResult>;
+  /** এই term ব্যবহার করা লেখা (trashed-সহ), সর্বশেষ সম্পাদনা আগে — limit নেই (সম্পূর্ণ তালিকা) */
+  listPosts(kind: TaxonomyKind, id: string): Promise<TermPost[]>;
+  /** লেখাগুলোর ক্যাটাগরি বদল: categoryId+categoryName একসাথে; `updatedAt` অক্ষত; idempotent; ব্যর্থ অংশ `failed`-এ */
+  moveToCategory(posts: readonly TermPost[], categoryId: string): Promise<PropagateResult>;
   /** guard: ডিফল্ট ক্যাটাগরি, ব্যবহৃত term, সন্তান-ক্যাটাগরি — TermRuleError */
   remove(kind: TaxonomyKind, id: string): Promise<void>;
   /** Migration 001: ক্যাটাগরিহীন (trashed ছাড়া) পোস্টে ডিফল্ট বসায়; শুধু ফিল্ড যোগ — কিছু মোছা/বদলানো নয়; idempotent */

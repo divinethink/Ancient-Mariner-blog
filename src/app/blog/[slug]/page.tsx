@@ -24,7 +24,7 @@ import { bn } from "@/i18n/bn";
 import { resolveCover } from "@/lib/cards";
 import { resolveGallery } from "@/lib/gallery";
 import { cldOgUrl } from "@/lib/cloudinary";
-import { formatDate } from "@/lib/datetime";
+import { formatBnNumber, formatDate } from "@/lib/datetime";
 import { pagePath } from "@/lib/pages";
 import { blogPath, planSlugMoves, postExcerpt } from "@/lib/publicSite";
 import { absoluteUrl } from "@/lib/reader";
@@ -166,7 +166,7 @@ export default async function BlogPost({ params }: Props) {
     <>
       {post.publishedAt && <time dateTime={post.publishedAt.toISOString()}>{formatDate(post.publishedAt, tz)}</time>}
       {" · "}
-      {post.wordCount} {bn.library.words}
+      {formatBnNumber(post.wordCount)} {bn.library.words}
       {minutes > 0 && ` · ${bn.public.readMinutes(minutes)}`}
       {post.location && ` · 📍 ${post.location}`}
     </>

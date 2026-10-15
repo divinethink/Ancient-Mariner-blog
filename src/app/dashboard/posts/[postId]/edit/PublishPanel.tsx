@@ -10,7 +10,7 @@ import { MAX_LOCATION, MAX_SEO_DESC, MAX_SEO_TITLE, PostNotFoundError, SlugTaken
 import { getTaxonomyOps } from "@/data/taxonomyOps.wire";
 import { getTaxonomyRepo } from "@/data/taxonomyRepo.wire";
 import { bn } from "@/i18n/bn";
-import { toZonedInput } from "@/lib/datetime";
+import { formatLongDateTime, fromZonedInput, toZonedInput } from "@/lib/datetime";
 import { sameIds } from "@/lib/gallery";
 import { orgFromPost, orgPatch, parseSeriesOrder, type OrgState } from "@/lib/postOrg";
 import { parsePublishDate } from "@/lib/publish";
@@ -371,7 +371,7 @@ export function PublishPanel(p: Props) {
                 {published ? bn.publishPanel.published : scheduled ? bn.publishPanel.scheduled : bn.publishPanel.draft}
               </span>
               {scheduled && meta.post.scheduledAt && (
-                <span className="ml-2 text-muted">{bn.publishPanel.scheduledFor(toZonedInput(meta.post.scheduledAt, tz).replace("T", " "))}</span>
+                <span className="ml-2 text-muted">{bn.publishPanel.scheduledFor(formatLongDateTime(meta.post.scheduledAt, tz))}</span>
               )}
               {published && meta.hasDraft && (
                 <span className="ml-2 text-accent-text">{bn.publishPanel.unpublished}</span>
@@ -510,7 +510,7 @@ export function PublishPanel(p: Props) {
               </fieldset>
             </Section>
 
-            <Section title={bn.publishPanel.sections.dates} hint={dateIn ? dateIn.replace("T", " ") : undefined}>
+            <Section title={bn.publishPanel.sections.dates} hint={dateIn ? (() => { const d = fromZonedInput(dateIn, tz); return d ? formatLongDateTime(d, tz) : undefined; })() : undefined}>
               <div>
                 <label htmlFor="pp-date" className={field}>
                   {bn.publishPanel.publishedAt}

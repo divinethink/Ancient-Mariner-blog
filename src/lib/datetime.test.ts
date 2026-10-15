@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { dayKey, formatDate, formatShortDateTime, fromZonedInput, toZonedInput, tzLabel } from "./datetime";
+import { dayKey, formatBnNumber, formatDate, formatLongDateTime, formatShortDateTime, fromZonedInput, toZonedInput, tzLabel } from "./datetime";
 
 describe("dayKey (Asia/Dhaka = UTC+6)", () => {
   it("UTC 17:59 একই দিন, 18:00 পরের দিন", () => {
@@ -53,5 +53,19 @@ describe("formatShortDateTime", () => {
     expect(out).not.toContain("২০২৬");
     expect(out).toContain("১১");
     expect(out).not.toContain(" এ ");
+  });
+});
+
+describe("formatLongDateTime / formatBnNumber (বাংলা অঙ্ক)", () => {
+  it("সাইট-timezone-এ বাংলা অঙ্কে তারিখ+সময়; ISO-ধরন নয়", () => {
+    const out = formatLongDateTime("2026-10-12T11:41:00Z"); // ঢাকা 17:41
+    expect(out).toContain("২০২৬");
+    expect(out).toContain("৫:৪১");
+    expect(out).not.toMatch(/[0-9]/);
+    expect(out).not.toContain("T");
+  });
+  it("সংখ্যা বাংলায়, গ্রুপিং ছাড়া", () => {
+    expect(formatBnNumber(69)).toBe("৬৯");
+    expect(formatBnNumber(1234)).toBe("১২৩৪");
   });
 });
