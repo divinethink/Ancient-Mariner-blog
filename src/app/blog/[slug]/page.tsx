@@ -175,7 +175,6 @@ export default async function BlogPost({ params }: Props) {
   return (
     <PublicShell>
       <ViewBeacon postId={post.id} />
-      <OwnerEditButton postId={post.id} />
       <ReadingChrome targetId="post-article" title={post.title || bn.library.untitled} />
       <ReadingResume slug={post.slug} targetId="post-article" />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: ld }} />
@@ -190,6 +189,7 @@ export default async function BlogPost({ params }: Props) {
         </div>
       )}
       <PostArticle toc={toc} anchors poem={post.contentType === "poetry"} title={post.title} meta={meta} links={card?.category ? [card.category] : []} body={post.body} cover={card?.cover} gallery={resolveGallery(post.gallery, media)} />
+      <OwnerEditButton postId={post.id} />
       <div className="zen-hide">
         <ShareBar url={absoluteUrl(safeSiteUrl(), blogPath(post.slug))} />
         <AuthorBox name={siteTitle} bio={authorBio} aboutHref={pages.some((p) => p.slug === "about") ? pagePath("about") : undefined} />
