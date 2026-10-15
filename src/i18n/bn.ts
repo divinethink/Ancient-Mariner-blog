@@ -699,6 +699,7 @@ export const bn = {
     calendarTitle: "দিনলিপি পঞ্জিকা",
     diaryNav: "দিনলিপি",
     ownerDashboard: "ড্যাশবোর্ড",
+    ownerEditPost: "এই লেখা সম্পাদনা করুন",
     diaryLess: "কম",
     diaryMore: "বেশি",
     diaryToday: "আজ",

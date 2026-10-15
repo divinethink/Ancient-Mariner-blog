@@ -11,6 +11,7 @@ import { PostPager, RelatedPosts } from "@/components/public/PostFooterNav";
 import { PublicShell } from "@/components/public/PublicShell";
 import { QuoteShare } from "@/components/public/QuoteShare";
 import { ReaderBar } from "@/components/public/ReaderTools";
+import { OwnerEditButton } from "@/components/public/OwnerEditButton";
 import { ViewBeacon } from "@/components/public/ViewBeacon";
 import { ShareBar } from "@/components/public/ShareBar";
 import { Comments, type CommentView } from "@/components/public/Comments";
@@ -174,6 +175,7 @@ export default async function BlogPost({ params }: Props) {
   return (
     <PublicShell>
       <ViewBeacon postId={post.id} />
+      <OwnerEditButton postId={post.id} />
       <ReadingChrome targetId="post-article" title={post.title || bn.library.untitled} />
       <ReadingResume slug={post.slug} targetId="post-article" />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: ld }} />

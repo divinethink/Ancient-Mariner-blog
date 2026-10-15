@@ -427,6 +427,62 @@ export function PublishPanel(p: Props) {
               </label>
             </div>
 
+            {org && (
+              <Section title={bn.org.panel.title} hint={`${org.categoryName ?? "—"} · #${org.tags.length}`}>
+                <OrgSection
+                  value={org}
+                  onChange={setOrg}
+                  opts={orgOpts}
+                  pending={pendingTags}
+                  onPending={setPendingTags}
+                  orderInput={orderIn}
+                  onOrderInput={setOrderIn}
+                  published={published}
+                  disabled={busy}
+                  onRetry={() => {
+                    setOrgOpts(null);
+                    setOptsTick((n) => n + 1);
+                  }}
+                />
+              </Section>
+            )}
+
+            <Section title={bn.publishPanel.sections.dates} hint={dateIn ? (() => { const d = fromZonedInput(dateIn, tz); return d ? formatLongDateTime(d, tz) : undefined; })() : undefined}>
+              <div>
+                <label htmlFor="pp-date" className={field}>
+                  {bn.publishPanel.publishedAt}
+                </label>
+                <input
+                  id="pp-date"
+                  type="datetime-local"
+                  value={dateIn}
+                  max={maxIn || undefined}
+                  onChange={(e) => setDateIn(e.target.value)}
+                  className={input}
+                />
+                <p className="mt-1 text-xs text-muted">{bn.publishPanel.publishedAtHint}</p>
+              </div>
+              {!published && (
+                <div>
+                  <label htmlFor="pp-sched" className={field}>
+                    {bn.publishPanel.scheduleAt}
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    <input id="pp-sched" type="datetime-local" value={schedIn} min={maxIn || undefined} onChange={(e) => setSchedIn(e.target.value)} className={`${input} flex-1`} />
+                    <button type="button" onClick={onSchedule} disabled={busy || !schedIn} className={btnGhost}>
+                      {bn.publishPanel.scheduleBtn}
+                    </button>
+                  </div>
+                  <p className="mt-1 text-xs text-muted">{bn.publishPanel.scheduleHint}</p>
+                  {scheduled && (
+                    <button type="button" onClick={onUnschedule} disabled={busy} className={`${btnGhost} mt-2`}>
+                      {bn.publishPanel.scheduleCancel}
+                    </button>
+                  )}
+                </div>
+              )}
+            </Section>
+
             <Section title={bn.publishPanel.sections.details} hint={placeIn.trim() || undefined}>
               <div>
                 <label htmlFor="pp-excerpt" className={field}>
@@ -466,26 +522,6 @@ export function PublishPanel(p: Props) {
               <GalleryPicker value={galleryIn} onChange={setGalleryIn} disabled={busy} />
             </Section>
 
-            {org && (
-              <Section title={bn.org.panel.title} hint={`${org.categoryName ?? "—"} · #${org.tags.length}`}>
-                <OrgSection
-                  value={org}
-                  onChange={setOrg}
-                  opts={orgOpts}
-                  pending={pendingTags}
-                  onPending={setPendingTags}
-                  orderInput={orderIn}
-                  onOrderInput={setOrderIn}
-                  published={published}
-                  disabled={busy}
-                  onRetry={() => {
-                    setOrgOpts(null);
-                    setOptsTick((n) => n + 1);
-                  }}
-                />
-              </Section>
-            )}
-
             <Section title={bn.publishPanel.sections.seo} hint={seoNoindexIn ? "noindex" : undefined}>
               <fieldset className="space-y-3" disabled={busy}>
                 <legend className="sr-only">{bn.publishPanel.seo.title}</legend>
@@ -508,42 +544,6 @@ export function PublishPanel(p: Props) {
                 </label>
                 <CoverPicker value={ogIn} onChange={setOgIn} disabled={busy} labels={{ title: bn.publishPanel.ogImage.title, none: bn.publishPanel.ogImage.none }} />
               </fieldset>
-            </Section>
-
-            <Section title={bn.publishPanel.sections.dates} hint={dateIn ? (() => { const d = fromZonedInput(dateIn, tz); return d ? formatLongDateTime(d, tz) : undefined; })() : undefined}>
-              <div>
-                <label htmlFor="pp-date" className={field}>
-                  {bn.publishPanel.publishedAt}
-                </label>
-                <input
-                  id="pp-date"
-                  type="datetime-local"
-                  value={dateIn}
-                  max={maxIn || undefined}
-                  onChange={(e) => setDateIn(e.target.value)}
-                  className={input}
-                />
-                <p className="mt-1 text-xs text-muted">{bn.publishPanel.publishedAtHint}</p>
-              </div>
-              {!published && (
-                <div>
-                  <label htmlFor="pp-sched" className={field}>
-                    {bn.publishPanel.scheduleAt}
-                  </label>
-                  <div className="flex flex-wrap gap-2">
-                    <input id="pp-sched" type="datetime-local" value={schedIn} min={maxIn || undefined} onChange={(e) => setSchedIn(e.target.value)} className={`${input} flex-1`} />
-                    <button type="button" onClick={onSchedule} disabled={busy || !schedIn} className={btnGhost}>
-                      {bn.publishPanel.scheduleBtn}
-                    </button>
-                  </div>
-                  <p className="mt-1 text-xs text-muted">{bn.publishPanel.scheduleHint}</p>
-                  {scheduled && (
-                    <button type="button" onClick={onUnschedule} disabled={busy} className={`${btnGhost} mt-2`}>
-                      {bn.publishPanel.scheduleCancel}
-                    </button>
-                  )}
-                </div>
-              )}
             </Section>
 
             <div className="flex flex-wrap items-center gap-2">

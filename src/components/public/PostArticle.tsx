@@ -35,7 +35,7 @@ export function PostArticle({
   poem?: boolean;
 }) {
   return (
-    <article id="post-article">
+    <article id="post-article" className={poem ? "text-center" : undefined}>
       {links[0] && (
         <p className="mb-2">
           {links[0].href ? (
