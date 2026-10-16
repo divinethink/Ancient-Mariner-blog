@@ -355,7 +355,6 @@ export function EditorSurface({ postId, data, backToSite = null }: { postId: str
       <header className="chrome sticky top-0 z-20 -mx-6 mb-4 flex min-h-14 items-center gap-1 border-b border-line bg-bg/90 px-4 backdrop-blur sm:gap-3">
         {backToSite ? (
           // সাধারণ <a>: পুরো-পেজ লোডে পাবলিক পেজের নিজের CSP/static HTML (ইচ্ছাকৃত)
-          // eslint-disable-next-line @next/next/no-html-link-for-pages
           <a href={backToSite} aria-label={bn.editor.backToSite} onClick={(e) => void onBack(e)} className="flex size-11 shrink-0 items-center justify-center text-xl">
             ←
           </a>

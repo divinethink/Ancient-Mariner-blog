@@ -14,7 +14,6 @@ export function OwnerEditButton({ postId, backPath }: { postId: string; backPath
   const on = useSyncExternalStore(subscribe, hasOwnerHint, () => false);
   if (!on) return null;
   return (
-    // eslint-disable-next-line @next/next/no-html-link-for-pages -- ইচ্ছাকৃত: পুরো-পেজ লোড (উপরের কারণ)
     <a
       href={`/dashboard/posts/${postId}/edit?back=${encodeURIComponent(backPath)}`}
       aria-label={bn.public.ownerEditPost}

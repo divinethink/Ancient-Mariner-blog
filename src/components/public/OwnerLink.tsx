@@ -11,7 +11,6 @@ export function OwnerLink({ className }: { className: string }) {
   const on = useSyncExternalStore(subscribe, hasOwnerHint, () => false);
   return on ? (
     // সাধারণ <a>: পুরো-পেজ লোডে dashboard-এর CSP বসে (OwnerEditButton-এর মন্তব্য দেখুন)
-    // eslint-disable-next-line @next/next/no-html-link-for-pages
     <a href="/dashboard" className={className}>
       ✎ {bn.public.ownerDashboard}
     </a>

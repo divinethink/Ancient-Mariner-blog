@@ -39,8 +39,6 @@ export function PostArticle({
 }) {
   return (
     <article id="post-article" className={poem ? "text-center" : undefined}>
-        </p>
-      )}
       <h1 className="font-serif text-3xl font-bold leading-snug">{title || bn.library.untitled}</h1>
       <p className="mt-2 text-sm text-muted">{meta}</p>
       {cover && (
