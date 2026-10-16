@@ -107,7 +107,7 @@ export async function load(postId: string, isNew: boolean, tpl: string | null = 
   };
 }
 
-export function PostEditor({ postId, isNew, tpl = null }: { postId: string; isNew: boolean; tpl?: string | null }) {
+export function PostEditor({ postId, isNew, tpl = null, backToSite = null }: { postId: string; isNew: boolean; tpl?: string | null; backToSite?: string | null }) {
   const tz = useSiteTimezone();
   const [state, setState] = useState<State>({ kind: "loading" });
   const [attempt, setAttempt] = useState(0);
@@ -122,7 +122,7 @@ export function PostEditor({ postId, isNew, tpl = null }: { postId: string; isNe
     };
   }, [postId, isNew, tpl, tz, attempt]);
 
-  if (state.kind === "ready") return <EditorSurface postId={postId} data={state.data} />;
+  if (state.kind === "ready") return <EditorSurface postId={postId} data={state.data} backToSite={backToSite} />;
   if (state.kind === "error") {
     return (
       <p role="alert" className="text-muted">

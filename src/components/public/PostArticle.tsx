@@ -19,6 +19,7 @@ export function PostArticle({
   toc = [],
   anchors = false,
   poem = false,
+  after,
 }: {
   title: string;
   meta: ReactNode;
@@ -33,18 +34,11 @@ export function PostArticle({
   anchors?: boolean;
   /** P10b-২: কবিতা (contentType=poetry) — কেন্দ্রে, পঙ্‌ক্তি-ভাঙা অক্ষত */
   poem?: boolean;
+  /** লেখার শেষ-সারির ডানে (owner-এর সম্পাদনা-আইকন; পাঠকের জন্য খালি) */
+  after?: ReactNode;
 }) {
   return (
     <article id="post-article" className={poem ? "text-center" : undefined}>
-      {links[0] && (
-        <p className="mb-2">
-          {links[0].href ? (
-            <Link href={links[0].href} prefetch={false} className="inline-flex min-h-8 items-center rounded-full border border-line bg-surface px-3 text-sm text-accent-text">
-              {links[0].name}
-            </Link>
-          ) : (
-            <span className="inline-flex min-h-8 items-center rounded-full border border-line bg-surface px-3 text-sm text-muted">{links[0].name}</span>
-          )}
         </p>
       )}
       <h1 className="font-serif text-3xl font-bold leading-snug">{title || bn.library.untitled}</h1>
@@ -59,6 +53,21 @@ export function PostArticle({
         <PostBody body={body} anchors={anchors} />
       </div>
       {gallery.length > 0 && <Gallery items={gallery} />}
+      {(links[0] || after) && (
+        <div className="mt-3 flex items-center justify-between gap-3 text-start">
+          <span>
+            {links[0] &&
+              (links[0].href ? (
+                <Link href={links[0].href} prefetch={false} className="inline-flex min-h-8 items-center rounded-full border border-line bg-surface px-3 text-sm text-accent-text">
+                  {links[0].name}
+                </Link>
+              ) : (
+                <span className="inline-flex min-h-8 items-center rounded-full border border-line bg-surface px-3 text-sm text-muted">{links[0].name}</span>
+              ))}
+          </span>
+          {after}
+        </div>
+      )}
     </article>
   );
 }

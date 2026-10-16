@@ -43,7 +43,7 @@ export type Loaded = {
 };
 type SaveState = "idle" | "saving" | "saved" | "failed";
 
-export function EditorSurface({ postId, data }: { postId: string; data: Loaded }) {
+export function EditorSurface({ postId, data, backToSite = null }: { postId: string; data: Loaded; backToSite?: string | null }) {
   const [title, setTitle] = useState(data.title);
   const router = useRouter();
   const [saveState, setSaveState] = useState<SaveState>("idle");
@@ -229,9 +229,11 @@ export function EditorSurface({ postId, data }: { postId: string; data: Loaded }
       e.preventDefault();
       await flushAsync();
       if (saveFailedRef.current && !confirm(bn.editor.backUnsaved)) return;
-      router.push("/dashboard");
+      // পাবলিক থেকে এলে সেখানেই ফেরা — পুরো-পেজ লোড (পাবলিক CSP-র জন্য); নইলে ড্যাশবোর্ড
+      if (backToSite) window.location.assign(backToSite);
+      else router.push("/dashboard");
     },
-    [saveState, flush, flushAsync, router],
+    [saveState, flush, flushAsync, router, backToSite],
   );
 
   const onBlur = useCallback(() => {
@@ -351,14 +353,17 @@ export function EditorSurface({ postId, data }: { postId: string; data: Loaded }
       style={{ paddingRight: inspector ? "24rem" : undefined, "--insp-w": inspector ? "24rem" : "0px" } as CSSProperties}
     >
       <header className="chrome sticky top-0 z-20 -mx-6 mb-4 flex min-h-14 items-center gap-1 border-b border-line bg-bg/90 px-4 backdrop-blur sm:gap-3">
-        <Link
-          href="/dashboard"
-          aria-label={bn.editor.back}
-          onClick={(e) => void onBack(e)}
-          className="flex size-11 shrink-0 items-center justify-center text-xl"
-        >
-          ←
-        </Link>
+        {backToSite ? (
+          // সাধারণ <a>: পুরো-পেজ লোডে পাবলিক পেজের নিজের CSP/static HTML (ইচ্ছাকৃত)
+          // eslint-disable-next-line @next/next/no-html-link-for-pages
+          <a href={backToSite} aria-label={bn.editor.backToSite} onClick={(e) => void onBack(e)} className="flex size-11 shrink-0 items-center justify-center text-xl">
+            ←
+          </a>
+        ) : (
+          <Link href="/dashboard" aria-label={bn.editor.back} onClick={(e) => void onBack(e)} className="flex size-11 shrink-0 items-center justify-center text-xl">
+            ←
+          </Link>
+        )}
         <span role="status" aria-live="polite" className="flex-1 text-sm text-muted">
           {statusText}
           {saveState === "failed" && <span className="text-accent-text"> {bn.editor.saveFailed}</span>}

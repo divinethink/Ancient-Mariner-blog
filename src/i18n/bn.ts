@@ -875,6 +875,7 @@ export const bn = {
     previewBack: "← লেখায় ফিরুন",
     titlePlaceholder: "শিরোনাম (ঐচ্ছিক)",
     back: "ফিরুন",
+    backToSite: "সাইটে ফিরুন",
     moreOpen: "আরও",
     history: "ইতিহাস",
     tpl: {

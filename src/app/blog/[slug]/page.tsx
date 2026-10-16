@@ -188,8 +188,7 @@ export default async function BlogPost({ params }: Props) {
           <SeriesBanner name={seriesScope.term!.name} path={seriesScope.path} index={sp.index} total={sp.total} prev={sp.prev} next={sp.next} />
         </div>
       )}
-      <PostArticle toc={toc} anchors poem={post.contentType === "poetry"} title={post.title} meta={meta} links={card?.category ? [card.category] : []} body={post.body} cover={card?.cover} gallery={resolveGallery(post.gallery, media)} />
-      <OwnerEditButton postId={post.id} />
+      <PostArticle toc={toc} anchors poem={post.contentType === "poetry"} title={post.title} meta={meta} links={card?.category ? [card.category] : []} body={post.body} cover={card?.cover} gallery={resolveGallery(post.gallery, media)} after={<OwnerEditButton postId={post.id} backPath={blogPath(post.slug)} />} />
       <div className="zen-hide">
         <ShareBar url={absoluteUrl(safeSiteUrl(), blogPath(post.slug))} />
         <AuthorBox name={siteTitle} bio={authorBio} aboutHref={pages.some((p) => p.slug === "about") ? pagePath("about") : undefined} />
