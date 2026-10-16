@@ -119,4 +119,7 @@ describe("DocView — শেষের ফাঁকা অনুচ্ছেদ �
     expect(view(p(t("ক")), empty, p({ type: "hardBreak" }), p(t("\u00a0 ")))).toBe("<p>ক</p>");
     expect(view(p(t("ক")), empty, p(t("খ")), empty)).toBe("<p>ক</p><p></p><p>খ</p>");
   });
+  it("পুরো লেখা ফাঁকা হলে কিছু বাদ নয়", () => {
+    expect(view({ type: "paragraph" } as DocNode)).toBe("<p></p>");
+  });
 });

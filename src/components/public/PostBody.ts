@@ -101,8 +101,11 @@ export function DocView({
   media?: ReadonlyMap<string, CoverView>;
 }): ReactNode {
   if (doc.type !== "doc") return null;
-  const content = [...(doc.content ?? [])];
-  while (content.length > 0 && isBlankParagraph(content[content.length - 1])) content.pop();
+  const all = doc.content ?? [];
+  let end = all.length;
+  while (end > 0 && isBlankParagraph(all[end - 1])) end--;
+  // পুরো লেখা ফাঁকা হলে কিছু বাদ নয় (বিকৃত body-র fallback খালি অনুচ্ছেদ আগের মতোই থাকে)
+  const content = end > 0 ? all.slice(0, end) : all;
   return h(Fragment, null, ...kids({ ...doc, content }, { anchors, n: 0, media }));
 }
 
