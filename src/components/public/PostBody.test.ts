@@ -112,3 +112,11 @@ describe("mediaImage render", () => {
     expect(html).toContain("<p>ঠিক</p>");
   });
 });
+
+describe("DocView — শেষের ফাঁকা অনুচ্ছেদ বাদ (শুধু দেখানোয়)", () => {
+  it("শেষের ফাঁকা/<br>/nbsp অনুচ্ছেদ বাদ; মাঝেরটা থাকে", () => {
+    const empty = { type: "paragraph" } as DocNode;
+    expect(view(p(t("ক")), empty, p({ type: "hardBreak" }), p(t("\u00a0 ")))).toBe("<p>ক</p>");
+    expect(view(p(t("ক")), empty, p(t("খ")), empty)).toBe("<p>ক</p><p></p><p>খ</p>");
+  });
+});

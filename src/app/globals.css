@@ -156,6 +156,10 @@ main:has(.dash-shell) {
 .reading p {
   margin: 0 0 1em;
 }
+/* লেখার শেষ অনুচ্ছেদের নিচে বাড়তি ফাঁক নেই (শেষ-সারি নিজেই দূরত্ব দেয়) */
+.reading > :last-child {
+  margin-bottom: 0;
+}
 .reading h2,
 .reading h3 {
   font-weight: 700;

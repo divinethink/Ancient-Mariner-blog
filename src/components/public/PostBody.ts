@@ -85,6 +85,12 @@ function renderNode(n: DocNode, key: number, st: State): ReactNode {
 }
 
 /** doc যেমন আছে তেমন render (কোনো sanitize ছাড়া) — renderer-এর নিজস্ব allowlist-test-এর জন্য আলাদা export */
+/** শেষের "দেখতে ফাঁকা" অনুচ্ছেদ (শুধু হোয়াইটস্পেস/nbsp/zero-width বা hardBreak) — শুধু দেখানোর সময় বাদ; সংরক্ষিত লেখা অক্ষত */
+function isBlankParagraph(n: DocNode): boolean {
+  if (n.type !== "paragraph") return false;
+  return (n.content ?? []).every((c) => c.type === "hardBreak" || (c.type === "text" && !/[^\s\u00a0\u200b-\u200d\ufeff]/.test(c.text ?? "")));
+}
+
 export function DocView({
   doc,
   anchors = false,
@@ -95,7 +101,9 @@ export function DocView({
   media?: ReadonlyMap<string, CoverView>;
 }): ReactNode {
   if (doc.type !== "doc") return null;
-  return h(Fragment, null, ...kids(doc, { anchors, n: 0, media }));
+  const content = [...(doc.content ?? [])];
+  while (content.length > 0 && isBlankParagraph(content[content.length - 1])) content.pop();
+  return h(Fragment, null, ...kids({ ...doc, content }, { anchors, n: 0, media }));
 }
 
 /** সংরক্ষিত body-string → `parseBody` (sanitize) → render */

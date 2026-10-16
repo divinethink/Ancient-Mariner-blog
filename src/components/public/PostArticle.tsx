@@ -52,7 +52,8 @@ export function PostArticle({
       </div>
       {gallery.length > 0 && <Gallery items={gallery} />}
       {(links[0] || after) && (
-        <div className="mt-3 flex items-center justify-between gap-3 text-start">
+        <div className={`mt-3 items-center gap-3 text-start ${poem ? "grid grid-cols-[1fr_auto_1fr]" : "flex justify-between"}`}>
+          {poem && <span aria-hidden="true" />}
           <span>
             {links[0] &&
               (links[0].href ? (
@@ -63,7 +64,7 @@ export function PostArticle({
                 <span className="inline-flex min-h-8 items-center rounded-full border border-line bg-surface px-3 text-sm text-muted">{links[0].name}</span>
               ))}
           </span>
-          {after}
+          <span className="justify-self-end">{after}</span>
         </div>
       )}
     </article>
