@@ -23,7 +23,7 @@ import { hasDefaultOgImage } from "@/data/publicAssets";
 import { getPublicMedia, getPublicPages, getPublicSettings, listPublicPosts, listUnlistedPosts } from "@/data/publicSnapshot";
 import { bn } from "@/i18n/bn";
 import { resolveCover } from "@/lib/cards";
-import { resolveGallery } from "@/lib/gallery";
+import { resolveGallery, resolveMediaMap } from "@/lib/gallery";
 import { cldOgUrl } from "@/lib/cloudinary";
 import { formatBnNumber, formatDate } from "@/lib/datetime";
 import { pagePath } from "@/lib/pages";
@@ -32,7 +32,7 @@ import { absoluteUrl } from "@/lib/reader";
 import { readingMinutes } from "@/lib/readingTime";
 import { adjacentIds, relatedIds, seriesPosition } from "@/lib/related";
 import { buildToc } from "@/lib/toc";
-import { parseBody } from "@/lib/editorDoc";
+import { collectMediaIds, parseBody } from "@/lib/editorDoc";
 import { articleJsonLd, buildSeo, resolvePostSeo } from "@/lib/seo";
 
 // build-সময়ে সব published+public লেখার (এবং বাংলা পুরনো-slug-এর redirect-stub) পেজ; অন্য slug = 404 (Arch §২, §১২)
@@ -188,7 +188,7 @@ export default async function BlogPost({ params }: Props) {
           <SeriesBanner name={seriesScope.term!.name} path={seriesScope.path} index={sp.index} total={sp.total} prev={sp.prev} next={sp.next} />
         </div>
       )}
-      <PostArticle toc={toc} anchors poem={post.contentType === "poetry"} title={post.title} meta={meta} links={card?.category ? [card.category] : []} body={post.body} cover={card?.cover} gallery={resolveGallery(post.gallery, media)} after={<OwnerEditButton postId={post.id} backPath={blogPath(post.slug)} />} />
+      <PostArticle toc={toc} anchors poem={post.contentType === "poetry"} title={post.title} meta={meta} links={card?.category ? [card.category] : []} body={post.body} cover={card?.cover} gallery={resolveGallery(post.gallery, media)} media={resolveMediaMap(collectMediaIds(parseBody(post.body)), media)} after={<OwnerEditButton postId={post.id} backPath={blogPath(post.slug)} />} />
       <div className="zen-hide">
         <ShareBar url={absoluteUrl(safeSiteUrl(), blogPath(post.slug))} />
         <AuthorBox name={siteTitle} bio={authorBio} aboutHref={pages.some((p) => p.slug === "about") ? pagePath("about") : undefined} />

@@ -20,6 +20,7 @@ export function PostArticle({
   anchors = false,
   poem = false,
   after,
+  media,
 }: {
   title: string;
   meta: ReactNode;
@@ -36,6 +37,8 @@ export function PostArticle({
   poem?: boolean;
   /** লেখার শেষ-সারির ডানে (owner-এর সম্পাদনা-আইকন; পাঠকের জন্য খালি) */
   after?: ReactNode;
+  /** body-র mediaImage id → ছবির তথ্য (পাবলিক build-এ); না দিলে body-র ছবি দেখায় না */
+  media?: ReadonlyMap<string, CoverView>;
 }) {
   return (
     <article id="post-article" className={poem ? "text-center" : undefined}>
@@ -48,7 +51,7 @@ export function PostArticle({
       )}
       <Toc items={toc} />
       <div className={`reading mt-6${poem ? " reading-poem" : ""}`}>
-        <PostBody body={body} anchors={anchors} />
+        <PostBody body={body} anchors={anchors} media={media} />
       </div>
       {gallery.length > 0 && <Gallery items={gallery} />}
       {(links[0] || after) && (

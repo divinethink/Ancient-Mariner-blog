@@ -17,6 +17,10 @@ describe("gallery", () => {
   it("mediaIdsOf: cover+gallery, ডুপ্লিকেট ছাড়া", () => {
     expect(mediaIdsOf([{ coverMediaId: "a", gallery: ["b", "a", "c"] }, { gallery: ["c", "d"] }, {}])).toEqual(["a", "b", "c", "d"]);
   });
+  it("mediaIdsOf: body-র mediaImage id-ও আসে", () => {
+    const body = JSON.stringify({ type: "doc", content: [{ type: "mediaImage", attrs: { mediaId: "z1" } }, { type: "paragraph" }] });
+    expect(mediaIdsOf([{ coverMediaId: "a", body }])).toEqual(["a", "z1"]);
+  });
   it("resolveGallery: ক্রম বজায়, মেটা-না-থাকা বাদ, সীমা ২০", () => {
     const media = new Map([["a", m("a")], ["b", m("b")]]);
     expect(resolveGallery(["b", "x", "a"], media).map((v) => v.alt)).toEqual(["b", "a"]);
