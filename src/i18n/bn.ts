@@ -964,6 +964,7 @@ export const bn = {
     toolbar: "লেখার টুলবার",
     moreTools: "আরও টুল",
     backUnsaved: "লেখা এই ডিভাইসে সংরক্ষণ করা যায়নি। তবুও ফিরবেন? অসংরক্ষিত অংশ হারাতে পারে।",
+    alignGroup: "লেখার অ্যালাইন",
     alignLeft: "বামে অ্যালাইন",
     alignCenter: "মাঝে অ্যালাইন",
     alignRight: "ডানে অ্যালাইন",

@@ -282,8 +282,10 @@ function Toolbar({ editor, onImage }: { editor: Editor; onImage: () => void }) {
   // মোবাইলে ৭টির বেশি বাটন আঁটে না ⇒ ৬টি মূল টুল সরাসরি, বাকি (ক্রমিক তালিকা, লিংক, undo/redo) "⋯" পপওভারে; অনুভূমিক স্ক্রল নেই
   const PRIMARY = ["b", "i", "u", "h", "q", "ul"];
   const primary = items.filter((it) => PRIMARY.includes(it.key));
-  const overflow = items.filter((it) => !PRIMARY.includes(it.key));
-  const overflowOn = overflow.some((it) => it.on);
+  const ALIGN_KEYS = ["al", "ac", "ar"];
+  const aligns = items.filter((it) => ALIGN_KEYS.includes(it.key));
+  const overflow = items.filter((it) => !PRIMARY.includes(it.key) && !ALIGN_KEYS.includes(it.key));
+  const overflowOn = overflow.some((it) => it.on) || aligns.some((it) => it.on);
   const btn = "min-h-11 min-w-11 flex-1 rounded-lg text-base font-semibold md:flex-none";
 
   return (
@@ -333,6 +335,24 @@ function Toolbar({ editor, onImage }: { editor: Editor; onImage: () => void }) {
             role="menu"
             className="absolute bottom-full right-1.5 mb-1 flex min-w-48 flex-col rounded-xl border border-line bg-surface p-1 shadow-lg"
           >
+            <div role="group" aria-label={bn.editor.alignGroup} className="flex gap-1 p-1">
+              {aligns.map((it) => (
+                <button
+                  key={it.key}
+                  type="button"
+                  aria-label={it.label}
+                  aria-pressed={it.on}
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => {
+                    it.run();
+                    setMore(false);
+                  }}
+                  className={`flex min-h-11 flex-1 items-center justify-center rounded-lg ${it.on ? "bg-btn-bg text-btn-tx" : ""}`}
+                >
+                  <AlignIcon kind={it.key} />
+                </button>
+              ))}
+            </div>
             {overflow.map((it) => (
               <button
                 key={it.key}
@@ -356,5 +376,17 @@ function Toolbar({ editor, onImage }: { editor: Editor; onImage: () => void }) {
         </>
       )}
     </div>
+  );
+}
+
+// বাম/মাঝ/ডান অ্যালাইনের লাইন-আইকন (শুধু আইকন; লেবেল aria-label-এ)
+function AlignIcon({ kind }: { kind: string }) {
+  const rows = kind === "al" ? [[4, 20], [4, 14], [4, 20], [4, 12]] : kind === "ar" ? [[4, 20], [10, 20], [4, 20], [12, 20]] : [[4, 20], [7, 17], [4, 20], [8, 16]];
+  return (
+    <svg aria-hidden width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+      {rows.map(([x1, x2], i) => (
+        <line key={i} x1={x1} x2={x2} y1={5 + i * 5} y2={5 + i * 5} />
+      ))}
+    </svg>
   );
 }
