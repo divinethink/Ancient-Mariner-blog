@@ -121,16 +121,32 @@ async function loadItems(): Promise<Loaded> {
 
 function PostMenu({
   id,
+  title,
   onTrash,
   disabled,
   className = "relative shrink-0",
 }: {
   id: string;
+  title: string;
   onTrash: () => void;
   disabled: boolean;
   className?: string;
 }) {
   const [open, setOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
+  // কার্ডে select-none (long-press = নির্বাচন) থাকায় শিরোনাম সিলেক্ট করা যায় না — তাই মেনু থেকে কপি
+  async function copyTitle() {
+    try {
+      await navigator.clipboard.writeText(title);
+      setCopied(true);
+      setTimeout(() => {
+        setCopied(false);
+        setOpen(false);
+      }, 900);
+    } catch {
+      setOpen(false);
+    }
+  }
   return (
     <div className={className}>
       <button
@@ -144,6 +160,12 @@ function PostMenu({
       </button>
       {open && (
         <div className="absolute right-0 top-11 z-10 flex flex-col rounded-xl border border-line bg-surface shadow">
+          <Link href={`/dashboard/posts/${id}/edit`} className="flex min-h-11 items-center whitespace-nowrap px-4">
+            {bn.library.editIt}
+          </Link>
+          <button type="button" onClick={() => void copyTitle()} className="min-h-11 whitespace-nowrap px-4 text-left">
+            {copied ? bn.library.titleCopied : bn.library.copyTitle}
+          </button>
           <Link
             href={`/dashboard/posts/${id}/history`}
             className="flex min-h-11 items-center whitespace-nowrap px-4"
@@ -538,6 +560,7 @@ export function LibraryHome() {
               </Link>
               <PostMenu
                 id={it.id}
+                title={it.title}
                 disabled={busy}
                 onTrash={() => void trashPost(it.id)}
                 className="absolute right-1 top-1"
@@ -786,7 +809,7 @@ export function LibraryHome() {
                   <td className="p-3 text-muted">{bnNum(it.wordCount)}</td>
                   {!selecting && (
                     <td className="p-1">
-                      <PostMenu id={it.id} disabled={busy} onTrash={() => void trashPost(it.id)} />
+                      <PostMenu id={it.id} title={it.title} disabled={busy} onTrash={() => void trashPost(it.id)} />
                     </td>
                   )}
                 </tr>
