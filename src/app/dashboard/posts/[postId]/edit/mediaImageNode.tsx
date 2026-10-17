@@ -86,7 +86,13 @@ function MediaImageView({ node, selected, updateAttributes, deleteNode, editor }
         </div>
       )}
       {editor.isEditable && (
-        <div className="mt-2 space-y-2 font-sans">
+        // বাটনে চাপলে editor-এর focus/selection সরতে দেওয়া হয় না (টুলবারের মতোই) — নইলে ব্রাউজার selection বদলে পেজ নিচে স্ক্রল করে; input-এ আগের মতোই
+        <div
+          className="mt-2 space-y-2 font-sans"
+          onMouseDown={(e) => {
+            if ((e.target as HTMLElement).closest("button")) e.preventDefault();
+          }}
+        >
           <Segmented
             label={bn.editor.image.sizeLabel}
             showLabel
