@@ -5,9 +5,10 @@ import { PostBody } from "@/components/public/PostBody";
 import { PublicShell } from "@/components/public/PublicShell";
 import { getSiteUrl } from "@/config/env";
 import { hasDefaultOgImage } from "@/data/publicAssets";
-import { getPublicPages, getPublicSettings } from "@/data/publicSnapshot";
+import { getPublicMedia, getPublicPages, getPublicSettings } from "@/data/publicSnapshot";
 import { bn } from "@/i18n/bn";
-import { docToText, makeExcerpt, parseBody } from "@/lib/editorDoc";
+import { collectMediaIds, docToText, makeExcerpt, parseBody } from "@/lib/editorDoc";
+import { resolveMediaMap } from "@/lib/gallery";
 import { pagePath } from "@/lib/pages";
 import { buildSeo } from "@/lib/seo";
 
@@ -60,6 +61,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function PublicPage({ params }: Props) {
   const page = await find((await params).slug);
   if (!page) notFound();
+  const media = resolveMediaMap(collectMediaIds(parseBody(page.body)), await getPublicMedia());
   return (
     <PublicShell>
       <Link href="/" prefetch={false} className="mb-3 inline-flex min-h-11 items-center text-accent-text">
@@ -68,7 +70,7 @@ export default async function PublicPage({ params }: Props) {
       <article>
         <h1 className="font-serif text-3xl font-bold leading-snug">{page.title || bn.library.untitled}</h1>
         <div className="reading mt-6">
-          <PostBody body={page.body} />
+          <PostBody body={page.body} media={media} />
         </div>
       </article>
     </PublicShell>

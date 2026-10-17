@@ -2,6 +2,9 @@ import Link from "next/link";
 import { PostBody } from "@/components/public/PostBody";
 import { bn } from "@/i18n/bn";
 import { formatDate } from "@/lib/datetime";
+import { collectMediaIds, parseBody } from "@/lib/editorDoc";
+import { resolveMediaMap } from "@/lib/gallery";
+import type { CardMedia } from "@/lib/cards";
 import { diaryDayPath, diaryPreview, type DiaryEntry } from "@/lib/diaryCalendar";
 
 /** "YYYY-MM-DD" → "শনিবার · ১০ অক্টোবর, ২০২৬" (দিন-key থেকে সরাসরি UTC-তে; timezone-সরণ নেই) */
@@ -11,7 +14,7 @@ export function dayLabel(day: string): string {
 }
 
 /** দিনের লেখা (পঞ্জিকার নিচে)। `preview` হলে প্রথম ~৩০ শব্দ (বাক্যের শেষে) + আরও পড়ুন; নইলে পুরোটা */
-export function DiaryEntries({ day, entries, preview = false }: { day: string; entries: readonly DiaryEntry[]; preview?: boolean }) {
+export function DiaryEntries({ day, entries, preview = false, media }: { day: string; entries: readonly DiaryEntry[]; preview?: boolean; media?: ReadonlyMap<string, CardMedia> }) {
   return (
     <section aria-label={dayLabel(day)} className="mt-6">
       <h2 className="font-serif text-xl font-bold">{dayLabel(day)}</h2>
@@ -24,7 +27,7 @@ export function DiaryEntries({ day, entries, preview = false }: { day: string; e
             {custom && <h3 className="font-serif text-lg font-bold">{e.title}</h3>}
             {e.location && <p className="text-sm text-muted">📍 {e.location}</p>}
             <div className="reading">
-              <PostBody body={p.body} />
+              <PostBody body={p.body} media={resolveMediaMap(collectMediaIds(parseBody(p.body)), media)} />
             </div>
             {p.truncated && (
               <Link href={diaryDayPath(day)} prefetch={false} className="mt-3 inline-flex min-h-11 items-center text-accent-text underline">

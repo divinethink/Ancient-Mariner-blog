@@ -6,7 +6,7 @@ import { PublicShell } from "@/components/public/PublicShell";
 import { getSiteUrl } from "@/config/env";
 import { hasDefaultOgImage } from "@/data/publicAssets";
 import { getPublicDiary } from "@/data/publicDiary";
-import { getPublicSettings } from "@/data/publicSnapshot";
+import { getPublicMedia, getPublicSettings } from "@/data/publicSnapshot";
 import { bn } from "@/i18n/bn";
 import Link from "next/link";
 import { adjacentDays, buildDiaryMonth, diaryDayPath } from "@/lib/diaryCalendar";
@@ -46,7 +46,7 @@ export default async function DiaryDay({ params }: Props) {
       <div className="mt-4 rounded-2xl border border-line bg-surface p-4">
         <DiaryCalendar view={buildDiaryMonth(words, day.slice(0, 7))} selected={day} timeZone={tz} />
       </div>
-      <DiaryEntries day={day} entries={entries} />
+      <DiaryEntries day={day} entries={entries} media={await getPublicMedia()} />
       <nav aria-label={bn.public.diaryNavLabel} className="mt-6 flex items-center justify-between gap-4 border-t border-line pt-3">
         {adj.prev ? (
           <Link href={diaryDayPath(adj.prev)} prefetch={false} className="inline-flex min-h-11 items-center text-accent-text">

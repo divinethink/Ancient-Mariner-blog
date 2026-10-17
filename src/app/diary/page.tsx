@@ -7,7 +7,7 @@ import { PublicShell } from "@/components/public/PublicShell";
 import { getSiteUrl } from "@/config/env";
 import { hasDefaultOgImage } from "@/data/publicAssets";
 import { getPublicDiary } from "@/data/publicDiary";
-import { getPublicSettings } from "@/data/publicSnapshot";
+import { getPublicMedia, getPublicSettings } from "@/data/publicSnapshot";
 import { bn } from "@/i18n/bn";
 import { buildDiaryMonth, buildYearView, DIARY_FEED_PATH, DIARY_PATH, diaryYears, latestDay, streakStats } from "@/lib/diaryCalendar";
 import { widgetTitle } from "@/lib/layout";
@@ -44,7 +44,7 @@ export default async function DiaryHome() {
           <DiaryStats s={streakStats(byDay.keys())} />
           <OnThisDay days={[...byDay.keys()]} timeZone={tz} />
           <p className="mt-6 text-sm font-semibold text-muted">{bn.public.diaryLatest}</p>
-          <DiaryEntries day={last} entries={byDay.get(last) ?? []} preview />
+          <DiaryEntries day={last} entries={byDay.get(last) ?? []} preview media={await getPublicMedia()} />
           <div className="mt-8 rounded-2xl border border-line bg-surface p-4">
             <DiaryYear view={buildYearView(words, Number(last.slice(0, 4)))} years={diaryYears(byDay.keys())} timeZone={tz} />
           </div>
