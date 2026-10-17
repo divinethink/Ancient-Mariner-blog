@@ -79,6 +79,15 @@ describe("DocView — anchors", () => {
   });
 });
 
+describe("অ্যালাইনমেন্ট render", () => {
+  it("paragraph/heading-এ বৈধ data-align; অবৈধ মান নয়; নেই হলে markup অপরিবর্তিত", () => {
+    expect(view({ type: "paragraph", attrs: { textAlign: "center" }, content: [t("ক")] })).toBe('<p data-align="center">ক</p>');
+    expect(view({ type: "heading", attrs: { level: 2, textAlign: "right" }, content: [t("শি")] })).toBe('<h2 data-align="right">শি</h2>');
+    expect(view({ type: "paragraph", attrs: { textAlign: 'x" onclick="y' }, content: [t("ক")] })).toBe("<p>ক</p>");
+    expect(view(p(t("ক")))).toBe("<p>ক</p>");
+  });
+});
+
 describe("mediaImage render", () => {
   const cv: CoverView = { cloud: "democloud", publicId: "blog/abc", w: 1600, h: 900, alt: "মিডিয়া-alt" };
   const media = new Map([["m1", cv]]);

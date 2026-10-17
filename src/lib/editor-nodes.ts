@@ -40,3 +40,8 @@ export const isImageSize = (v: unknown): v is ImageSize => typeof v === "string"
 export const isImageAlign = (v: unknown): v is ImageAlign => typeof v === "string" && (IMAGE_ALIGNS as readonly string[]).includes(v);
 /** নতুন বসানো ছবির শুরুর মান */
 export const NEW_IMAGE_LAYOUT = { size: "m", align: "center" } as const;
+
+/** অনুচ্ছেদ/শিরোনামের অ্যালাইনমেন্ট (শুধু এই তালিকার মান; attr না থাকা = লেখার ধরনের ডিফল্ট — কবিতায় মাঝে, বাকিতে বামে) */
+export const TEXT_ALIGNS = ["left", "center", "right"] as const;
+export type TextAlignValue = (typeof TEXT_ALIGNS)[number];
+export const isTextAlign = (v: unknown): v is TextAlignValue => typeof v === "string" && (TEXT_ALIGNS as readonly string[]).includes(v);

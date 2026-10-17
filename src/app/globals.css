@@ -106,7 +106,22 @@ main:has(.dash-shell) {
 }
 
 .pm p {
-  margin: 0 0 1em;
+  margin: 0 0 var(--para-gap);
+}
+/* অনুচ্ছেদের নিচের ফাঁক (line-height ১.৯৫ আগেই ফাঁক দেয়, তাই ছোট) — এডিটর ও পাবলিক একই মান */
+.pm,
+.reading {
+  --para-gap: 0.55em;
+}
+/* অনুচ্ছেদ/শিরোনামের অ্যালাইনমেন্ট (attr না থাকলে ডিফল্ট; কবিতার মাঝ-অ্যালাইনও এতে বদলায়) */
+:is(.pm, .reading) :is(p, h2, h3)[data-align="left"] {
+  text-align: left;
+}
+:is(.pm, .reading) :is(p, h2, h3)[data-align="center"] {
+  text-align: center;
+}
+:is(.pm, .reading) :is(p, h2, h3)[data-align="right"] {
+  text-align: right;
 }
 .pm h2,
 .pm h3 {
@@ -154,7 +169,7 @@ main:has(.dash-shell) {
   line-height: 1.95;
 }
 .reading p {
-  margin: 0 0 1em;
+  margin: 0 0 var(--para-gap);
 }
 /* লেখার শেষ অনুচ্ছেদের নিচে বাড়তি ফাঁক নেই (শেষ-সারি নিজেই দূরত্ব দেয়) */
 .reading > :last-child {

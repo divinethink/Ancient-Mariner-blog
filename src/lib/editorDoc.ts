@@ -7,6 +7,7 @@ import {
   isImageAlign,
   isImageSize,
   isSafeHref,
+  isTextAlign,
   isSafeMediaId,
   MEDIA_ALT_MAX,
   MEDIA_CAPTION_MAX,
@@ -71,6 +72,10 @@ function cleanNode(n: unknown): DocNode | null {
   if (n.type === "heading") {
     const level = isObj(n.attrs) ? Number(n.attrs.level) : NaN;
     out.attrs = { level: (HEADING_LEVELS as readonly number[]).includes(level) ? level : 2 };
+  }
+  if (n.type === "paragraph" || n.type === "heading") {
+    const ta = isObj(n.attrs) ? n.attrs.textAlign : undefined;
+    if (isTextAlign(ta)) out.attrs = { ...(out.attrs ?? {}), textAlign: ta };
   }
   if (n.type === "orderedList") {
     const start = isObj(n.attrs) ? Number(n.attrs.start) : 1;

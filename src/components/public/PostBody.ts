@@ -5,7 +5,7 @@ import { createElement as h, Fragment, type ReactNode } from "react";
 import { cldSrcSet, cldUrl } from "@/lib/cloudinary";
 import type { CoverView } from "@/lib/cards";
 import { bn } from "@/i18n/bn";
-import { isImageAlign, isImageSize, isSafeHref } from "@/lib/editor-nodes";
+import { isImageAlign, isImageSize, isSafeHref, isTextAlign } from "@/lib/editor-nodes";
 import { headingId } from "@/lib/toc";
 import { parseBody, type DocMark, type DocNode } from "@/lib/editorDoc";
 import { ImageViewer } from "./ImageViewer";
@@ -31,6 +31,12 @@ function applyMarks(text: string, marks: DocMark[] | undefined): ReactNode {
 /** `media`: mediaId → ছবির render-তথ্য (build-এ public media থেকে); না থাকলে mediaImage কিছুই render করে না (ভাঙা ছবি কখনো নয়) */
 type State = { anchors: boolean; n: number; media?: ReadonlyMap<string, CoverView> };
 
+/** অ্যালাইনমেন্ট: শুধু বৈধ মান `data-align`-এ (CSS ধরে); নইলে কিছুই নয় */
+function alignAttr(n: DocNode): { "data-align"?: string } {
+  const v: unknown = n.attrs?.textAlign;
+  return isTextAlign(v) ? { "data-align": v } : {};
+}
+
 function kids(n: DocNode, st: State): ReactNode[] {
   return (n.content ?? []).map((c, i) => renderNode(c, i, st));
 }
@@ -40,11 +46,11 @@ function renderNode(n: DocNode, key: number, st: State): ReactNode {
     case "text":
       return h(Fragment, { key }, applyMarks(n.text ?? "", n.marks));
     case "paragraph":
-      return h("p", { key }, ...kids(n, st));
+      return h("p", { key, ...alignAttr(n) }, ...kids(n, st));
     case "heading": // H1 = শিরোনাম; body-তে শুধু H2–H3
     {
       const id = st.anchors ? headingId(++st.n) : undefined;
-      return h(Number(n.attrs?.level) === 3 ? "h3" : "h2", { key, ...(id && { id }) }, ...kids(n, st));
+      return h(Number(n.attrs?.level) === 3 ? "h3" : "h2", { key, ...(id && { id }), ...alignAttr(n) }, ...kids(n, st));
     }
     case "bulletList":
       return h("ul", { key }, ...kids(n, st));

@@ -16,6 +16,7 @@ import type { DocNode } from "@/lib/editorDoc";
 import { pasteToken, prepareImport } from "@/lib/pasteImages";
 import { ImagePickerSheet } from "./ImagePickerSheet";
 import { MediaImage } from "./mediaImageNode";
+import { TextAlign } from "./textAlign";
 import { ParaFocus } from "./paraFocus";
 import { useKeyboardInset } from "./useKeyboardInset";
 
@@ -54,6 +55,7 @@ export default function TiptapEditor({
       }),
       ParaFocus,
       MediaImage,
+      TextAlign,
     ],
     content: initialDoc,
     // spellcheck বন্ধ: বাংলা শব্দে ভুল লাল-দাগ ও "Add to dictionary" মেনু এড়াতে
@@ -234,6 +236,9 @@ function Toolbar({ editor, onImage }: { editor: Editor; onImage: () => void }) {
       bullets: ctx.editor.isActive("bulletList"),
       numbers: ctx.editor.isActive("orderedList"),
       link: ctx.editor.isActive("link"),
+      alignLeft: ctx.editor.isActive({ textAlign: "left" }),
+      alignCenter: ctx.editor.isActive({ textAlign: "center" }),
+      alignRight: ctx.editor.isActive({ textAlign: "right" }),
     }),
   });
 
@@ -251,6 +256,12 @@ function Toolbar({ editor, onImage }: { editor: Editor; onImage: () => void }) {
     editor.chain().focus().extendMarkRange("link").setLink({ href: url.trim() }).run();
   }
 
+  // একই বাটনে আবার চাপলে অ্যালাইনমেন্ট মুছে ডিফল্টে ফেরে (কবিতায় মাঝে, বাকিতে বামে)
+  function setAlign(v: "left" | "center" | "right", active: boolean) {
+    const value = active ? null : v;
+    editor.chain().focus().updateAttributes("paragraph", { textAlign: value }).updateAttributes("heading", { textAlign: value }).run();
+  }
+
   const items: { key: string; label: string; icon: string; on: boolean; run: () => void }[] = [
     { key: "b", label: bn.editor.bold, icon: "B", on: s.bold, run: () => editor.chain().focus().toggleBold().run() },
     { key: "i", label: bn.editor.italic, icon: "I", on: s.italic, run: () => editor.chain().focus().toggleItalic().run() },
@@ -259,6 +270,9 @@ function Toolbar({ editor, onImage }: { editor: Editor; onImage: () => void }) {
     { key: "q", label: bn.editor.quote, icon: "❝", on: s.quote, run: () => editor.chain().focus().toggleBlockquote().run() },
     { key: "ul", label: bn.editor.bullets, icon: "•", on: s.bullets, run: () => editor.chain().focus().toggleBulletList().run() },
     { key: "ol", label: bn.editor.numbers, icon: "1.", on: s.numbers, run: () => editor.chain().focus().toggleOrderedList().run() },
+    { key: "al", label: bn.editor.alignLeft, icon: "⇤", on: s.alignLeft, run: () => setAlign("left", s.alignLeft) },
+    { key: "ac", label: bn.editor.alignCenter, icon: "↔", on: s.alignCenter, run: () => setAlign("center", s.alignCenter) },
+    { key: "ar", label: bn.editor.alignRight, icon: "⇥", on: s.alignRight, run: () => setAlign("right", s.alignRight) },
     { key: "a", label: s.link ? bn.editor.unlink : bn.editor.link, icon: "🔗", on: s.link, run: toggleLink },
     { key: "img", label: bn.editor.image.add, icon: "🖼️", on: false, run: onImage },
     { key: "undo", label: bn.editor.undo, icon: "↶", on: false, run: () => editor.chain().focus().undo().run() },

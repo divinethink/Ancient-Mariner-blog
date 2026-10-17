@@ -96,6 +96,17 @@ describe("docToText / countWords / makeExcerpt", () => {
   });
 });
 
+describe("textAlign (paragraph/heading)", () => {
+  it("বৈধ মান থাকে; অবৈধ/অনুপস্থিত বাদ; heading-এ level-সহ", () => {
+    const para = (attrs?: object) => ({ type: "paragraph", ...(attrs ? { attrs } : {}), content: [{ type: "text", text: "ক" }] });
+    expect(sanitizeDoc(doc(para({ textAlign: "center" })))).toEqual(doc(para({ textAlign: "center" })));
+    expect(sanitizeDoc(doc(para({ textAlign: "justify" })))).toEqual(doc(para()));
+    expect(sanitizeDoc(doc(para()))).toEqual(doc(para()));
+    const h = sanitizeDoc(doc({ type: "heading", attrs: { level: 3, textAlign: "right", x: 1 }, content: [{ type: "text", text: "শি" }] }));
+    expect(h.content?.[0].attrs).toEqual({ level: 3, textAlign: "right" });
+  });
+});
+
 describe("mediaImage", () => {
   const img = (attrs: object) => ({ type: "mediaImage", attrs });
   it("বৈধ mediaId টিকে থাকে; raw src/url/অতিরিক্ত attr ঝরে যায়", () => {
