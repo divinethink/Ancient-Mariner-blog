@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { runBulkAction } from "@/data/bulk.wire";
 import type { BulkRequest, BulkSpec, BulkSummary } from "@/data/bulkRun";
@@ -121,32 +122,21 @@ async function loadItems(): Promise<Loaded> {
 
 function PostMenu({
   id,
-  title,
+  rawStatus,
   onTrash,
+  onStatus,
   disabled,
   className = "relative shrink-0",
 }: {
   id: string;
-  title: string;
+  rawStatus: PostStatus;
   onTrash: () => void;
+  onStatus: (kind: "unpublish" | "archive") => void;
   disabled: boolean;
   className?: string;
 }) {
   const [open, setOpen] = useState(false);
-  const [copied, setCopied] = useState(false);
-  // কার্ডে select-none (long-press = নির্বাচন) থাকায় শিরোনাম সিলেক্ট করা যায় না — তাই মেনু থেকে কপি
-  async function copyTitle() {
-    try {
-      await navigator.clipboard.writeText(title);
-      setCopied(true);
-      setTimeout(() => {
-        setCopied(false);
-        setOpen(false);
-      }, 900);
-    } catch {
-      setOpen(false);
-    }
-  }
+  const row = "min-h-11 whitespace-nowrap px-4 text-left disabled:opacity-50";
   return (
     <div className={className}>
       <button
@@ -163,15 +153,38 @@ function PostMenu({
           <Link href={`/dashboard/posts/${id}/edit`} className="flex min-h-11 items-center whitespace-nowrap px-4">
             {bn.library.editIt}
           </Link>
-          <button type="button" onClick={() => void copyTitle()} className="min-h-11 whitespace-nowrap px-4 text-left">
-            {copied ? bn.library.titleCopied : bn.library.copyTitle}
-          </button>
           <Link
             href={`/dashboard/posts/${id}/history`}
             className="flex min-h-11 items-center whitespace-nowrap px-4"
           >
             {bn.library.history}
           </Link>
+          {rawStatus !== "draft" && (
+            <button
+              type="button"
+              disabled={disabled}
+              onClick={() => {
+                setOpen(false);
+                onStatus("unpublish");
+              }}
+              className={row}
+            >
+              {bn.editor.status.draft}
+            </button>
+          )}
+          {rawStatus !== "archived" && (
+            <button
+              type="button"
+              disabled={disabled}
+              onClick={() => {
+                setOpen(false);
+                onStatus("archive");
+              }}
+              className={row}
+            >
+              {bn.editor.status.archive}
+            </button>
+          )}
           <button
             type="button"
             disabled={disabled}
@@ -179,7 +192,7 @@ function PostMenu({
               setOpen(false);
               onTrash();
             }}
-            className="min-h-11 whitespace-nowrap px-4 text-left disabled:opacity-50"
+            className={row}
           >
             {bn.library.trashIt}
           </button>
@@ -230,6 +243,7 @@ function LibraryHeader({
 
 export function LibraryHome() {
   const tz = useSiteTimezone();
+  const router = useRouter();
   const [state, setState] = useState<State>({ kind: "loading" });
   const [attempt, setAttempt] = useState(0);
   const bgSynced = useRef(false);
@@ -397,6 +411,12 @@ export function LibraryHome() {
       if (wasPublished)
         return (await triggerSiteRebuild()) ? bn.build.liveIn : bn.build.triggerFailed;
     });
+  /** ⋯ মেনু থেকে খসড়া/আর্কাইভ — bulk-এর নিরাপদ পথ (অসংরক্ষিত লোকাল সম্পাদনা থাকলে বাদ); প্রকাশিত লেখায় confirm + rebuild */
+  const statusPost = (id: string, kind: "unpublish" | "archive") => {
+    const it = [...(state.kind === "ready" ? state.items : []), ...(found?.items ?? [])].find((i) => i.id === id);
+    if (it?.rawStatus === "published" && !confirm(kind === "archive" ? bn.editor.status.confirmArchive : bn.editor.status.confirmDraft)) return;
+    void runBulkReq({ kind, ids: [id] });
+  };
   const restorePost = (id: string) => act((repo) => repo.restore(id));
   const deletePost = (id: string) =>
     act(async (repo) => {
@@ -494,7 +514,12 @@ export function LibraryHome() {
   const allSelected = selectableIds.length > 0 && selectableIds.every((id) => selected.has(id));
   const rowBody = (it: Item) => (
     <span className="min-w-0 flex-1">
-      <span className="block truncate font-serif text-lg font-bold">{it.title || bn.library.untitled}</span>
+      <span
+        className="block select-text truncate font-serif text-lg font-bold [-webkit-touch-callout:default]"
+        onPointerDown={(e) => e.stopPropagation()} // শিরোনামে চেপে ধরলে লেখা সিলেক্ট (নির্বাচন-মোড নয়)
+      >
+        {it.title || bn.library.untitled}
+      </span>
       <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted">
         <span className="shrink-0 rounded-full bg-line px-2 py-0.5 text-xs">{statusLabel(it)}</span>
         <span className="whitespace-nowrap">{formatDate(new Date(it.updatedAt), tz)}</span>
@@ -551,16 +576,25 @@ export function LibraryHome() {
             </label>
           ) : (
             <>
-              <Link
-                href={`/dashboard/posts/${it.id}/edit`}
+              {/* <a> নয়, div: লিংকে long-press করলে ব্রাউজার লেখা সিলেক্ট করতে দেয় না — শিরোনাম আঙুলে মার্ক করে কপির জন্য */}
+              <div
+                role="link"
+                tabIndex={0}
                 {...(it.localOnly ? {} : longPress(it.id))}
-                className="flex min-w-0 select-none items-start gap-3 rounded-2xl border border-line bg-surface p-4 pr-12 [-webkit-touch-callout:none]"
+                onClick={(e) => {
+                  if (!it.localOnly) longPress(it.id).onClick(e); // long-press-এর পরের click বাদ
+                  if (e.defaultPrevented || window.getSelection()?.toString()) return; // সিলেক্ট করা থাকলে খুলবে না
+                  router.push(`/dashboard/posts/${it.id}/edit`);
+                }}
+                onKeyDown={(e) => e.key === "Enter" && router.push(`/dashboard/posts/${it.id}/edit`)}
+                className="flex min-w-0 cursor-pointer select-none items-start gap-3 rounded-2xl border border-line bg-surface p-4 pr-12 [-webkit-touch-callout:none]"
               >
                 {rowBody(it)}
-              </Link>
+              </div>
               <PostMenu
                 id={it.id}
-                title={it.title}
+                rawStatus={it.rawStatus}
+                onStatus={(k) => statusPost(it.id, k)}
                 disabled={busy}
                 onTrash={() => void trashPost(it.id)}
                 className="absolute right-1 top-1"
@@ -809,7 +843,7 @@ export function LibraryHome() {
                   <td className="p-3 text-muted">{bnNum(it.wordCount)}</td>
                   {!selecting && (
                     <td className="p-1">
-                      <PostMenu id={it.id} title={it.title} disabled={busy} onTrash={() => void trashPost(it.id)} />
+                      <PostMenu id={it.id} rawStatus={it.rawStatus} onStatus={(k) => statusPost(it.id, k)} disabled={busy} onTrash={() => void trashPost(it.id)} />
                     </td>
                   )}
                 </tr>

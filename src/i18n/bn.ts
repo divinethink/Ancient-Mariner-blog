@@ -298,8 +298,6 @@ export const bn = {
     trashIt: "ট্র্যাশে পাঠান",
     history: "ইতিহাস",
     editIt: "সম্পাদনা করুন",
-    copyTitle: "শিরোনাম কপি",
-    titleCopied: "কপি হয়েছে ✓",
     trashFailed: "ট্র্যাশে পাঠানো যায়নি। নেট দেখে আবার চেষ্টা করুন।",
     view: {
       label: "তালিকার ধরন",
