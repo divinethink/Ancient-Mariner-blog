@@ -3,6 +3,7 @@
 import { z } from "zod";
 import { ContentType, PostStatus, PostVisibility } from "@/lib/enums";
 import { isValidDayKey } from "@/lib/diary";
+import { COVER_FOCUS, COVER_RATIOS, toCoverCrop } from "@/lib/coverCrop";
 import type { FindOpts } from "@/lib/postFind";
 
 export const SCHEMA_VERSION = 1;
@@ -38,6 +39,9 @@ const Gallery = z.array(z.string().min(1).max(40)).max(MAX_GALLERY);
 /** P10a-১: per-post SEO (Arch §৬ `seo{}`); সব ফিল্ড ঐচ্ছিক, খালি = ডিফল্ট (শিরোনাম/সারাংশ/cover) */
 export const MAX_SEO_TITLE = 120;
 export const MAX_SEO_DESC = 300;
+/** কভারের পাবলিক-ক্রপ (শুধু CSS; মূল ছবি অক্ষত); না থাকা = পুরো ছবি */
+export const CoverCropSchema = z.object({ ratio: z.enum(COVER_RATIOS), focus: z.enum(COVER_FOCUS) });
+
 export const SeoSchema = z.object({
   title: z.string().max(MAX_SEO_TITLE).optional(),
   description: z.string().max(MAX_SEO_DESC).optional(),
@@ -67,6 +71,7 @@ export const PostSchema = z.object({
   featured: z.boolean().optional(), // P4b-৩: Home-এ featured (পুরনো doc-এ নেই = false)
   commentsEnabled: z.boolean().optional(), // P11b-২: নতুন মন্তব্য নেওয়া হবে কি (পুরনো doc-এ নেই = চালু; Arch §৬)
   coverMediaId: z.string().min(1).max(40).optional(), // P6-৩ক: cover = `media/{id}` (পাবলিক ছবি); পুরনো doc-এ নেই = cover নেই
+  coverCrop: CoverCropSchema.optional(), // কভার-ক্রপ (অনুপাত+ফোকাস); পুরনো doc-এ নেই = পুরো ছবি
   date: DayKey.optional(), // P8a: diary-র দিন; পুরনো doc-এ নেই
   location: Location.optional(), // P8a: owner-লেখা স্থান; প্রকাশিত লেখার meta-তে দেখায় (media-র নিজস্ব location/GPS নয়, সেটা কখনো পাবলিকে না)
   gallery: Gallery.optional(), // P8a: media-id তালিকা (P8a-২-তে পাবলিক gallery)
@@ -106,6 +111,7 @@ export const PostPatchSchema = z
     featured: z.boolean().optional(),
     commentsEnabled: z.boolean().optional(),
     coverMediaId: z.string().min(1).max(40).nullable().optional(), // null = cover সরানো
+    coverCrop: CoverCropSchema.nullable().optional(), // null = ক্রপ সরানো (পুরো ছবি)
     date: DayKey.nullable().optional(),
     location: Location.nullable().optional(),
     gallery: Gallery.nullable().optional(),
@@ -187,6 +193,7 @@ export const parsePost = (id: string, raw: Record<string, unknown>): PostWithId 
   if (n.date !== undefined && !DayKey.safeParse(n.date).success) delete n.date;
   if (n.location !== undefined && !Location.safeParse(n.location).success) delete n.location;
   if (n.gallery !== undefined && !Gallery.safeParse(n.gallery).success) delete n.gallery;
+  if (n.coverCrop !== undefined && !toCoverCrop(n.coverCrop)) delete n.coverCrop; // বিকৃত ক্রপ শুধু বাদ
   if (n.seo !== undefined && !SeoSchema.safeParse(n.seo).success) delete n.seo; // P10a-১: বিকৃত seo শুধু বাদ
   return { ...PostSchema.parse(n), id };
 };

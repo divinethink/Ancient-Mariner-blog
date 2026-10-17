@@ -12,6 +12,8 @@ import { getTaxonomyRepo } from "@/data/taxonomyRepo.wire";
 import { bn } from "@/i18n/bn";
 import { formatLongDateTime, fromZonedInput, toZonedInput } from "@/lib/datetime";
 import { sameIds } from "@/lib/gallery";
+import { COVER_FOCUS, COVER_RATIOS, sameCrop, type CoverCrop, type CoverFocus, type CoverRatio } from "@/lib/coverCrop";
+import { Segmented } from "@/components/ui/Segmented";
 import { orgFromPost, orgPatch, parseSeriesOrder, type OrgState } from "@/lib/postOrg";
 import { parsePublishDate } from "@/lib/publish";
 import { parseScheduleInput } from "@/lib/schedule";
@@ -68,6 +70,7 @@ export function PublishPanel(p: Props) {
   const [feat, setFeat] = useState(false);
   const [commentsOn, setCommentsOn] = useState(true);
   const [coverIn, setCoverIn] = useState<string | null>(null);
+  const [cropIn, setCropIn] = useState<CoverCrop | null>(null);
   const [galleryIn, setGalleryIn] = useState<string[]>([]);
   const [placeIn, setPlaceIn] = useState("");
   const [seoTitleIn, setSeoTitleIn] = useState("");
@@ -97,6 +100,7 @@ export function PublishPanel(p: Props) {
       setFeat(post.featured === true);
       setCommentsOn(post.commentsEnabled !== false);
       setCoverIn(post.coverMediaId ?? null);
+      setCropIn(post.coverCrop ?? null);
       setGalleryIn(post.gallery ?? []);
       setPlaceIn(post.location ?? "");
       setSeoTitleIn(post.seo?.title ?? "");
@@ -199,6 +203,7 @@ export function PublishPanel(p: Props) {
       ...(feat !== (cur.featured === true) ? { featured: feat } : {}),
       ...(commentsOn !== (cur.commentsEnabled !== false) ? { commentsEnabled: commentsOn } : {}),
       ...(coverIn !== (cur.coverMediaId ?? null) ? { coverMediaId: coverIn } : {}),
+      ...(sameCrop(coverIn ? cropIn : null, cur.coverCrop) ? {} : { coverCrop: coverIn ? cropIn : null }),
       ...(sameIds(galleryIn, cur.gallery ?? []) ? {} : { gallery: galleryIn.length ? galleryIn : null }),
       ...(placeIn.trim() !== (cur.location ?? "") ? { location: placeIn.trim() || null } : {}),
       ...(dateChanged ? { publishedAt: date.date } : {}),
@@ -518,7 +523,30 @@ export function PublishPanel(p: Props) {
             </Section>
 
             <Section title={bn.publishPanel.sections.media} hint={bn.publishPanel.sections.mediaHint(!!coverIn, galleryIn.length)}>
-              <CoverPicker value={coverIn} onChange={setCoverIn} disabled={busy} />
+              <CoverPicker value={coverIn} onChange={setCoverIn} disabled={busy} crop={cropIn} />
+              {coverIn && (
+                <div className="space-y-2">
+                  <Segmented<CoverRatio | "full">
+                    label={bn.publishPanel.coverCrop.ratioLabel}
+                    showLabel
+                    compact
+                    value={cropIn?.ratio ?? "full"}
+                    options={[{ value: "full", label: bn.publishPanel.coverCrop.full }, ...COVER_RATIOS.map((v) => ({ value: v, label: bn.publishPanel.coverCrop.ratios[v] }))]}
+                    onChange={(v) => setCropIn(v === "full" ? null : { ratio: v, focus: cropIn?.focus ?? "center" })}
+                  />
+                  {cropIn && (
+                    <Segmented<CoverFocus>
+                      label={bn.publishPanel.coverCrop.focusLabel}
+                      showLabel
+                      compact
+                      value={cropIn.focus}
+                      options={COVER_FOCUS.map((v) => ({ value: v, label: bn.publishPanel.coverCrop.focus[v] }))}
+                      onChange={(v) => setCropIn({ ...cropIn, focus: v })}
+                    />
+                  )}
+                  <p className="text-xs text-muted">{bn.publishPanel.coverCrop.hint}</p>
+                </div>
+              )}
               <GalleryPicker value={galleryIn} onChange={setGalleryIn} disabled={busy} />
             </Section>
 

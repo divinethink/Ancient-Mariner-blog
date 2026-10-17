@@ -1,13 +1,14 @@
 // পাবলিক post-card view-model ও [আরও দেখান] chunk (Arch §২ 'Public payload', §১৭ P4a)। pure, SDK/UI-মুক্ত।
 // CardView JSON-serializable — build-সময়ে তৈরি হয়ে static পেজ ও `/data/cards/*.json`-এ যায়; `body` কখনো না।
 import { cloudFromUrl } from "./cloudinary";
+import type { CoverCrop } from "./coverCrop";
 import { formatDate, formatDayMonth } from "./datetime";
 import { categoryPath, postExcerpt, blogPath, tagPath } from "./publicSite";
 import { readingMinutes } from "./readingTime";
 
 export type CardLink = { name: string; href?: string };
 /** cover-ছবির render-তথ্য (Cloudinary public_id + cloud; URL browser-পক্ষে `lib/cloudinary` বানায়) */
-export type CoverView = { publicId: string; cloud: string; w?: number; h?: number; alt: string };
+export type CoverView = { publicId: string; cloud: string; w?: number; h?: number; alt: string; crop?: CoverCrop };
 /** snapshot-এর public media-র যেটুকু card-এর লাগে */
 export type CardMedia = { cloudinaryPublicId: string; cloudinaryUrl: string; width?: number; height?: number; altText?: string };
 
@@ -41,6 +42,7 @@ export type CardPost = {
   tagIds: readonly string[];
   tagNames: readonly string[];
   coverMediaId?: string;
+  coverCrop?: CoverCrop;
 };
 export type CardTerm = { id: string; slug: string };
 export type CardCtx = {
@@ -51,11 +53,11 @@ export type CardCtx = {
 };
 
 /** cover-id → render-তথ্য; মেটা না থাকলে/URL-এ অন্য host হলে undefined (fallback) */
-export function resolveCover(coverMediaId: string | undefined, media: ReadonlyMap<string, CardMedia> | undefined): CoverView | undefined {
+export function resolveCover(coverMediaId: string | undefined, media: ReadonlyMap<string, CardMedia> | undefined, crop?: CoverCrop): CoverView | undefined {
   const m = coverMediaId ? media?.get(coverMediaId) : undefined;
   const cloud = m ? cloudFromUrl(m.cloudinaryUrl) : null;
   if (!m || !cloud) return undefined;
-  return { publicId: m.cloudinaryPublicId, cloud, ...(m.width && m.height ? { w: m.width, h: m.height } : {}), alt: m.altText ?? "" };
+  return { publicId: m.cloudinaryPublicId, cloud, ...(m.width && m.height ? { w: m.width, h: m.height } : {}), alt: m.altText ?? "", ...(crop && { crop }) };
 }
 
 export function toCardView(p: CardPost, ctx: CardCtx): CardView {
@@ -70,7 +72,7 @@ export function toCardView(p: CardPost, ctx: CardCtx): CardView {
     return [{ name, href: t ? tagPath(t.slug) : undefined }];
   });
   const d = p.publishedAt;
-  const cover = resolveCover(p.coverMediaId, ctx.media);
+  const cover = resolveCover(p.coverMediaId, ctx.media, p.coverCrop);
   return {
     id: p.id,
     title: p.title,

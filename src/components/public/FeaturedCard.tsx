@@ -2,13 +2,15 @@ import Link from "next/link";
 import { Cover } from "@/components/public/Cover";
 import { bn } from "@/i18n/bn";
 import type { CardView } from "@/lib/cards";
+import { cropStyle } from "@/lib/coverCrop";
 
 /** Home-এর featured বড় কার্ড; cover থাকলে উপরে বড় ছবি (LCP ⇒ eager), না থাকলে শুধু লেখা */
 export function FeaturedCard({ c }: { c: CardView }) {
   return (
     <article className="overflow-hidden rounded-3xl border border-line bg-surface">
       {c.cover && (
-        <div className="relative aspect-video w-full bg-line sm:aspect-[2/1]">
+        // ক্রপ বাছা থাকলে সেই অনুপাত (মোবাইল-ডেস্কটপ একই); নইলে আগের মতো
+        <div className={`relative w-full bg-line ${c.cover.crop ? "" : "aspect-video sm:aspect-[2/1]"}`} style={c.cover.crop ? { aspectRatio: cropStyle(c.cover.crop).aspectRatio } : undefined}>
           <Cover cover={c.cover} sizes="(min-width: 1120px) 800px, 100vw" priority />
         </div>
       )}
