@@ -337,8 +337,8 @@ function Toolbar({ editor, onImage }: { editor: Editor; onImage: () => void }) {
               <button
                 key={it.key}
                 type="button"
-                role="menuitem"
-                aria-pressed={it.on}
+                role="menuitemcheckbox"
+                aria-checked={it.on}
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={() => {
                   it.run();
