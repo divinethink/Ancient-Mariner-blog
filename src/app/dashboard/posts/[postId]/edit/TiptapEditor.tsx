@@ -11,7 +11,7 @@ import { importMediaFromUrl, UploadError, uploadMedia } from "@/data/mediaUpload
 import { bn } from "@/i18n/bn";
 import type { EditorPos } from "@/data/draftStore";
 import { typewriterDelta } from "@/lib/comfort";
-import { HEADING_LEVELS, MEDIA_ALT_MAX, isSafeHref } from "@/lib/editor-nodes";
+import { HEADING_LEVELS, MEDIA_ALT_MAX, NEW_IMAGE_LAYOUT, isSafeHref } from "@/lib/editor-nodes";
 import type { DocNode } from "@/lib/editorDoc";
 import { pasteToken, prepareImport } from "@/lib/pasteImages";
 import { ImagePickerSheet } from "./ImagePickerSheet";
@@ -122,7 +122,7 @@ export default function TiptapEditor({
   function insertImage(m: MediaWithId) {
     if (!editor) return;
     const alt = Array.from((m.altText ?? "").trim()).slice(0, MEDIA_ALT_MAX).join("");
-    editor.chain().focus().insertContent({ type: "mediaImage", attrs: { mediaId: m.id, alt } }).run();
+    editor.chain().focus().insertContent({ type: "mediaImage", attrs: { mediaId: m.id, alt, ...NEW_IMAGE_LAYOUT } }).run();
   }
 
   // একটার পর একটা আপলোড (বিদ্যমান পথ: resize, EXIF মোছা); ব্যর্থ হলে থামে, আগেরগুলো বসে থাকে
@@ -208,7 +208,7 @@ function replaceToken(ed: Editor, token: string, m: MediaWithId | null, alt: str
   const a = Array.from((m?.altText ?? alt).trim()).slice(0, MEDIA_ALT_MAX).join("");
   for (const h of hits.reverse()) {
     const c = ed.chain();
-    if (m) c.insertContentAt(h, { type: "mediaImage", attrs: { mediaId: m.id, alt: a } });
+    if (m) c.insertContentAt(h, { type: "mediaImage", attrs: { mediaId: m.id, alt: a, ...NEW_IMAGE_LAYOUT } });
     else c.deleteRange(h);
     c.run();
   }

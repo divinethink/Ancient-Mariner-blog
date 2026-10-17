@@ -8,7 +8,18 @@ import type { MediaWithId } from "@/data/mediaRepo";
 import { getMediaRepo } from "@/data/mediaRepo.wire";
 import { bn } from "@/i18n/bn";
 import { cldUrl, cloudFromUrl } from "@/lib/cloudinary";
-import { isSafeMediaId, MEDIA_ALT_MAX, MEDIA_CAPTION_MAX } from "@/lib/editor-nodes";
+import { Segmented } from "@/components/ui/Segmented";
+import {
+  IMAGE_ALIGNS,
+  IMAGE_SIZES,
+  isImageAlign,
+  isImageSize,
+  isSafeMediaId,
+  MEDIA_ALT_MAX,
+  MEDIA_CAPTION_MAX,
+  type ImageAlign,
+  type ImageSize,
+} from "@/lib/editor-nodes";
 
 // একই ছবি বহুবার থাকলেও একবারই আনা; ব্যর্থ হলে cache থেকে সরে যায় (পরের বার আবার চেষ্টা)
 const cache = new Map<string, Promise<MediaWithId | null>>();
@@ -50,12 +61,17 @@ function MediaImageView({ node, selected, updateAttributes, deleteNode, editor }
   const caption = typeof node.attrs.caption === "string" ? node.attrs.caption : "";
   const ownAlt = typeof node.attrs.alt === "string" ? node.attrs.alt : "";
   const field = "min-h-11 w-full rounded-lg border border-line bg-transparent px-3 text-sm";
+  // attr না থাকা (পুরনো ছবি) = পুরো-প্রস্থ ও মাঝে; পাবলিকের CSS-এর একই নিয়ম
+  const size: ImageSize = isImageSize(node.attrs.size) ? node.attrs.size : "full";
+  const align: ImageAlign = isImageAlign(node.attrs.align) ? node.attrs.align : "center";
 
   return (
     <NodeViewWrapper
       as="figure"
       contentEditable={false}
       data-drag-handle
+      data-size={isImageSize(node.attrs.size) ? node.attrs.size : undefined}
+      data-align={isImageAlign(node.attrs.align) ? node.attrs.align : undefined}
       className={`reading-figure rounded-xl ${selected ? "outline outline-2 outline-offset-2 outline-accent" : ""}`}
     >
       {src ? (
@@ -71,6 +87,22 @@ function MediaImageView({ node, selected, updateAttributes, deleteNode, editor }
       )}
       {editor.isEditable && (
         <div className="mt-2 space-y-2 font-sans">
+          <Segmented
+            label={bn.editor.image.sizeLabel}
+            showLabel
+            compact
+            value={size}
+            options={IMAGE_SIZES.map((v) => ({ value: v, label: bn.editor.image.sizes[v] }))}
+            onChange={(v) => updateAttributes({ size: v })}
+          />
+          <Segmented
+            label={bn.editor.image.alignLabel}
+            showLabel
+            compact
+            value={align}
+            options={IMAGE_ALIGNS.map((v) => ({ value: v, label: bn.editor.image.aligns[v] }))}
+            onChange={(v) => updateAttributes({ align: v })}
+          />
           <input
             type="text"
             aria-label={bn.editor.image.altLabel}
@@ -125,6 +157,23 @@ export const MediaImage = Node.create({
         default: null,
         parseHTML: (el) => el.getAttribute("data-caption"),
         renderHTML: (a) => (a.caption ? { "data-caption": a.caption } : {}),
+      },
+      // null = পুরনো ছবি (পুরো-প্রস্থ); শুধু বৈধ মান (সেভের সময় sanitizeDoc-ও যাচাই করে)
+      size: {
+        default: null,
+        parseHTML: (el) => {
+          const v = el.getAttribute("data-size");
+          return isImageSize(v) ? v : null;
+        },
+        renderHTML: (a) => (isImageSize(a.size) ? { "data-size": a.size } : {}),
+      },
+      align: {
+        default: null,
+        parseHTML: (el) => {
+          const v = el.getAttribute("data-align");
+          return isImageAlign(v) ? v : null;
+        },
+        renderHTML: (a) => (isImageAlign(a.align) ? { "data-align": a.align } : {}),
       },
     };
   },

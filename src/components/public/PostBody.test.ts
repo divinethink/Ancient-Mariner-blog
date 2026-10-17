@@ -84,6 +84,17 @@ describe("mediaImage render", () => {
   const media = new Map([["m1", cv]]);
   const img = (attrs: Record<string, unknown>): DocNode => ({ type: "mediaImage", attrs });
   const doc = (...c: DocNode[]): DocNode => ({ type: "doc", content: c });
+  it("size/align ও ক্লিকে-বড় তথ্য: শুধু বৈধ মান; পুরনো ছবিতে data-size/align নেই", () => {
+    const html = (a: Record<string, unknown>) => renderToStaticMarkup(h(DocView, { doc: doc(img({ mediaId: "m1", ...a })), media }));
+    expect(html({ size: "s", align: "left" })).toContain('<figure class="reading-figure" data-size="s" data-align="left">');
+    expect(html({ size: "evil\" onload=\"x", align: "top" })).toContain('<figure class="reading-figure">');
+    expect(html({})).not.toContain("data-size");
+    expect(html({})).toContain('data-full="https://res.cloudinary.com/democloud/image/upload/f_auto,q_auto,w_1600,c_limit/blog/abc"');
+    expect(html({})).toContain('role="button"');
+  });
+  it("PostBody: ImageViewer প্রথমে কিছুই আঁকে না (markup অক্ষত)", () => {
+    expect(renderToStaticMarkup(h(PostBody, { body: JSON.stringify({ type: "doc", content: [p(t("ক"))] }) }))).toBe("<p>ক</p>");
+  });
   it("figure>img: cldUrl, srcset, lazy, মাপ; কোনো raw URL পাথ নয়", () => {
     const html = renderToStaticMarkup(h(DocView, { doc: doc(img({ mediaId: "m1", alt: "নিজের alt", caption: "ক্যাপশন <b>" })), media }));
     expect(html).toContain('<figure class="reading-figure">');

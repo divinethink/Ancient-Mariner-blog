@@ -4,6 +4,8 @@ import {
   ALLOWED_MARKS,
   ALLOWED_NODES,
   HEADING_LEVELS,
+  isImageAlign,
+  isImageSize,
   isSafeHref,
   isSafeMediaId,
   MEDIA_ALT_MAX,
@@ -54,7 +56,16 @@ function cleanNode(n: unknown): DocNode | null {
     const a = isObj(n.attrs) ? n.attrs : {};
     if (!isSafeMediaId(a.mediaId)) return null;
     const caption = clip(a.caption, MEDIA_CAPTION_MAX);
-    return { type: "mediaImage", attrs: { mediaId: a.mediaId, alt: clip(a.alt, MEDIA_ALT_MAX), ...(caption ? { caption } : {}) } };
+    return {
+      type: "mediaImage",
+      attrs: {
+        mediaId: a.mediaId,
+        alt: clip(a.alt, MEDIA_ALT_MAX),
+        ...(caption ? { caption } : {}),
+        ...(isImageSize(a.size) ? { size: a.size } : {}),
+        ...(isImageAlign(a.align) ? { align: a.align } : {}),
+      },
+    };
   }
   const out: DocNode = { type: n.type };
   if (n.type === "heading") {

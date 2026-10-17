@@ -30,3 +30,13 @@ export const isSafeMediaId = (v: unknown): v is string => typeof v === "string" 
 /** mediaImage-র alt / caption-এর সর্বোচ্চ দৈর্ঘ্য (অক্ষর) */
 export const MEDIA_ALT_MAX = 300;
 export const MEDIA_CAPTION_MAX = 300;
+
+/** mediaImage-র মাপ ও অবস্থান (শুধু এই তালিকার মান; বাইরের মান বাদ)। attr না থাকা = পুরনো আচরণ (পুরো-প্রস্থ), তাই পুরনো লেখা অক্ষত */
+export const IMAGE_SIZES = ["s", "m", "l", "full"] as const;
+export const IMAGE_ALIGNS = ["left", "center", "right"] as const;
+export type ImageSize = (typeof IMAGE_SIZES)[number];
+export type ImageAlign = (typeof IMAGE_ALIGNS)[number];
+export const isImageSize = (v: unknown): v is ImageSize => typeof v === "string" && (IMAGE_SIZES as readonly string[]).includes(v);
+export const isImageAlign = (v: unknown): v is ImageAlign => typeof v === "string" && (IMAGE_ALIGNS as readonly string[]).includes(v);
+/** নতুন বসানো ছবির শুরুর মান */
+export const NEW_IMAGE_LAYOUT = { size: "m", align: "center" } as const;

@@ -181,12 +181,44 @@ main:has(.dash-shell) {
 .reading-figure {
   margin: 1.2em 0;
 }
+/* মাপ/অবস্থান: attr না থাকলে (পুরনো ছবি) পুরো-প্রস্থ; ছোট মাপেও ফোনে ন্যূনতম প্রস্থ থাকে */
+.reading-figure[data-size="s"] {
+  width: max(40%, 11rem);
+}
+.reading-figure[data-size="m"] {
+  width: max(65%, 14rem);
+}
+.reading-figure[data-size="l"] {
+  width: 85%;
+}
+.reading-figure[data-size] {
+  max-width: 100%;
+  margin-inline: auto;
+}
+.reading-figure[data-align="left"] {
+  margin-inline: 0 auto;
+}
+.reading-figure[data-align="right"] {
+  margin-inline: auto 0;
+}
+.reading-figure[data-size="full"] {
+  width: 100%;
+}
+/* হালকা সাদা (থিমের surface) বর্ডার + নরম ছায়া — সব থিমে token */
 .reading-figure img {
   display: block;
   width: 100%;
   height: auto;
-  border-radius: 12px;
+  box-sizing: border-box;
+  border: 6px solid var(--surface);
+  border-radius: 4px;
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.12),
+    0 6px 18px rgba(0, 0, 0, 0.08);
   background: var(--line);
+}
+.reading-figure img[data-full] {
+  cursor: zoom-in;
 }
 .reading-figure figcaption {
   margin-top: 0.5em;

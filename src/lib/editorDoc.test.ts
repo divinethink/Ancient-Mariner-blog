@@ -119,6 +119,11 @@ describe("mediaImage", () => {
     expect(Array.from(a.caption)).toHaveLength(300);
     expect(out.content?.[0].content).toBeUndefined();
   });
+  it("size/align: শুধু বৈধ মান থাকে; অবৈধ বাদ; অনুপস্থিত = পুরনো ছবি অপরিবর্তিত", () => {
+    expect(sanitizeDoc(doc(img({ mediaId: "m1", size: "m", align: "right" })))).toEqual(doc(img({ mediaId: "m1", alt: "", size: "m", align: "right" })));
+    expect(sanitizeDoc(doc(img({ mediaId: "m1", size: "huge", align: "top" })))).toEqual(doc(img({ mediaId: "m1", alt: "" })));
+    expect(sanitizeDoc(doc(img({ mediaId: "m1", size: 3, align: null })))).toEqual(doc(img({ mediaId: "m1", alt: "" })));
+  });
   it("round-trip স্থিতিশীল; পুরনো image node এখনও বাদ", () => {
     const d = doc(img({ mediaId: "m1", alt: "", caption: "ক" }));
     expect(parseBody(serializeDoc(d))).toEqual(d);

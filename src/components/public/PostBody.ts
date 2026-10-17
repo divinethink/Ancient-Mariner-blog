@@ -4,9 +4,11 @@
 import { createElement as h, Fragment, type ReactNode } from "react";
 import { cldSrcSet, cldUrl } from "@/lib/cloudinary";
 import type { CoverView } from "@/lib/cards";
-import { isSafeHref } from "@/lib/editor-nodes";
+import { bn } from "@/i18n/bn";
+import { isImageAlign, isImageSize, isSafeHref } from "@/lib/editor-nodes";
 import { headingId } from "@/lib/toc";
 import { parseBody, type DocMark, type DocNode } from "@/lib/editorDoc";
+import { ImageViewer } from "./ImageViewer";
 
 function applyMarks(text: string, marks: DocMark[] | undefined): ReactNode {
   let out: ReactNode = text;
@@ -64,11 +66,24 @@ function renderNode(n: DocNode, key: number, st: State): ReactNode {
       if (!m || !src) return null;
       const alt = typeof n.attrs?.alt === "string" && n.attrs.alt ? n.attrs.alt : m.alt; // doc-এর alt অগ্রাধিকার, নইলে media-র
       const caption = typeof n.attrs?.caption === "string" ? n.attrs.caption : "";
+      const size: unknown = n.attrs?.size;
+      const align: unknown = n.attrs?.align;
       return h(
         "figure",
-        { key, className: "reading-figure" },
+        {
+          key,
+          className: "reading-figure",
+          // attr না থাকলে কিছুই নয় (পুরনো ছবি = পুরো-প্রস্থ); মান শুধু allowlist থেকে
+          ...(isImageSize(size) ? { "data-size": size } : {}),
+          ...(isImageAlign(align) ? { "data-align": align } : {}),
+        },
         h("img", {
           src,
+          // ক্লিকে বড় ছবি (ImageViewer, event-delegation); বড় সংস্করণ খোলার পরেই আনা হয়
+          "data-full": cldUrl(m.cloud, m.publicId, { w: 1600 }) ?? undefined,
+          role: "button",
+          tabIndex: 0,
+          "aria-label": alt ? `${alt} — ${bn.public.imageOpen}` : bn.public.imageOpen,
           srcSet: cldSrcSet(m.cloud, m.publicId, m.w ?? 2000) ?? undefined,
           sizes: "(min-width: 768px) 720px, 100vw",
           alt,
@@ -119,5 +134,6 @@ export function PostBody({
   anchors?: boolean;
   media?: ReadonlyMap<string, CoverView>;
 }): ReactNode {
-  return h(DocView, { doc: parseBody(body), anchors, media });
+  // ImageViewer প্রথমে কিছুই render করে না (static markup অক্ষত); ছবিতে ক্লিক করলেই dialog খোলে
+  return h(Fragment, null, h(DocView, { doc: parseBody(body), anchors, media }), h(ImageViewer));
 }
