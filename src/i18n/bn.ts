@@ -1196,6 +1196,7 @@ export const bn = {
     working: "চলছে…",
     failed: "কাজটি সম্পন্ন হয়নি। নেট দেখে আবার চেষ্টা করুন।",
     publishedOk: "প্রকাশিত ✓",
+    openPost: "লেখাটি খুলুন ↗",
     updatedOk: "আপডেট হয়েছে ✓",
     savedOk: "সংরক্ষিত ✓",
     unpublished: "অপ্রকাশিত পরিবর্তন আছে",

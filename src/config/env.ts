@@ -42,6 +42,12 @@ const cloudinarySchema = z.object({
 });
 
 // `POST /api/view` (P11a-১): VIEW_HASH_SALT = শুধু Worker secret (দৈনিক dedupe-hash-এর salt); SITE_TIMEZONE ঐচ্ছিক `wrangler.jsonc` var (দিন-গণনা; না থাকলে Asia/Dhaka)
+// `GET /api/live/[slug]` (নতুন-প্রকাশ তাৎক্ষণিক): FIREBASE_SERVER_API_KEY = Worker secret (deploy.yml বসায়); না থাকলে route 503 (সাধারণ 404 থাকে)
+const liveSchema = z.object({
+  FIREBASE_PROJECT_ID: z.string().min(1),
+  FIREBASE_SERVER_API_KEY: z.string().min(1),
+});
+
 const viewSchema = z.object({
   SITE_URL: z.url(),
   VIEW_HASH_SALT: z.string().min(16),
@@ -99,6 +105,7 @@ export const getSiteUrl = () => parse(siteSchema).SITE_URL;
 export const getRebuildEnv = () => parse(rebuildSchema);
 export const getCloudinaryEnv = () => parse(cloudinarySchema);
 export const getViewEnv = () => parse(viewSchema);
+export const getLiveEnv = () => parse(liveSchema);
 /** `scheduled` handler-এর নিজস্ব `env` দিয়ে (process.env-এর ওপর নির্ভর না করে); মিসিং হলে fail-closed */
 export const getCronEnv = (source: unknown) => parse(cronSchema, source);
 

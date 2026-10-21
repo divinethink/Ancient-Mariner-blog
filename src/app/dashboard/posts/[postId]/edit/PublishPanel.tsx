@@ -12,6 +12,7 @@ import { getTaxonomyRepo } from "@/data/taxonomyRepo.wire";
 import { bn } from "@/i18n/bn";
 import { formatLongDateTime, toZonedInput } from "@/lib/datetime";
 import { sameIds } from "@/lib/gallery";
+import { blogPath } from "@/lib/publicSite";
 import { COVER_FOCUS, COVER_RATIOS, sameCrop, type CoverCrop, type CoverFocus, type CoverRatio } from "@/lib/coverCrop";
 import { Segmented } from "@/components/ui/Segmented";
 import { orgFromPost, orgPatch, parseSeriesOrder, type OrgState } from "@/lib/postOrg";
@@ -21,7 +22,6 @@ import type { PostVisibility } from "@/lib/enums";
 import { useSiteTimezone } from "../../../SiteSettingsProvider";
 import { autoSlugBase, withSuffix } from "@/lib/slug";
 import type { SyncStatus } from "@/data/syncEngine";
-import { BuildStatus } from "@/app/dashboard/BuildStatus";
 import { CoverPicker } from "./CoverPicker";
 import { GalleryPicker } from "./GalleryPicker";
 import { OrgSection, type OrgOptions } from "./OrgSection";
@@ -233,7 +233,7 @@ export function PublishPanel(p: Props) {
   }
 
   /** affectsSite = পাবলিক সাইটে প্রভাব পড়ে এমন ক্রিয়া → সফল হলে rebuild trigger (Arch §১২; autosave-এ কখনো না) */
-  async function run(action: (repo: PostRepo) => Promise<string>, affectsSite = false) {
+  async function run(action: (repo: PostRepo) => Promise<string>, affectsSite = false, liveNote = true) {
     if (!engine || busy) return;
     setBusy(true);
     setMsg(null);
@@ -249,7 +249,12 @@ export function PublishPanel(p: Props) {
         await refresh(repo);
         return t;
       });
-      if (affectsSite) text += ` ${(await triggerSiteRebuild()) ? bn.build.liveIn : bn.build.triggerFailed}`;
+      // নতুন-প্রকাশে লিংক সঙ্গে সঙ্গে খোলে (`/api/live`) ⇒ "১–২ মিনিট" নোট নয়; rebuild পেছনে চলে (তালিকা/sitemap/RSS)
+      if (affectsSite) {
+        const ok = await triggerSiteRebuild();
+        if (!ok) text += ` ${bn.build.triggerFailed}`;
+        else if (liveNote) text += ` ${bn.build.liveIn}`;
+      }
       setMsg({ kind: "ok", text });
     } catch (e) {
       const reason = e instanceof Error ? e.message : "";
@@ -282,7 +287,7 @@ export function PublishPanel(p: Props) {
       await writeMeta(repo, { status: "published", ...(meta?.post.status === "scheduled" ? { scheduledAt: null } : {}) }, { defaultCategory: true, autoSlug: true });
       await snapshotOnPublish(postId).catch(() => undefined); // ইতিহাস best-effort — প্রকাশ আটকায় না
       return bn.publishPanel.publishedOk;
-    }, true);
+    }, true, false);
   /** P11c-১: সময় নির্ধারণ — status=scheduled + scheduledAt (UTC); সময় হলে Cron publish করে। সাইটে এখনই প্রভাব নেই ⇒ rebuild নয় */
   const onSchedule = () =>
     run(async (repo) => {
@@ -331,6 +336,8 @@ export function PublishPanel(p: Props) {
   };
 
   const published = meta?.post.status === "published";
+  /** প্রকাশিত+public লেখার পাবলিক লিংক (নতুন লেখায় সঙ্গে সঙ্গে খোলে) */
+  const liveHref = published && meta?.post.visibility === "public" && meta.post.slug ? blogPath(meta.post.slug) : null;
   const scheduled = meta?.post.status === "scheduled";
   return (
     <div className={p.docked ? "fixed inset-y-0 right-0 z-40 w-96" : "fixed inset-0 z-40"} role="presentation">
@@ -527,13 +534,20 @@ export function PublishPanel(p: Props) {
                 </button>
               )}
             </div>
-            {published && <BuildStatus />}
 
             {/* প্রধান ক্রিয়া সবসময় নাগালে: নিচে আটকানো বার */}
             <div className="sticky bottom-0 z-10 -mx-5 space-y-2 border-t border-line bg-surface px-5 py-3">
               {msg && (
                 <p role={msg.kind === "err" ? "alert" : "status"} className={msg.kind === "err" ? "text-accent-text" : "text-muted"}>
                   {msg.text}
+                  {msg.kind === "ok" && liveHref && (
+                    <>
+                      {" "}
+                      <a href={liveHref} target="_blank" rel="noopener" className="text-accent-text underline">
+                        {bn.publishPanel.openPost}
+                      </a>
+                    </>
+                  )}
                 </p>
               )}
               <div className="flex gap-2">
