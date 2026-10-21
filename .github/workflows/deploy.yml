@@ -28,9 +28,22 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      # build-সময় কমাতে Next-এর compile-cache (শুধু গতি; ডেটা snapshot থেকে, তাই পুরনো লেখা আসে না)
+      - uses: actions/cache@v4
+        with:
+          path: .next/cache
+          key: next-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-${{ hashFiles('src/**', 'scripts/**') }}
+          restore-keys: |
+            next-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-
       - run: npm run build:cf
+      # সাইজ-পরীক্ষা শুধু কোড-push-এ; প্রতি প্রকাশের (schedule/dispatch) ডাবল-bundle বাদ
       - name: Size check (Total Upload ≤ 64MiB)
+        if: github.event_name == 'push'
         run: npx wrangler deploy --dry-run
       - run: npx wrangler deploy
+      # নতুন-প্রকাশ তাৎক্ষণিক (/api/live): Worker-এর server-key (public-read; rules-নিয়ন্ত্রিত)। ব্যর্থ হলে deploy থামে না — route তখন 503, সাধারণ 404 থাকে
+      - name: Worker secret FIREBASE_SERVER_API_KEY
+        continue-on-error: true
+        run: printf '%s' "$FIREBASE_SERVER_API_KEY" | npx wrangler secret put FIREBASE_SERVER_API_KEY
       # P11a-১: D1 টেবিল (numbered migration; আগে প্রয়োগ-হওয়াগুলো বাদ — idempotent)
       - run: npx wrangler d1 migrations apply DB --remote
