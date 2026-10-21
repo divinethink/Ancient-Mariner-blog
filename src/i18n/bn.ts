@@ -1192,7 +1192,7 @@ export const bn = {
     confirmDiscard: "অপ্রকাশিত পরিবর্তন মুছে যাবে — নিশ্চিত?",
     revert: "Draft-এ ফেরান",
     confirmRevert: "লেখাটি পাবলিক সাইট থেকে সরে Draft হয়ে যাবে — নিশ্চিত?",
-    done: "Done",
+    done: "Save",
     working: "চলছে…",
     failed: "কাজটি সম্পন্ন হয়নি। নেট দেখে আবার চেষ্টা করুন।",
     publishedOk: "প্রকাশিত ✓",
