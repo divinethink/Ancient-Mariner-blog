@@ -10,11 +10,10 @@ import { MAX_LOCATION, PostNotFoundError, SlugTakenError, type PostRepo, type Po
 import { getTaxonomyOps } from "@/data/taxonomyOps.wire";
 import { getTaxonomyRepo } from "@/data/taxonomyRepo.wire";
 import { bn } from "@/i18n/bn";
-import { formatLongDateTime, fromZonedInput, toZonedInput } from "@/lib/datetime";
+import { formatLongDateTime, toZonedInput } from "@/lib/datetime";
 import { sameIds } from "@/lib/gallery";
 import { COVER_FOCUS, COVER_RATIOS, sameCrop, type CoverCrop, type CoverFocus, type CoverRatio } from "@/lib/coverCrop";
 import { Segmented } from "@/components/ui/Segmented";
-import { Toggle } from "@/components/ui/Toggle";
 import { orgFromPost, orgPatch, parseSeriesOrder, type OrgState } from "@/lib/postOrg";
 import { parsePublishDate } from "@/lib/publish";
 import { parseScheduleInput } from "@/lib/schedule";
@@ -63,7 +62,7 @@ export function PublishPanel(p: Props) {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<Msg>(null);
   const [vis, setVis] = useState<PostVisibility>("public");
-  const [schedIn, setSchedIn] = useState("");
+  const [coverOpen, setCoverOpen] = useState(false);
   const [dateIn, setDateIn] = useState("");
   const [feat, setFeat] = useState(false);
   const [commentsOn, setCommentsOn] = useState(true);
@@ -87,8 +86,8 @@ export function PublishPanel(p: Props) {
       setMeta({ post, hasDraft });
       // কখনো প্রকাশ না-হওয়া লেখায় প্রকাশের পথে Public শুরুর মান; নইলে বর্তমান
       setVis(post.publishedAt || post.status === "scheduled" ? post.visibility : "public");
-      setSchedIn(post.scheduledAt ? toZonedInput(post.scheduledAt, tz) : "");
-      setDateIn(post.publishedAt ? toZonedInput(post.publishedAt, tz) : "");
+      // একটাই তারিখ-ঘর: নির্ধারিত লেখায় নির্ধারিত সময়, নইলে প্রকাশের তারিখ
+      setDateIn(post.status === "scheduled" && post.scheduledAt ? toZonedInput(post.scheduledAt, tz) : post.publishedAt ? toZonedInput(post.publishedAt, tz) : "");
       setFeat(post.featured === true);
       setCommentsOn(post.commentsEnabled !== false);
       setCoverIn(post.coverMediaId ?? null);
@@ -174,7 +173,9 @@ export function PublishPanel(p: Props) {
   ) {
     if (!meta) return;
     const cur = meta.post;
-    const date = parsePublishDate(dateIn, nowMs(), tz);
+    let date = parsePublishDate(dateIn, nowMs(), tz);
+    // প্রকাশিত নয় এমন লেখায় ভবিষ্যৎ তারিখ = নির্ধারণের সময় (publishedAt নয়) — সেটা onSchedule সামলায়
+    if (!date.ok && date.reason === "future" && cur.status !== "published") date = { ok: true, date: undefined };
     if (!date.ok) throw new Error(date.reason);
     // slug স্বয়ংক্রিয়: শুধু কখনো-প্রকাশ-না-হওয়া লেখার প্রথম প্রকাশ/সময়-নির্ধারণে শিরোনাম থেকে; একবার প্রকাশের পর কখনো বদলায় না (লিংক ভাঙে না)
     if (opts.autoSlug && !cur.publishedAt) {
@@ -285,7 +286,7 @@ export function PublishPanel(p: Props) {
   /** P11c-১: সময় নির্ধারণ — status=scheduled + scheduledAt (UTC); সময় হলে Cron publish করে। সাইটে এখনই প্রভাব নেই ⇒ rebuild নয় */
   const onSchedule = () =>
     run(async (repo) => {
-      const s = parseScheduleInput(schedIn, nowMs(), tz);
+      const s = parseScheduleInput(dateIn, nowMs(), tz);
       if (!s.ok) throw new Error(s.reason);
       await writeMeta(repo, { status: "scheduled", scheduledAt: s.date }, { defaultCategory: true, autoSlug: true });
       await snapshotOnPublish(postId).catch(() => undefined);
@@ -378,9 +379,9 @@ export function PublishPanel(p: Props) {
             </p>
 
             <div>
+              <div className="mb-1.5 text-sm text-muted">{bn.publishPanel.visibility}</div>
               <Segmented<PostVisibility>
                 label={bn.publishPanel.visibility}
-                showLabel
                 value={vis}
                 options={[
                   { value: "private", label: bn.publishPanel.private },
@@ -390,11 +391,6 @@ export function PublishPanel(p: Props) {
                 onChange={setVis}
               />
               {vis === "unlisted" && <p className="mt-1 text-xs text-muted">{bn.publishPanel.unlistedHint}</p>}
-            </div>
-
-            <div className="divide-y divide-line rounded-2xl border border-line px-4">
-              <Toggle checked={feat} onChange={setFeat} label={bn.publishPanel.featured} />
-              <Toggle checked={commentsOn} onChange={setCommentsOn} label={bn.publishPanel.sections.commentsShort} />
             </div>
 
             {org && (
@@ -415,54 +411,66 @@ export function PublishPanel(p: Props) {
               />
             )}
 
-            <Section title={bn.publishPanel.sections.dates} hint={dateIn ? (() => { const d = fromZonedInput(dateIn, tz); return d ? formatLongDateTime(d, tz) : undefined; })() : undefined}>
-              <div className={`grid gap-2 ${published ? "grid-cols-1" : "grid-cols-2"}`}>
-                <div className="flex min-w-0 flex-col justify-between rounded-xl border border-line bg-bg px-3 py-1.5 focus-within:border-accent">
-                  <label htmlFor="pp-date" className="block text-xs text-muted">
-                    {bn.publishPanel.publishedAt}
-                  </label>
-                  <input
-                    id="pp-date"
-                    type="datetime-local"
-                    value={dateIn}
-                    max={maxIn || undefined}
-                    onChange={(e) => setDateIn(e.target.value)}
-                    className="field-clean min-h-9 w-full min-w-0 bg-transparent text-sm"
-                  />
-                </div>
-                {!published && (
-                  <div className="flex min-w-0 flex-col justify-between rounded-xl border border-line bg-bg px-3 py-1.5 focus-within:border-accent">
-                    <label htmlFor="pp-sched" className="block text-xs text-muted">
-                      {bn.publishPanel.scheduleAt}
-                    </label>
-                    <input
-                      id="pp-sched"
-                      type="datetime-local"
-                      value={schedIn}
-                      min={maxIn || undefined}
-                      onChange={(e) => setSchedIn(e.target.value)}
-                      className="field-clean min-h-9 w-full min-w-0 bg-transparent text-sm"
+            <div className="grid grid-cols-2 gap-2">
+              <div className="flex min-w-0 flex-col justify-between rounded-xl border border-line bg-bg px-3 py-1.5 focus-within:border-accent">
+                <label htmlFor="pp-date" className="block text-xs text-muted">
+                  {bn.publishPanel.publishedAt}
+                </label>
+                <input
+                  id="pp-date"
+                  type="datetime-local"
+                  value={dateIn}
+                  max={published ? maxIn || undefined : undefined}
+                  disabled={busy}
+                  onChange={(e) => setDateIn(e.target.value)}
+                  className="field-clean min-h-9 w-full min-w-0 bg-transparent text-sm"
+                />
+              </div>
+              <button
+                type="button"
+                aria-expanded={coverOpen}
+                onClick={() => setCoverOpen((o) => !o)}
+                className="flex min-h-14 min-w-0 items-center justify-between gap-2 rounded-xl border border-line bg-bg px-3 py-1.5 text-left"
+              >
+                <span className="min-w-0">
+                  <span className="block text-xs text-muted">{bn.publishPanel.sections.cover}</span>
+                  <span className="block truncate text-base">{coverIn ? bn.publishPanel.sections.coverSet : bn.publishPanel.sections.coverPick}</span>
+                </span>
+                <span aria-hidden="true" className={`shrink-0 text-muted transition-transform ${coverOpen ? "rotate-180" : ""}`}>
+                  ▾
+                </span>
+              </button>
+            </div>
+            <p className="-mt-1 text-xs text-muted">{published ? bn.publishPanel.publishedAtHint : bn.publishPanel.dateHintNew}</p>
+
+            {coverOpen && (
+              <div className="space-y-3 rounded-2xl border border-line p-4">
+                <CoverPicker value={coverIn} onChange={setCoverIn} disabled={busy} crop={cropIn} />
+                {coverIn && (
+                  <div className="space-y-2">
+                    <Segmented<CoverRatio | "full">
+                      label={bn.publishPanel.coverCrop.ratioLabel}
+                      showLabel
+                      compact
+                      value={cropIn?.ratio ?? "full"}
+                      options={[{ value: "full", label: bn.publishPanel.coverCrop.full }, ...COVER_RATIOS.map((v) => ({ value: v, label: bn.publishPanel.coverCrop.ratios[v] }))]}
+                      onChange={(v) => setCropIn(v === "full" ? null : { ratio: v, focus: cropIn?.focus ?? "center" })}
                     />
+                    {cropIn && (
+                      <Segmented<CoverFocus>
+                        label={bn.publishPanel.coverCrop.focusLabel}
+                        showLabel
+                        compact
+                        value={cropIn.focus}
+                        options={COVER_FOCUS.map((v) => ({ value: v, label: bn.publishPanel.coverCrop.focus[v] }))}
+                        onChange={(v) => setCropIn({ ...cropIn, focus: v })}
+                      />
+                    )}
+                    <p className="text-xs text-muted">{bn.publishPanel.coverCrop.hint}</p>
                   </div>
                 )}
               </div>
-              <p className="text-xs text-muted">
-                {bn.publishPanel.publishedAtHint}
-                {!published && ` ${bn.publishPanel.scheduleHint}`}
-              </p>
-              {!published && (
-                <div className="flex flex-wrap gap-2">
-                  <button type="button" onClick={onSchedule} disabled={busy || !schedIn} className={btnGhost}>
-                    {bn.publishPanel.scheduleBtn}
-                  </button>
-                  {scheduled && (
-                    <button type="button" onClick={onUnschedule} disabled={busy} className={btnGhost}>
-                      {bn.publishPanel.scheduleCancel}
-                    </button>
-                  )}
-                </div>
-              )}
-            </Section>
+            )}
 
             {(meta.post.contentType === "diary" || meta.post.contentType === "travel" || placeIn.trim() !== "") && (
               <Section title={bn.publishPanel.place.label} hint={placeIn.trim() || undefined}>
@@ -482,38 +490,32 @@ export function PublishPanel(p: Props) {
               </Section>
             )}
 
-            <Section title={bn.publishPanel.sections.media} hint={bn.publishPanel.sections.mediaHint(!!coverIn, galleryIn.length)}>
-              <CoverPicker value={coverIn} onChange={setCoverIn} disabled={busy} crop={cropIn} />
-              {coverIn && (
-                <div className="space-y-2">
-                  <Segmented<CoverRatio | "full">
-                    label={bn.publishPanel.coverCrop.ratioLabel}
-                    showLabel
-                    compact
-                    value={cropIn?.ratio ?? "full"}
-                    options={[{ value: "full", label: bn.publishPanel.coverCrop.full }, ...COVER_RATIOS.map((v) => ({ value: v, label: bn.publishPanel.coverCrop.ratios[v] }))]}
-                    onChange={(v) => setCropIn(v === "full" ? null : { ratio: v, focus: cropIn?.focus ?? "center" })}
-                  />
-                  {cropIn && (
-                    <Segmented<CoverFocus>
-                      label={bn.publishPanel.coverCrop.focusLabel}
-                      showLabel
-                      compact
-                      value={cropIn.focus}
-                      options={COVER_FOCUS.map((v) => ({ value: v, label: bn.publishPanel.coverCrop.focus[v] }))}
-                      onChange={(v) => setCropIn({ ...cropIn, focus: v })}
-                    />
-                  )}
-                  <p className="text-xs text-muted">{bn.publishPanel.coverCrop.hint}</p>
-                </div>
-              )}
-              <GalleryPicker value={galleryIn} onChange={setGalleryIn} disabled={busy} />
-            </Section>
+            {(meta.post.contentType === "diary" || meta.post.contentType === "travel" || galleryIn.length > 0) && (
+              <Section title={bn.publishPanel.sections.gallery} hint={bn.publishPanel.sections.galleryHint(galleryIn.length)}>
+                <GalleryPicker value={galleryIn} onChange={setGalleryIn} disabled={busy} />
+              </Section>
+            )}
+
+            <div className="grid grid-cols-2 gap-2">
+              <label title={bn.publishPanel.featuredHint} className={`flex min-h-12 min-w-0 cursor-pointer items-center gap-2 rounded-xl border px-3 text-sm ${feat ? "border-accent bg-line" : "border-line"}`}>
+                <input type="checkbox" checked={feat} onChange={(e) => setFeat(e.target.checked)} className="size-5 shrink-0" />
+                {bn.publishPanel.featured}
+              </label>
+              <label title={bn.publishPanel.commentsOnHint} className={`flex min-h-12 min-w-0 cursor-pointer items-center gap-2 rounded-xl border px-3 text-sm ${commentsOn ? "border-accent bg-line" : "border-line"}`}>
+                <input type="checkbox" checked={commentsOn} onChange={(e) => setCommentsOn(e.target.checked)} className="size-5 shrink-0" />
+                {bn.publishPanel.sections.commentsShort}
+              </label>
+            </div>
 
             <div className="flex flex-wrap items-center gap-2">
               <a href={`/dashboard/shares?post=${postId}`} className="inline-flex min-h-11 items-center text-accent-text underline">
                 🔗 {bn.shareLink.openPanel}
               </a>
+              {scheduled && (
+                <button type="button" onClick={onUnschedule} disabled={busy} className={btnGhost}>
+                  {bn.publishPanel.scheduleCancel}
+                </button>
+              )}
               {published && meta.hasDraft && (
                 <button type="button" onClick={onDiscard} disabled={busy} className={btnGhost}>
                   {bn.publishPanel.discard}
@@ -538,6 +540,10 @@ export function PublishPanel(p: Props) {
                 {published ? (
                   <button type="button" onClick={onUpdate} disabled={busy || !meta.hasDraft} className={`${btnPrimary} flex-1`}>
                     {busy ? bn.publishPanel.working : bn.publishPanel.update}
+                  </button>
+                ) : dateIn !== "" && dateIn > maxIn ? (
+                  <button type="button" onClick={onSchedule} disabled={busy} className={`${btnPrimary} flex-1`}>
+                    {busy ? bn.publishPanel.working : bn.publishPanel.scheduleBtn}
                   </button>
                 ) : (
                   <button type="button" onClick={onPublish} disabled={busy} className={`${btnPrimary} flex-1`}>
