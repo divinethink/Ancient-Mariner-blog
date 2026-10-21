@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  autoSlugBase,
   decideSlugClaim,
   fallbackSlug,
   isValidSlug,
@@ -72,5 +73,19 @@ describe("decideSlugClaim / nextHistory", () => {
     expect(nextHistory(["a"], "b", "c")).toEqual(["a", "b"]);
     expect(nextHistory(["a", "b"], "c", "a")).toEqual(["b", "c"]);
     expect(nextHistory(["a"], "a", "b")).toEqual(["a"]);
+  });
+});
+
+describe("autoSlugBase", () => {
+  it("শিরোনাম থেকে base; fallback slug বদলায়", () => {
+    expect(autoSlugBase("সাজেকের উদ্দেশ্যে", "post-ab12cd34")).toBe("সাজেকের-উদ্দেশ্যে");
+  });
+  it("একই slug বা আগের সংঘাত-suffix থাকলে null", () => {
+    expect(autoSlugBase("সাজেকের উদ্দেশ্যে", "সাজেকের-উদ্দেশ্যে")).toBeNull();
+    expect(autoSlugBase("সাজেকের উদ্দেশ্যে", "সাজেকের-উদ্দেশ্যে-২")).toBeNull();
+  });
+  it("শিরোনাম খালি/শুধু চিহ্ন হলে null", () => {
+    expect(autoSlugBase("", "post-ab12cd34")).toBeNull();
+    expect(autoSlugBase("!!!", "post-ab12cd34")).toBeNull();
   });
 });

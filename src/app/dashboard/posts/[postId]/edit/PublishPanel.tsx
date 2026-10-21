@@ -2,11 +2,11 @@
 
 // Publish/Metadata panel (Mockup §৭.৯): mobile = bottom-sheet, ≥md = ডান ড্রয়ার।
 // সব রিমোট-লেখা `engine.exclusive`-এর ভেতরে (sync-এর সাথে ক্রমানুসারে); প্রতিটা ক্রিয়ার পর রিমোট পড়ে base বসানো।
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { draftStore } from "@/data/draftStore";
 import { triggerSiteRebuild } from "@/data/rebuildClient";
 import { snapshotOnPublish } from "@/data/revisionHooks";
-import { MAX_LOCATION, MAX_SEO_DESC, MAX_SEO_TITLE, PostNotFoundError, SlugTakenError, type PostRepo, type PostWithId } from "@/data/postRepo";
+import { MAX_LOCATION, PostNotFoundError, SlugTakenError, type PostRepo, type PostWithId } from "@/data/postRepo";
 import { getTaxonomyOps } from "@/data/taxonomyOps.wire";
 import { getTaxonomyRepo } from "@/data/taxonomyRepo.wire";
 import { bn } from "@/i18n/bn";
@@ -14,13 +14,13 @@ import { formatLongDateTime, fromZonedInput, toZonedInput } from "@/lib/datetime
 import { sameIds } from "@/lib/gallery";
 import { COVER_FOCUS, COVER_RATIOS, sameCrop, type CoverCrop, type CoverFocus, type CoverRatio } from "@/lib/coverCrop";
 import { Segmented } from "@/components/ui/Segmented";
+import { Toggle } from "@/components/ui/Toggle";
 import { orgFromPost, orgPatch, parseSeriesOrder, type OrgState } from "@/lib/postOrg";
 import { parsePublishDate } from "@/lib/publish";
 import { parseScheduleInput } from "@/lib/schedule";
 import type { PostVisibility } from "@/lib/enums";
-import { normalizeSeoInput, sameSeo } from "@/lib/seo";
 import { useSiteTimezone } from "../../../SiteSettingsProvider";
-import { isValidSlug, slugify } from "@/lib/slug";
+import { autoSlugBase, withSuffix } from "@/lib/slug";
 import type { SyncStatus } from "@/data/syncEngine";
 import { BuildStatus } from "@/app/dashboard/BuildStatus";
 import { CoverPicker } from "./CoverPicker";
@@ -51,7 +51,6 @@ type Msg = { kind: "ok" | "err"; text: string } | null;
 /** event-handler-এর ভেতরের "এখন" — render-purity lint এড়াতে আলাদা (render-এ কখনো ডাকা হয় না) */
 const nowMs = () => Date.now();
 
-const field = "mb-1 block text-sm text-muted";
 const input = "min-h-11 w-full rounded-xl border border-line bg-bg px-3 text-base";
 const btnPrimary = "min-h-11 rounded-full bg-btn-bg px-5 font-semibold text-btn-tx disabled:opacity-50";
 const btnGhost = "min-h-11 rounded-full border border-line px-4 disabled:opacity-50";
@@ -63,7 +62,6 @@ export function PublishPanel(p: Props) {
   const [state, setState] = useState<"loading" | "ready" | "empty" | "error">("loading");
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<Msg>(null);
-  const [slugIn, setSlugIn] = useState("");
   const [vis, setVis] = useState<PostVisibility>("public");
   const [schedIn, setSchedIn] = useState("");
   const [dateIn, setDateIn] = useState("");
@@ -73,10 +71,6 @@ export function PublishPanel(p: Props) {
   const [cropIn, setCropIn] = useState<CoverCrop | null>(null);
   const [galleryIn, setGalleryIn] = useState<string[]>([]);
   const [placeIn, setPlaceIn] = useState("");
-  const [seoTitleIn, setSeoTitleIn] = useState("");
-  const [seoDescIn, setSeoDescIn] = useState("");
-  const [seoNoindexIn, setSeoNoindexIn] = useState(false);
-  const [ogIn, setOgIn] = useState<string | null>(null);
   /** প্রকাশের তারিখের `max` — render-এ Date.now() নয়, meta লোডের সময় বসে */
   const [maxIn, setMaxIn] = useState("");
   const [org, setOrg] = useState<OrgState | null>(null);
@@ -85,14 +79,12 @@ export function PublishPanel(p: Props) {
   const [pendingTags, setPendingTags] = useState<string[]>([]);
   const [orgOpts, setOrgOpts] = useState<OrgOptions | "error" | null>(null);
   const [optsTick, setOptsTick] = useState(0);
-  const firstRef = useRef<HTMLInputElement>(null);
   const { flushLocal } = p;
 
   const { onPub } = p;
   const applyMeta = useCallback(
     (post: PostWithId, hasDraft: boolean) => {
       setMeta({ post, hasDraft });
-      setSlugIn(post.slug);
       // কখনো প্রকাশ না-হওয়া লেখায় প্রকাশের পথে Public শুরুর মান; নইলে বর্তমান
       setVis(post.publishedAt || post.status === "scheduled" ? post.visibility : "public");
       setSchedIn(post.scheduledAt ? toZonedInput(post.scheduledAt, tz) : "");
@@ -103,10 +95,6 @@ export function PublishPanel(p: Props) {
       setCropIn(post.coverCrop ?? null);
       setGalleryIn(post.gallery ?? []);
       setPlaceIn(post.location ?? "");
-      setSeoTitleIn(post.seo?.title ?? "");
-      setSeoDescIn(post.seo?.description ?? "");
-      setSeoNoindexIn(post.seo?.noindex === true);
-      setOgIn(post.seo?.ogImageId ?? null);
       setMaxIn(toZonedInput(new Date(), tz));
       setOrg(orgFromPost(post));
       setOrderIn(post.seriesId && post.seriesOrder !== undefined ? String(post.seriesOrder) : "");
@@ -173,32 +161,40 @@ export function PublishPanel(p: Props) {
   }, [state, optsTick]);
 
   useEffect(() => {
-    firstRef.current?.focus();
     const esc = (e: KeyboardEvent) => e.key === "Escape" && !p.docked && onClose();
     window.addEventListener("keydown", esc);
     return () => window.removeEventListener("keydown", esc);
   }, [state, onClose, p.docked]);
 
-  /** slug/visibility/publishedAt যা বদলেছে তা লেখা; ব্যর্থ হলে Error throw (বার্তা ফেরত) */
+  /** visibility/publishedAt ইত্যাদি যা বদলেছে তা লেখা; ব্যর্থ হলে Error throw (বার্তা ফেরত) */
   async function writeMeta(
     repo: PostRepo,
     extra: { status?: "published" | "draft" | "scheduled"; scheduledAt?: Date | null } = {},
-    opts: { defaultCategory?: boolean } = {},
+    opts: { defaultCategory?: boolean; autoSlug?: boolean } = {},
   ) {
     if (!meta) return;
     const cur = meta.post;
-    const slug = slugify(slugIn);
-    if (!isValidSlug(slug)) throw new Error("slug");
     const date = parsePublishDate(dateIn, nowMs(), tz);
     if (!date.ok) throw new Error(date.reason);
-    if (slug !== cur.slug) await repo.changeSlug(postId, slug);
+    // slug স্বয়ংক্রিয়: শুধু কখনো-প্রকাশ-না-হওয়া লেখার প্রথম প্রকাশ/সময়-নির্ধারণে শিরোনাম থেকে; একবার প্রকাশের পর কখনো বদলায় না (লিংক ভাঙে না)
+    if (opts.autoSlug && !cur.publishedAt) {
+      const base = autoSlugBase(cur.title, cur.slug);
+      if (base) {
+        for (let n = 1; n <= 10; n++) {
+          try {
+            await repo.changeSlug(postId, withSuffix(base, n));
+            break;
+          } catch (e) {
+            if (!(e instanceof SlugTakenError) || n === 10) throw e;
+          }
+        }
+      }
+    }
     const dateChanged =
       date.date !== undefined && (!cur.publishedAt || toZonedInput(cur.publishedAt, tz) !== dateIn);
     const orgChange = await resolveOrg(cur, opts.defaultCategory ?? false);
-    const nextSeo = normalizeSeoInput({ title: seoTitleIn, description: seoDescIn, ogImageId: ogIn, noindex: seoNoindexIn });
     const patch = {
       ...orgChange,
-      ...(sameSeo(nextSeo, cur.seo) ? {} : { seo: nextSeo }),
       ...(vis !== cur.visibility ? { visibility: vis } : {}),
       ...(feat !== (cur.featured === true) ? { featured: feat } : {}),
       ...(commentsOn !== (cur.commentsEnabled !== false) ? { commentsEnabled: commentsOn } : {}),
@@ -261,9 +257,7 @@ export function PublishPanel(p: Props) {
         text:
           e instanceof SlugTakenError
             ? bn.publishPanel.slugTaken
-            : reason === "slug"
-              ? bn.publishPanel.slugInvalid
-              : reason === "order"
+            : reason === "order"
                 ? bn.org.panel.orderInvalid
                 : reason === "past"
                 ? bn.publishPanel.schedulePast
@@ -284,7 +278,7 @@ export function PublishPanel(p: Props) {
 
   const onPublish = () =>
     run(async (repo) => {
-      await writeMeta(repo, { status: "published", ...(meta?.post.status === "scheduled" ? { scheduledAt: null } : {}) }, { defaultCategory: true });
+      await writeMeta(repo, { status: "published", ...(meta?.post.status === "scheduled" ? { scheduledAt: null } : {}) }, { defaultCategory: true, autoSlug: true });
       await snapshotOnPublish(postId).catch(() => undefined); // ইতিহাস best-effort — প্রকাশ আটকায় না
       return bn.publishPanel.publishedOk;
     }, true);
@@ -293,7 +287,7 @@ export function PublishPanel(p: Props) {
     run(async (repo) => {
       const s = parseScheduleInput(schedIn, nowMs(), tz);
       if (!s.ok) throw new Error(s.reason);
-      await writeMeta(repo, { status: "scheduled", scheduledAt: s.date }, { defaultCategory: true });
+      await writeMeta(repo, { status: "scheduled", scheduledAt: s.date }, { defaultCategory: true, autoSlug: true });
       await snapshotOnPublish(postId).catch(() => undefined);
       return bn.publishPanel.scheduledOk;
     });
@@ -384,103 +378,85 @@ export function PublishPanel(p: Props) {
             </p>
 
             <div>
-              <label htmlFor="pp-slug" className={field}>
-                {bn.publishPanel.slug}
-              </label>
-              <input
-                id="pp-slug"
-                ref={firstRef}
-                value={slugIn}
-                onChange={(e) => setSlugIn(e.target.value)}
-                lang="bn"
-                autoCapitalize="none"
-                spellCheck={false}
-                className={input}
+              <Segmented<PostVisibility>
+                label={bn.publishPanel.visibility}
+                showLabel
+                value={vis}
+                options={[
+                  { value: "private", label: bn.publishPanel.private },
+                  { value: "public", label: bn.publishPanel.public },
+                  { value: "unlisted", label: bn.publishPanel.unlisted },
+                ]}
+                onChange={setVis}
               />
+              {vis === "unlisted" && <p className="mt-1 text-xs text-muted">{bn.publishPanel.unlistedHint}</p>}
             </div>
 
-            <fieldset>
-              <legend className={field}>{bn.publishPanel.visibility}</legend>
-              <div className="flex gap-2">
-                {(["private", "public", "unlisted"] as const).map((v) => (
-                  <label
-                    key={v}
-                    className={`flex min-h-11 flex-1 cursor-pointer items-center justify-center rounded-xl border px-3 ${vis === v ? "border-accent bg-line" : "border-line"}`}
-                  >
-                    <input
-                      type="radio"
-                      name="pp-vis"
-                      checked={vis === v}
-                      onChange={() => setVis(v)}
-                      className="sr-only"
-                    />
-                    {v === "private" ? bn.publishPanel.private : v === "unlisted" ? bn.publishPanel.unlisted : bn.publishPanel.public}
-                  </label>
-                ))}
-              </div>
-              {vis === "unlisted" && <p className="mt-1 text-xs text-muted">{bn.publishPanel.unlistedHint}</p>}
-            </fieldset>
-
-            <div className="grid grid-cols-2 gap-2">
-              <label title={bn.publishPanel.featuredHint} className={`flex min-h-11 cursor-pointer items-center gap-2 rounded-xl border px-3 text-sm ${feat ? "border-accent bg-line" : "border-line"}`}>
-                <input type="checkbox" checked={feat} onChange={(e) => setFeat(e.target.checked)} className="size-5 shrink-0" />
-                {bn.publishPanel.featured}
-              </label>
-              <label title={bn.publishPanel.commentsOnHint} className={`flex min-h-11 cursor-pointer items-center gap-2 rounded-xl border px-3 text-sm ${commentsOn ? "border-accent bg-line" : "border-line"}`}>
-                <input type="checkbox" checked={commentsOn} onChange={(e) => setCommentsOn(e.target.checked)} className="size-5 shrink-0" />
-                {bn.publishPanel.sections.commentsShort}
-              </label>
+            <div className="divide-y divide-line rounded-2xl border border-line px-4">
+              <Toggle checked={feat} onChange={setFeat} label={bn.publishPanel.featured} />
+              <Toggle checked={commentsOn} onChange={setCommentsOn} label={bn.publishPanel.sections.commentsShort} />
             </div>
 
             {org && (
-              <Section title={bn.org.panel.title} hint={`${org.categoryName ?? "—"} · #${org.tags.length}`}>
-                <OrgSection
-                  value={org}
-                  onChange={setOrg}
-                  opts={orgOpts}
-                  pending={pendingTags}
-                  onPending={setPendingTags}
-                  orderInput={orderIn}
-                  onOrderInput={setOrderIn}
-                  published={published}
-                  disabled={busy}
-                  onRetry={() => {
-                    setOrgOpts(null);
-                    setOptsTick((n) => n + 1);
-                  }}
-                />
-              </Section>
+              <OrgSection
+                value={org}
+                onChange={setOrg}
+                opts={orgOpts}
+                pending={pendingTags}
+                onPending={setPendingTags}
+                orderInput={orderIn}
+                onOrderInput={setOrderIn}
+                published={published}
+                disabled={busy}
+                onRetry={() => {
+                  setOrgOpts(null);
+                  setOptsTick((n) => n + 1);
+                }}
+              />
             )}
 
             <Section title={bn.publishPanel.sections.dates} hint={dateIn ? (() => { const d = fromZonedInput(dateIn, tz); return d ? formatLongDateTime(d, tz) : undefined; })() : undefined}>
-              <div>
-                <label htmlFor="pp-date" className={field}>
-                  {bn.publishPanel.publishedAt}
-                </label>
-                <input
-                  id="pp-date"
-                  type="datetime-local"
-                  value={dateIn}
-                  max={maxIn || undefined}
-                  onChange={(e) => setDateIn(e.target.value)}
-                  className={input}
-                />
-                <p className="mt-1 text-xs text-muted">{bn.publishPanel.publishedAtHint}</p>
-              </div>
-              {!published && (
-                <div>
-                  <label htmlFor="pp-sched" className={field}>
-                    {bn.publishPanel.scheduleAt}
+              <div className={`grid gap-2 ${published ? "grid-cols-1" : "grid-cols-2"}`}>
+                <div className="flex min-w-0 flex-col justify-between rounded-xl border border-line bg-bg px-3 py-1.5 focus-within:border-accent">
+                  <label htmlFor="pp-date" className="block text-xs text-muted">
+                    {bn.publishPanel.publishedAt}
                   </label>
-                  <div className="flex flex-wrap gap-2">
-                    <input id="pp-sched" type="datetime-local" value={schedIn} min={maxIn || undefined} onChange={(e) => setSchedIn(e.target.value)} className={`${input} flex-1`} />
-                    <button type="button" onClick={onSchedule} disabled={busy || !schedIn} className={btnGhost}>
-                      {bn.publishPanel.scheduleBtn}
-                    </button>
+                  <input
+                    id="pp-date"
+                    type="datetime-local"
+                    value={dateIn}
+                    max={maxIn || undefined}
+                    onChange={(e) => setDateIn(e.target.value)}
+                    className="field-clean min-h-9 w-full min-w-0 bg-transparent text-sm"
+                  />
+                </div>
+                {!published && (
+                  <div className="flex min-w-0 flex-col justify-between rounded-xl border border-line bg-bg px-3 py-1.5 focus-within:border-accent">
+                    <label htmlFor="pp-sched" className="block text-xs text-muted">
+                      {bn.publishPanel.scheduleAt}
+                    </label>
+                    <input
+                      id="pp-sched"
+                      type="datetime-local"
+                      value={schedIn}
+                      min={maxIn || undefined}
+                      onChange={(e) => setSchedIn(e.target.value)}
+                      className="field-clean min-h-9 w-full min-w-0 bg-transparent text-sm"
+                    />
                   </div>
-                  <p className="mt-1 text-xs text-muted">{bn.publishPanel.scheduleHint}</p>
+                )}
+              </div>
+              <p className="text-xs text-muted">
+                {bn.publishPanel.publishedAtHint}
+                {!published && ` ${bn.publishPanel.scheduleHint}`}
+              </p>
+              {!published && (
+                <div className="flex flex-wrap gap-2">
+                  <button type="button" onClick={onSchedule} disabled={busy || !schedIn} className={btnGhost}>
+                    {bn.publishPanel.scheduleBtn}
+                  </button>
                   {scheduled && (
-                    <button type="button" onClick={onUnschedule} disabled={busy} className={`${btnGhost} mt-2`}>
+                    <button type="button" onClick={onUnschedule} disabled={busy} className={btnGhost}>
                       {bn.publishPanel.scheduleCancel}
                     </button>
                   )}
@@ -488,39 +464,23 @@ export function PublishPanel(p: Props) {
               )}
             </Section>
 
-            <Section title={bn.publishPanel.sections.details} hint={placeIn.trim() || undefined}>
-              <div>
-                <label htmlFor="pp-excerpt" className={field}>
-                  {bn.publishPanel.excerpt}
+            {(meta.post.contentType === "diary" || meta.post.contentType === "travel" || placeIn.trim() !== "") && (
+              <Section title={bn.publishPanel.place.label} hint={placeIn.trim() || undefined}>
+                <label className="block">
+                  <span className="sr-only">{bn.publishPanel.place.label}</span>
+                  <input
+                    type="text"
+                    value={placeIn}
+                    maxLength={MAX_LOCATION}
+                    disabled={busy}
+                    placeholder={bn.publishPanel.place.placeholder}
+                    onChange={(e) => setPlaceIn(e.target.value)}
+                    className={input}
+                  />
+                  <span className="mt-1 block text-xs text-muted">{bn.publishPanel.place.hint}</span>
                 </label>
-                <textarea
-                  id="pp-excerpt"
-                  value={p.excerpt}
-                  onChange={(e) => {
-                    p.onExcerpt(e.target.value);
-                    // প্রকাশিত লেখায় সারাংশ-বদলও অপ্রকাশিত পরিবর্তন (drafts-এ যাবে)
-                    setMeta((m) => (m && m.post.status === "published" ? { ...m, hasDraft: true } : m));
-                  }}
-                  rows={3}
-                  lang="bn"
-                  className={`${input} py-2`}
-                />
-                <p className="mt-1 text-xs text-muted">{bn.publishPanel.excerptHint}</p>
-              </div>
-              <label className="block">
-                <span className={field}>{bn.publishPanel.place.label}</span>
-                <input
-                  type="text"
-                  value={placeIn}
-                  maxLength={MAX_LOCATION}
-                  disabled={busy}
-                  placeholder={bn.publishPanel.place.placeholder}
-                  onChange={(e) => setPlaceIn(e.target.value)}
-                  className={input}
-                />
-                <span className="mt-1 block text-xs text-muted">{bn.publishPanel.place.hint}</span>
-              </label>
-            </Section>
+              </Section>
+            )}
 
             <Section title={bn.publishPanel.sections.media} hint={bn.publishPanel.sections.mediaHint(!!coverIn, galleryIn.length)}>
               <CoverPicker value={coverIn} onChange={setCoverIn} disabled={busy} crop={cropIn} />
@@ -548,30 +508,6 @@ export function PublishPanel(p: Props) {
                 </div>
               )}
               <GalleryPicker value={galleryIn} onChange={setGalleryIn} disabled={busy} />
-            </Section>
-
-            <Section title={bn.publishPanel.sections.seo} hint={seoNoindexIn ? "noindex" : undefined}>
-              <fieldset className="space-y-3" disabled={busy}>
-                <legend className="sr-only">{bn.publishPanel.seo.title}</legend>
-                <label className="block space-y-1">
-                  <span className="text-sm">{bn.publishPanel.seo.titleLabel}</span>
-                  <input type="text" value={seoTitleIn} maxLength={MAX_SEO_TITLE} onChange={(e) => setSeoTitleIn(e.target.value)} className={input} />
-                  <span className="block text-xs text-muted">{bn.publishPanel.seo.titleHint} {bn.publishPanel.seo.count(seoTitleIn.length, MAX_SEO_TITLE)}</span>
-                </label>
-                <label className="block space-y-1">
-                  <span className="text-sm">{bn.publishPanel.seo.descLabel}</span>
-                  <textarea value={seoDescIn} maxLength={MAX_SEO_DESC} rows={3} onChange={(e) => setSeoDescIn(e.target.value)} className={`${input} py-2`} />
-                  <span className="block text-xs text-muted">{bn.publishPanel.seo.descHint} {bn.publishPanel.seo.count(seoDescIn.length, MAX_SEO_DESC)}</span>
-                </label>
-                <label className="flex min-h-11 cursor-pointer items-start gap-3">
-                  <input type="checkbox" checked={seoNoindexIn} onChange={(e) => setSeoNoindexIn(e.target.checked)} className="mt-1 size-5" />
-                  <span>
-                    {bn.publishPanel.seo.noindex}
-                    <span className="block text-xs text-muted">{bn.publishPanel.seo.noindexHint}</span>
-                  </span>
-                </label>
-                <CoverPicker value={ogIn} onChange={setOgIn} disabled={busy} labels={{ title: bn.publishPanel.ogImage.title, none: bn.publishPanel.ogImage.none }} />
-              </fieldset>
             </Section>
 
             <div className="flex flex-wrap items-center gap-2">

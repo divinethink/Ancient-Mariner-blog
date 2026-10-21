@@ -68,10 +68,8 @@ export function OrgSection(p: Props) {
   }
 
   return (
-    <fieldset className="space-y-4" disabled={p.disabled}>
-      <legend className="sr-only">{t.title}</legend>
-
-      <div className="grid grid-cols-1 gap-2">
+    <fieldset className="space-y-3" disabled={p.disabled}>
+      <div className="grid grid-cols-2 gap-2">
         <div className="min-w-0 rounded-xl border border-line bg-bg px-3 py-1.5 focus-within:border-accent">
           <label htmlFor="org-cat" className="block text-xs text-muted">
             {t.category}
@@ -97,7 +95,38 @@ export function OrgSection(p: Props) {
             ))}
           </select>
         </div>
+        <div className="min-w-0 rounded-xl border border-line bg-bg px-3 py-1.5 focus-within:border-accent">
+          <label htmlFor="org-series" className="block text-xs text-muted">
+            {t.series}
+          </label>
+          <select
+            id="org-series"
+            className="field-clean min-h-9 w-full bg-transparent text-base"
+            value={v.seriesId ?? ""}
+            onChange={(e) => {
+              const id = e.target.value || null;
+              if (!id) p.onOrderInput("");
+              p.onChange({ ...v, seriesId: id, seriesOrder: id ? v.seriesOrder : null });
+            }}
+          >
+            <option value="">{t.noSeries}</option>
+            {v.seriesId && !series.some((s) => s.id === v.seriesId) && <option value={v.seriesId}>{v.seriesId}</option>}
+            {series.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
+      {v.seriesId && (
+        <div className="min-w-0 rounded-xl border border-line bg-bg px-3 py-1.5 focus-within:border-accent">
+          <label htmlFor="org-order" className="block text-xs text-muted">
+            {t.seriesOrder}
+          </label>
+          <input id="org-order" className="field-clean min-h-9 w-full bg-transparent text-base" inputMode="numeric" value={p.orderInput} onChange={(e) => p.onOrderInput(e.target.value)} />
+        </div>
+      )}
 
       <div>
         <label htmlFor="org-tag" className="mb-1 block text-xs text-muted">
@@ -158,41 +187,6 @@ export function OrgSection(p: Props) {
           </p>
         )}
       </div>
-
-      <div className="flex gap-2">
-        <div className="min-w-0 rounded-xl border border-line bg-bg px-3 py-1.5 focus-within:border-accent flex-1">
-          <label htmlFor="org-series" className="block text-xs text-muted">
-            {t.series}
-          </label>
-          <select
-            id="org-series"
-            className="field-clean min-h-9 w-full bg-transparent text-base"
-            value={v.seriesId ?? ""}
-            onChange={(e) => {
-              const id = e.target.value || null;
-              if (!id) p.onOrderInput("");
-              p.onChange({ ...v, seriesId: id, seriesOrder: id ? v.seriesOrder : null });
-            }}
-          >
-            <option value="">{t.noSeries}</option>
-            {v.seriesId && !series.some((s) => s.id === v.seriesId) && <option value={v.seriesId}>{v.seriesId}</option>}
-            {series.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name}
-              </option>
-            ))}
-          </select>
-        </div>
-        {v.seriesId && (
-          <div className="min-w-0 rounded-xl border border-line bg-bg px-3 py-1.5 focus-within:border-accent w-24 shrink-0">
-            <label htmlFor="org-order" className="block text-xs text-muted">
-              {t.seriesOrder}
-            </label>
-            <input id="org-order" className="field-clean min-h-9 w-full bg-transparent text-base" inputMode="numeric" value={p.orderInput} onChange={(e) => p.onOrderInput(e.target.value)} />
-          </div>
-        )}
-      </div>
-      <p className="text-xs text-muted">{t.hint}</p>
     </fieldset>
   );
 }

@@ -41,3 +41,14 @@ export function decideSlugClaim(existingPostId: string | null, postId: string): 
 export function nextHistory(history: readonly string[], oldSlug: string, newSlug: string): string[] {
   return [...new Set([...history, oldSlug])].filter((s) => s !== newSlug);
 }
+
+/**
+ * স্বয়ংক্রিয় slug (প্রথম প্রকাশে): শিরোনাম থেকে base; বদলানোর দরকার না থাকলে null।
+ * শিরোনাম খালি/শুধু-চিহ্ন, বা বর্তমান slug-ই base / base-<বাংলা সংখ্যা> হলে (আগের সংঘাত-suffix) null — অকারণে নাম-বদল নয়।
+ */
+export function autoSlugBase(title: string, currentSlug: string): string | null {
+  const base = slugify(title);
+  if (!base || currentSlug === base) return null;
+  if (currentSlug.startsWith(`${base}-`) && /^[০-৯]+$/.test(currentSlug.slice(base.length + 1))) return null;
+  return base;
+}
