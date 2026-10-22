@@ -1,7 +1,6 @@
 "use client";
 import { useLayoutEffect } from "react";
-
-const KEY = "diaryCalPos";
+import { KEEP_POS_KEY as KEY } from "./keepPosScript";
 
 /**
  * পঞ্জিকায় তারিখ/মাসে ট্যাপ করলে পাতা নতুন করে লোড হয় (static সাইট) → স্ক্রল ওপরে চলে যায়।
@@ -10,6 +9,9 @@ const KEY = "diaryCalPos";
  */
 export function CalendarKeepPos() {
   useLayoutEffect(() => {
+    const show = () => {
+      document.documentElement.style.visibility = "";
+    };
     try {
       const raw = sessionStorage.getItem(KEY);
       sessionStorage.removeItem(KEY);
@@ -20,11 +22,14 @@ export function CalendarKeepPos() {
         if (Date.now() - t < 8000) {
           const fix = () => window.scrollBy(0, el.getBoundingClientRect().top - top);
           fix();
-          requestAnimationFrame(fix); // browser-এর নিজস্ব scroll-restore পরে চললে আবার মেলাই
-        }
-      }
+          requestAnimationFrame(() => {
+            fix(); // browser-এর নিজস্ব scroll-restore পরে চললে আবার মেলাই
+            show();
+          });
+        } else show();
+      } else show();
     } catch {
-      // storage নেই/অবৈধ মান: শুধু বাদ
+      show(); // storage নেই/অবৈধ মান: শুধু বাদ
     }
     const onClick = (e: MouseEvent) => {
       const a = (e.target as Element | null)?.closest?.("a");
