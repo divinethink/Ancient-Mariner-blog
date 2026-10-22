@@ -1,15 +1,15 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { DiaryCalendar } from "@/components/public/DiaryCalendar";
-import { DiaryEntries, dayLabel } from "@/components/public/DiaryEntries";
+import { dayLabel } from "@/components/public/DiaryEntries";
+import { DiaryMonthPanels } from "@/components/public/DiaryMonthPanels";
 import { PublicShell } from "@/components/public/PublicShell";
 import { getSiteUrl } from "@/config/env";
 import { hasDefaultOgImage } from "@/data/publicAssets";
 import { getPublicDiary } from "@/data/publicDiary";
 import { getPublicMedia, getPublicSettings } from "@/data/publicSnapshot";
 import { bn } from "@/i18n/bn";
-import Link from "next/link";
-import { adjacentDays, buildDiaryMonth, diaryDayPath } from "@/lib/diaryCalendar";
+import { buildDiaryMonth, diaryDayPath } from "@/lib/diaryCalendar";
 import { widgetTitle } from "@/lib/layout";
 import { buildSeo } from "@/lib/seo";
 
@@ -41,7 +41,6 @@ export default async function DiaryDay({ params }: Props) {
   const calTitle = widgetTitle((await getPublicSettings()).layout.sidebar, "calendar", bn.public.calendarTitle);
   const entries = byDay.get(day);
   if (!entries) notFound();
-  const adj = adjacentDays(byDay.keys(), day);
   return (
     <PublicShell>
       <h1 className="font-serif text-3xl font-bold">{calTitle}</h1>
@@ -49,21 +48,7 @@ export default async function DiaryDay({ params }: Props) {
       <div className="mt-4 rounded-2xl border border-line bg-surface p-4">
         <DiaryCalendar view={buildDiaryMonth(words, day.slice(0, 7))} selected={day} timeZone={tz} />
       </div>
-      <DiaryEntries day={day} entries={entries} media={await getPublicMedia()} />
-      <nav aria-label={bn.public.diaryNavLabel} className="mt-6 flex items-center justify-between gap-4 border-t border-line pt-3">
-        {adj.prev ? (
-          <Link href={diaryDayPath(adj.prev)} prefetch={false} className="inline-flex min-h-11 items-center text-accent-text">
-            {bn.public.diaryPrev}
-          </Link>
-        ) : (
-          <span />
-        )}
-        {adj.next && (
-          <Link href={diaryDayPath(adj.next)} prefetch={false} className="inline-flex min-h-11 items-center text-accent-text">
-            {bn.public.diaryNext}
-          </Link>
-        )}
-      </nav>
+      <DiaryMonthPanels ym={day.slice(0, 7)} byDay={byDay} selected={day} media={await getPublicMedia()} />
     </PublicShell>
   );
 }

@@ -325,3 +325,20 @@ main:has(.dash-shell) {
   outline: none;
   border-color: var(--accent-text);
 }
+
+/* পাবলিক দিনলিপি: দিন বদলালে নতুন লেখা আলতো ফুটে ওঠে (শুধু ট্যাপের পরে; reduced-motion-এ নয়) */
+@keyframes diary-fade {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  [data-diary-panels][data-switched] [data-diary-panel]:not([hidden]) {
+    animation: diary-fade 0.22s ease-out;
+  }
+}

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { DiaryCalendar } from "@/components/public/DiaryCalendar";
-import { DiaryEntries } from "@/components/public/DiaryEntries";
+import { DiaryMonthPanels } from "@/components/public/DiaryMonthPanels";
 import { DiaryStats, DiaryYear } from "@/components/public/DiaryYear";
 import { OnThisDay } from "@/components/public/OnThisDay";
 import { PublicShell } from "@/components/public/PublicShell";
@@ -43,8 +43,7 @@ export default async function DiaryHome() {
           </div>
           <DiaryStats s={streakStats(byDay.keys())} />
           <OnThisDay days={[...byDay.keys()]} timeZone={tz} />
-          <p className="mt-6 text-sm font-semibold text-muted">{bn.public.diaryLatest}</p>
-          <DiaryEntries day={last} entries={byDay.get(last) ?? []} preview media={await getPublicMedia()} />
+          <DiaryMonthPanels ym={last.slice(0, 7)} byDay={byDay} selected={last} previewDay={last} latestLabel={bn.public.diaryLatest} media={await getPublicMedia()} />
           <div className="mt-8 rounded-2xl border border-line bg-surface p-4">
             <DiaryYear view={buildYearView(words, Number(last.slice(0, 4)))} years={diaryYears(byDay.keys())} timeZone={tz} />
           </div>
