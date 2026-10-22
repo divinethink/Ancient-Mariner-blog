@@ -8,6 +8,7 @@ import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { readNavCollapsed, saveNavCollapsed } from "@/data/comfortStore";
 import { setOwnerHint } from "@/lib/ownerHint";
 import { AddProvider } from "./AddSheet";
+import { DebugOverlay } from "./DebugOverlay";
 import { SidePanel, TopNav } from "./DashboardNav";
 import { useMinWidth } from "./useMinWidth";
 
@@ -41,6 +42,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
   };
   return (
     <AddProvider>
+      <DebugOverlay />
       <div
         className="dash-shell lg:pl-[var(--nav-w)]"
         style={{ "--nav-w": collapsed ? "72px" : "240px" } as CSSProperties}
