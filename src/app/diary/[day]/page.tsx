@@ -10,6 +10,7 @@ import { getPublicMedia, getPublicSettings } from "@/data/publicSnapshot";
 import { bn } from "@/i18n/bn";
 import Link from "next/link";
 import { adjacentDays, buildDiaryMonth, diaryDayPath } from "@/lib/diaryCalendar";
+import { widgetTitle } from "@/lib/layout";
 import { buildSeo } from "@/lib/seo";
 
 export const dynamic = "force-static";
@@ -37,12 +38,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function DiaryDay({ params }: Props) {
   const { day } = await params;
   const { tz, byDay, words } = await getPublicDiary();
+  const calTitle = widgetTitle((await getPublicSettings()).layout.sidebar, "calendar", bn.public.calendarTitle);
   const entries = byDay.get(day);
   if (!entries) notFound();
   const adj = adjacentDays(byDay.keys(), day);
   return (
     <PublicShell>
-      <h1 className="font-serif text-3xl font-bold">{bn.public.calendarTitle}</h1>
+      <h1 className="font-serif text-3xl font-bold">{calTitle}</h1>
+      <p className="mt-1 text-muted">{bn.public.diaryDesc}</p>
       <div className="mt-4 rounded-2xl border border-line bg-surface p-4">
         <DiaryCalendar view={buildDiaryMonth(words, day.slice(0, 7))} selected={day} timeZone={tz} />
       </div>

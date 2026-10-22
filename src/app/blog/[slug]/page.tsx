@@ -175,7 +175,7 @@ export default async function BlogPost({ params }: Props) {
   return (
     <PublicShell>
       <ViewBeacon postId={post.id} />
-      <ReadingChrome targetId="post-article" title={post.title || bn.library.untitled} />
+      <ReadingChrome title={post.title || bn.library.untitled} />
       <ReadingResume slug={post.slug} targetId="post-article" />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: ld }} />
       <ReaderBar>

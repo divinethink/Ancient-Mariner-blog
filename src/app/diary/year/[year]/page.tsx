@@ -8,6 +8,7 @@ import { getPublicDiary } from "@/data/publicDiary";
 import { getPublicSettings } from "@/data/publicSnapshot";
 import { bn } from "@/i18n/bn";
 import { buildYearView, diaryYearPath, diaryYears, streakStats } from "@/lib/diaryCalendar";
+import { widgetTitle } from "@/lib/layout";
 import { buildSeo } from "@/lib/seo";
 
 export const dynamic = "force-static";
@@ -35,11 +36,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function DiaryYearPage({ params }: Props) {
   const year = Number((await params).year);
   const { tz, byDay, words } = await getPublicDiary();
+  const calTitle = widgetTitle((await getPublicSettings()).layout.sidebar, "calendar", bn.public.calendarTitle);
   const years = diaryYears(byDay.keys());
   if (!years.includes(year)) notFound();
   return (
     <PublicShell>
-      <h1 className="font-serif text-3xl font-bold">{bn.public.calendarTitle}</h1>
+      <h1 className="font-serif text-3xl font-bold">{calTitle}</h1>
       <DiaryStats s={streakStats(byDay.keys())} />
       <div className="mt-4 rounded-2xl border border-line bg-surface p-4">
         <DiaryYear view={buildYearView(words, year)} years={years} timeZone={tz} />

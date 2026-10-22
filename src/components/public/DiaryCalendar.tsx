@@ -11,11 +11,11 @@ const nav = "inline-flex min-h-11 min-w-11 items-center justify-center rounded-l
 /** "দিনলিপি পঞ্জিকা": লেখা-আছে এমন দিন হিটম্যাপ-রঙে ও লিংক; নির্বাচিত দিনে রিং; আজ আলাদা রঙে ভরা (TodayMark)। সাইডবার ও /diary দুই জায়গায় একই */
 export function DiaryCalendar({ view, selected, timeZone }: { view: DiaryMonthView; selected?: string; timeZone: string }) {
   const slots = [...Array<null>(view.lead).fill(null), ...view.cells];
-  while (slots.length % 7 !== 0) slots.push(null);
+  while (slots.length < 42 || slots.length % 7 !== 0) slots.push(null); // সবসময় ৬ সারি: মাস বদলালে উচ্চতা লাফায় না
   const weeks = Array.from({ length: slots.length / 7 }, (_, i) => slots.slice(i * 7, i * 7 + 7));
   const arrow = (href: string | undefined, label: string, ch: string) =>
     href ? (
-      <Link href={href} prefetch={false} aria-label={label} className={nav}>
+      <Link href={href} prefetch={false} scroll={false} aria-label={label} className={nav}>
         {ch}
       </Link>
     ) : (
@@ -46,12 +46,13 @@ export function DiaryCalendar({ view, selected, timeZone }: { view: DiaryMonthVi
           {weeks.map((w, wi) => (
             <tr key={wi}>
               {w.map((c, ci) => (
-                <td key={ci} className="p-0.5">
+                <td key={ci} className="h-12 p-0.5">
                   {c &&
                     (c.href ? (
                       <Link
                         href={c.href}
                         prefetch={false}
+                        scroll={false}
                         data-day={c.key}
                         aria-current={selected === c.key ? "page" : undefined}
                         className={`${base} ${HEAT[c.level]} font-semibold ${selected === c.key ? "bg-btn-bg! text-btn-tx!" : ""}`}

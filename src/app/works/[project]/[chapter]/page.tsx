@@ -57,7 +57,7 @@ export default async function ChapterPage({ params }: Props) {
   const projectHref = worksPath(work.project.slug);
   return (
     <PublicShell>
-      <ReadingChrome targetId="chapter-article" title={chapter.title} />
+      <ReadingChrome title={chapter.title} />
       <ReaderBar>
         <Link href={projectHref} prefetch={false} className="zen-hide inline-flex min-h-11 items-center text-accent-text">
           ← {work.project.title}
