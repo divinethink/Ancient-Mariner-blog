@@ -1399,7 +1399,7 @@ export const bn = {
     goalTitle: "আজকের লক্ষ্য",
     goalWords: (n: number, goal: number) => `আজ ${bnDigits(n)}/${bnDigits(goal)} শব্দ`,
     goalHint: "শুধু আজকের নতুন শব্দ গোনা হয় — চাপ নেই 🌱",
-    glance: (pub: number, draft: number) => `${bnDigits(pub)} Published · ${bnDigits(draft)} Draft`,
+    glance: (pub: number, draft: number) => `${pub} Published · ${draft} Draft`,
     pickTitle: "আইডিয়া থেকে একটা বাছুন",
     pickWrite: "এটা নিয়ে লিখুন",
     pickAnother: "আরেকটা",

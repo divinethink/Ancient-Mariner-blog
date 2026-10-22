@@ -64,16 +64,8 @@ const statusLabel = (it: Item) =>
 type Found = { key: string; items: Item[] | null }; // items=null ⇒ ব্যর্থ
 type Filter = "all" | "draft" | "published" | "archived" | "trash";
 const FILTER_ORDER: readonly Filter[] = ["draft", "published", "archived", "all", "trash"];
-const FILTER_KEY = "lib.filter"; // শেষ বাছা ফিল্টার (শুধু per-device সুবিধা; না থাকলে "draft")
-function readFilter(): Filter {
-  try {
-    const v = localStorage.getItem(FILTER_KEY) as Filter | null;
-    if (v && FILTER_ORDER.includes(v)) return v;
-  } catch {
-    /* private mode ইত্যাদি — ডিফল্ট */
-  }
-  return "draft";
-}
+// লাইব্রেরি সবসময় "Draft" ফিল্টারে খোলে (শেষ বাছা মনে রাখা হয় না)
+const DEFAULT_FILTER: Filter = "draft";
 type Loaded = { items: Item[]; trashed: TrashItem[]; remoteFailed: boolean };
 type State = { kind: "loading" } | ({ kind: "ready" } & Loaded);
 
@@ -247,7 +239,7 @@ export function LibraryHome() {
   const [state, setState] = useState<State>({ kind: "loading" });
   const [attempt, setAttempt] = useState(0);
   const bgSynced = useRef(false);
-  const [filter, setFilter] = useState<Filter>(readFilter);
+  const [filter, setFilter] = useState<Filter>(DEFAULT_FILTER);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   // Bulk select-mode (P3b-ক)
@@ -260,11 +252,6 @@ export function LibraryHome() {
     setFilter(k);
     setSelected(new Set()); // অন্য দৃশ্যের লেখা নির্বাচনে থাকে না
     setLastReq(null);
-    try {
-      localStorage.setItem(FILTER_KEY, k);
-    } catch {
-      /* সুবিধা মাত্র — ব্যর্থ হলে চুপ */
-    }
   }
   // তালিকায় বাঁ/ডানে সোয়াইপ ⇒ পাশের ফিল্টার (চিপ-সারি/নির্বাচন-মোডে নয়)
   const swipeStart = (e: React.TouchEvent) => {
@@ -666,7 +653,7 @@ export function LibraryHome() {
               filter === key ? "border-transparent bg-btn-bg text-btn-tx" : "border-line"
             }`}
           >
-            {label} {bnNum(countOf(key))}
+            {label} {countOf(key)}
           </button>
         ))}
       </div>

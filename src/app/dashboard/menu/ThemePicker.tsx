@@ -3,6 +3,7 @@
 // মেনুর শীর্ষে থিম-গ্রিড (ধাপ ১): ৬ থিম, গ্লোবাল। ComfortPanel (Aa)-এর মতো একই readThemePref/saveThemePref → data-theme তাৎক্ষণিক, রিলোডেও থাকে।
 import { useSyncExternalStore } from "react";
 import { readThemePref, saveThemePref } from "@/data/comfortStore";
+import { Icon } from "@/components/icons";
 import { bn } from "@/i18n/bn";
 import { THEME_BG, THEME_PREFS, type ThemePref } from "@/lib/comfort";
 
@@ -15,8 +16,16 @@ const LABEL: Record<ThemePref, string> = {
   dark: names.themeDark,
   amoled: names.themeAmoled,
 };
-// auto = আধা-আলো আধা-গাঢ় নমুনা
-const swatch = (k: ThemePref) =>
+// প্রিভিউ-রঙ: theme/tokens.css-এর --bg/--text/--accent-এর সাথে মেলানো (auto = আধা-আলো আধা-গাঢ়, মাঝারি ধূসর লেখা)
+const PREVIEW: Record<ThemePref, { text: string; accent: string }> = {
+  auto: { text: "#8a8680", accent: "#c96442" },
+  light: { text: "#1f1e1d", accent: "#c96442" },
+  sepia: { text: "#3b3226", accent: "#b5552f" },
+  warm: { text: "#45301c", accent: "#b9531a" },
+  dark: { text: "#ece8df", accent: "#e0805f" },
+  amoled: { text: "#ece8df", accent: "#e0805f" },
+};
+const previewBg = (k: ThemePref) =>
   k === "auto" ? `linear-gradient(135deg, ${THEME_BG.light} 50%, ${THEME_BG.dark} 50%)` : THEME_BG[k];
 
 // hydration-নিরাপদ: সার্ভারে "light", ক্লায়েন্টে আসল পছন্দ; বদলালে listener-দের জানানো
@@ -35,25 +44,40 @@ export function ThemePicker() {
   return (
     <section aria-label={bn.dashboard.themeTitle} className="mb-5">
       <h2 className="mb-1.5 px-1 text-sm text-muted">{bn.dashboard.themeTitle}</h2>
-      <div className="grid grid-cols-3 gap-2">
-        {THEME_PREFS.map((k) => (
-          <button
-            key={k}
-            type="button"
-            aria-pressed={theme === k}
-            onClick={() => pick(k)}
-            className={`flex min-h-12 items-center gap-1.5 rounded-xl border px-2 text-[13px] ${
-              theme === k ? "border-accent bg-surface font-semibold" : "border-line"
-            }`}
-          >
-            <span
-              aria-hidden
-              className="size-5 shrink-0 rounded-full border border-line"
-              style={{ background: swatch(k) }}
-            />
-            <span className="whitespace-nowrap">{LABEL[k]}</span>
-          </button>
-        ))}
+      <div className="grid grid-cols-3 gap-2.5">
+        {THEME_PREFS.map((k) => {
+          const on = theme === k;
+          const c = PREVIEW[k];
+          return (
+            <button
+              key={k}
+              type="button"
+              aria-pressed={on}
+              onClick={() => pick(k)}
+              className={`relative overflow-hidden rounded-2xl border-2 text-center transition-shadow ${
+                on ? "border-accent shadow-md" : "border-line"
+              }`}
+            >
+              <span aria-hidden className="block px-3 pb-2 pt-3 text-left" style={{ background: previewBg(k) }}>
+                <span className="block font-serif text-2xl font-bold leading-none" style={{ color: c.text }}>
+                  আ
+                </span>
+                <span className="mt-2 block h-1 w-full rounded-full" style={{ background: c.text, opacity: 0.35 }} />
+                <span className="mt-1 block h-1 w-3/4 rounded-full" style={{ background: c.text, opacity: 0.35 }} />
+                <span className="mt-1.5 block h-1.5 w-1/3 rounded-full" style={{ background: c.accent }} />
+              </span>
+              <span className={`block bg-surface py-1.5 text-[13px] ${on ? "font-semibold" : "text-muted"}`}>{LABEL[k]}</span>
+              {on && (
+                <span
+                  aria-hidden
+                  className="absolute right-1.5 top-1.5 flex size-5 items-center justify-center rounded-full bg-btn-bg text-btn-tx"
+                >
+                  <Icon name="check" size={13} strokeWidth={3} />
+                </span>
+              )}
+            </button>
+          );
+        })}
       </div>
     </section>
   );
