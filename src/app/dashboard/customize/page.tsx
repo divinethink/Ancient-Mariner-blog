@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { MenuBack } from "../MenuBack";
 import { bn } from "@/i18n/bn";
 import { BuildStatus } from "../BuildStatus";
 import { CustomizeForm } from "./CustomizeForm";
@@ -11,9 +11,7 @@ export default async function CustomizePage({ searchParams }: { searchParams: Pr
   const initialTab = TABS.find((x) => x === tab);
   return (
     <>
-      <Link href="/dashboard/menu" className="mb-3 inline-flex min-h-11 items-center text-accent-text">
-        ← {bn.dashboard.menu}
-      </Link>
+      <MenuBack />
       <h1 className="mb-6 font-serif text-3xl font-bold">{bn.customize.title}</h1>
       <CustomizeForm initialTab={initialTab} />
       <div className="mt-10">

@@ -6,7 +6,24 @@ import { Icon, type IconName } from "@/components/icons";
 import { bn } from "@/i18n/bn";
 import { useAdd } from "./AddSheet";
 
-const item = "flex min-h-14 flex-1 flex-col items-center justify-center gap-0.5 text-xs text-muted";
+const item = "flex min-h-14 flex-1 flex-col items-center justify-center gap-0 text-xs text-muted";
+
+// মেনু থেকে খোলা পাতাগুলো (নিচের নেভে "মেনু" সক্রিয় রাখতে)
+const MENU_PAGES = [
+  "/dashboard/ideas",
+  "/dashboard/inbox",
+  "/dashboard/bookmarks",
+  "/dashboard/import",
+  "/dashboard/library",
+  "/dashboard/pages",
+  "/dashboard/customize",
+  "/dashboard/media",
+  "/dashboard/stats",
+  "/dashboard/shares",
+  "/dashboard/comments",
+  "/dashboard/backups",
+  "/dashboard/settings",
+];
 
 /** <1024px: bottom-nav (৫ আইটেম: লাইব্রেরি, প্রজেক্ট, ＋, দিনলিপি, মেনু) / উপরের সারি; editor-এ লুকানো (শুধু লেখা) */
 export function TopNav() {
@@ -15,11 +32,14 @@ export function TopNav() {
   if (path.startsWith("/dashboard/posts/")) return null;
   // লাইব্রেরি শুধু ঠিক-মিলে (বাকি সব পেজ /dashboard/... — নইলে সবসময় active); অন্যগুলো সাব-পথসহ
   const isOn = (p: string) => (p === "/dashboard" ? path === p : path === p || path.startsWith(`${p}/`));
-  const link = (href: string, icon: IconName, label: string) => {
-    const on = isOn(href);
+  // মেনুর ভেতরের পাতায় (সংগঠন, সেটিংস, মিডিয়া…) "মেনু" ট্যাব সক্রিয় থাকে; খোঁজ লাইব্রেরি থেকেও খোলে, তাই বাদ
+  const link = (href: string, icon: IconName, label: string, also: string[] = []) => {
+    const on = isOn(href) || also.some(isOn);
     return (
       <Link href={href} aria-current={on ? "page" : undefined} className={`${item} ${on ? "font-semibold text-accent-text" : ""}`}>
-        <Icon name={icon} strokeWidth={on ? 2.4 : 1.8} />
+        <span className={`flex h-7 w-14 items-center justify-center rounded-full ${on ? "bg-line" : ""}`}>
+          <Icon name={icon} strokeWidth={on ? 2.4 : 1.8} />
+        </span>
         <span className="max-w-full truncate px-1">{label}</span>
       </Link>
     );
@@ -41,7 +61,7 @@ export function TopNav() {
         <Icon name="plus" size={26} strokeWidth={2.2} />
       </button>
       {link("/dashboard/diary", "diary", bn.nav.diary)}
-      {link("/dashboard/menu", "menu", bn.nav.menu)}
+      {link("/dashboard/menu", "menu", bn.nav.menu, MENU_PAGES)}
     </nav>
   );
 }

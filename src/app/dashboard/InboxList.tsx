@@ -5,6 +5,7 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { NoteContentSchema, type NoteWithId } from "@/data/noteRepo";
 import { getNoteRepo } from "@/data/noteRepo.wire";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { bn } from "@/i18n/bn";
 import { formatDate } from "@/lib/datetime";
 import { newId } from "@/lib/id";
@@ -139,7 +140,7 @@ export function InboxList() {
       )}
       {load.kind === "ready" &&
         (load.items.length === 0 ? (
-          <p className="text-muted">{organized ? t.organizedEmpty : t.inboxEmpty}</p>
+          <EmptyState icon="inbox" text={organized ? t.organizedEmpty : t.inboxEmpty} />
         ) : (
           <ul className="space-y-3">
             {load.items.map((n) => (

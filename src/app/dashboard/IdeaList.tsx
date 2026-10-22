@@ -9,6 +9,7 @@ import { convertIdeaToPost } from "@/data/ideaConvert";
 import { IdeaTextSchema, IdeaTitleSchema, type IdeaWithId } from "@/data/ideaRepo";
 import { getIdeaRepo } from "@/data/ideaRepo.wire";
 import { getPostRepo } from "@/data/postRepo.wire";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { bn } from "@/i18n/bn";
 import { formatDate } from "@/lib/datetime";
 import { IDEA_TYPE, type IdeaType } from "@/lib/enums";
@@ -135,7 +136,7 @@ export function IdeaList() {
   return (
     <>
       {load.items.length === 0 ? (
-        <p className="text-muted">{t.empty}</p>
+        <EmptyState icon="idea" text={t.empty} />
       ) : (
         <ul className="space-y-3">
           {load.items.map((it) => (

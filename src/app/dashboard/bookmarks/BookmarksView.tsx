@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { Bookmark, HighlightWithId } from "@/data/bookmarkRepo";
 import { getBookmarkRepo } from "@/data/bookmarkRepo.wire";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { bn } from "@/i18n/bn";
 import { ConfirmButton } from "../ConfirmButton";
 
@@ -67,7 +68,7 @@ export function BookmarksView() {
       <section aria-labelledby="bm-h">
         <h2 id="bm-h" className="mb-2 font-serif text-xl font-semibold">{t.bookmarksTitle}</h2>
         {load.bookmarks.length === 0 ? (
-          <p className="text-muted">{t.emptyBookmarks}</p>
+          <EmptyState icon="bookmark" text={t.emptyBookmarks} />
         ) : (
           <ul className="divide-y divide-line rounded-2xl border border-line bg-surface">
             {load.bookmarks.map((b) => (
@@ -82,7 +83,7 @@ export function BookmarksView() {
       <section aria-labelledby="hl-h">
         <h2 id="hl-h" className="mb-2 font-serif text-xl font-semibold">{t.highlightsTitle}</h2>
         {load.highlights.length === 0 ? (
-          <p className="text-muted">{t.emptyHighlights}</p>
+          <EmptyState icon="bookmark" text={t.emptyHighlights} />
         ) : (
           <ul className="space-y-3">
             {load.highlights.map((h) => (

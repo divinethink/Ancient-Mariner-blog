@@ -42,7 +42,7 @@ export function ThemePicker() {
             type="button"
             aria-pressed={theme === k}
             onClick={() => pick(k)}
-            className={`flex min-h-12 items-center gap-2 rounded-xl border px-3 text-sm ${
+            className={`flex min-h-12 items-center gap-1.5 rounded-xl border px-2 text-[13px] ${
               theme === k ? "border-accent bg-surface font-semibold" : "border-line"
             }`}
           >
@@ -51,7 +51,7 @@ export function ThemePicker() {
               className="size-5 shrink-0 rounded-full border border-line"
               style={{ background: swatch(k) }}
             />
-            <span className="truncate">{LABEL[k]}</span>
+            <span className="whitespace-nowrap">{LABEL[k]}</span>
           </button>
         ))}
       </div>
