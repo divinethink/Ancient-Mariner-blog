@@ -7,8 +7,8 @@
   var DESIGN = { accent: "terracotta", font: "serif-sans", card: "outline" };
   var BG = {
     light: "#faf9f5",
-    sepia: "#f4ecd8",
-    warm: "#f7e0bc",
+    sepia: "#f7e0bc",
+    warm: "#eec58a",
     dark: "#1c1b19",
     amoled: "#000000",
   };

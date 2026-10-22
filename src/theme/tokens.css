@@ -16,18 +16,6 @@
 }
 [data-theme="sepia"] {
   color-scheme: light;
-  --bg: #f4ecd8;
-  --surface: #faf3e2;
-  --text: #3b3226;
-  --muted: #75684f;
-  --accent: #b5552f;
-  --accent-text: #94431f;
-  --line: #e2d5b8;
-  --btn-bg: #94431f;
-  --btn-tx: #ffffff;
-}
-[data-theme="warm"] {
-  color-scheme: light;
   --bg: #f7e0bc;
   --surface: #fbe9cc;
   --text: #45301c;
@@ -36,6 +24,18 @@
   --accent-text: #94420f;
   --line: #e6c89e;
   --btn-bg: #94420f;
+  --btn-tx: #ffffff;
+}
+[data-theme="warm"] {
+  color-scheme: light;
+  --bg: #eec58a;
+  --surface: #f4d6a6;
+  --text: #45301c;
+  --muted: #6b4c2a;
+  --accent: #a84a12;
+  --accent-text: #8a3a0a;
+  --line: #d9b27a;
+  --btn-bg: #8a3a0a;
   --btn-tx: #ffffff;
 }
 [data-theme="dark"] {
@@ -65,8 +65,8 @@
 /* সাইট-accent (P9b-১): <html data-accent="teal"> — শুধু accent/accent-text/btn ওভাররাইড; AA ≥ ৪.৫:১ (লেখা/বোতাম), accent ≥ ৩:১ — স্ক্রিপ্টে গণনা-করা।
    specificity: [data-accent][data-theme] > [data-theme] */
 [data-accent="teal"][data-theme="light"] { --accent: #2a8f8f; --accent-text: #0b6666; --btn-bg: #0b6666; --btn-tx: #ffffff; }
-[data-accent="teal"][data-theme="sepia"] { --accent: #2a8585; --accent-text: #0a5f5f; --btn-bg: #0a5f5f; --btn-tx: #ffffff; }
-[data-accent="teal"][data-theme="warm"] { --accent: #2a7f7f; --accent-text: #075a5a; --btn-bg: #075a5a; --btn-tx: #ffffff; }
+[data-accent="teal"][data-theme="sepia"] { --accent: #2a7f7f; --accent-text: #075a5a; --btn-bg: #075a5a; --btn-tx: #ffffff; }
+[data-accent="teal"][data-theme="warm"] { --accent: #1f7373; --accent-text: #075a5a; --btn-bg: #075a5a; --btn-tx: #ffffff; }
 [data-accent="teal"][data-theme="dark"] { --accent: #4fb3b3; --accent-text: #6cc7c7; --btn-bg: #4fb3b3; --btn-tx: #1c1b19; }
 [data-accent="teal"][data-theme="amoled"] { --accent: #4fb3b3; --accent-text: #6cc7c7; --btn-bg: #4fb3b3; --btn-tx: #000000; }
 
