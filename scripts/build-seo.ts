@@ -6,6 +6,7 @@ import { renderRss } from "../src/lib/rss";
 import { pagePath } from "../src/lib/pages";
 import { renderRobots, renderSitemap } from "../src/lib/seo";
 import { buildPublicSearchIndex, SEARCH_INDEX_PATH } from "../src/lib/publicSearch";
+import { PLACES_PATH, placeStats } from "../src/lib/diarySummary";
 import { DIARY_FEED_PATH, DIARY_PATH, diaryDayPath, diaryYearPath, diaryYears, groupByDay } from "../src/lib/diaryCalendar";
 import { parseBody } from "../src/lib/editorDoc";
 import { postExcerpt } from "../src/lib/publicSite";
@@ -31,8 +32,9 @@ function worksEntries(works: Awaited<ReturnType<typeof readWorks>>): { path: str
 
 /** দিনলিপি-পঞ্জিকা: /diary ও লেখা-আছে এমন প্রতিটি দিন (দিনলিপি না থাকলে কিছু নয়) */
 function diaryPaths(snap: NonNullable<Awaited<ReturnType<typeof readSnapshot>>>): string[] {
-  const days = [...groupByDay(snap.diary, snap.settings.timezone).keys()].sort();
-  return days.length ? [DIARY_PATH, ...diaryYears(days).map(diaryYearPath), ...days.map(diaryDayPath)] : [];
+  const byDay = groupByDay(snap.diary, snap.settings.timezone);
+  const days = [...byDay.keys()].sort();
+  return days.length ? [DIARY_PATH, ...diaryYears(days).map(diaryYearPath), ...(placeStats(byDay).length ? [PLACES_PATH] : []), ...days.map(diaryDayPath)] : [];
 }
 
 async function main() {

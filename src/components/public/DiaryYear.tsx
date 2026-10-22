@@ -62,14 +62,14 @@ export function DiaryYear({ view, years, timeZone }: { view: YearView; years: re
   );
 }
 
-/** ব্যাজ: মোট দিন · সর্বশেষ টানা · সর্বোচ্চ টানা (build-তারিখ-নিরপেক্ষ) */
-export function DiaryStats({ s }: { s: StreakStats }) {
+/** ব্যাজ: মোট দিন; `showStreak` (Settings, ডিফল্ট বন্ধ) হলে + সর্বশেষ টানা · সর্বোচ্চ টানা (build-তারিখ-নিরপেক্ষ) */
+export function DiaryStats({ s, showStreak = false }: { s: StreakStats; showStreak?: boolean }) {
   const chip = "inline-flex min-h-8 items-center rounded-full border border-line bg-surface px-3 text-sm";
   return (
     <ul className="mt-4 flex flex-wrap gap-2">
       <li className={chip}>{bn.public.diaryStatTotal(s.total)}</li>
-      {s.latest > 1 && <li className={`${chip} text-accent-text`}>🔥 {bn.public.diaryStatLatest(s.latest)}</li>}
-      {s.longest > 1 && <li className={chip}>{bn.public.diaryStatLongest(s.longest)}</li>}
+      {showStreak && s.latest > 1 && <li className={`${chip} text-accent-text`}>🔥 {bn.public.diaryStatLatest(s.latest)}</li>}
+      {showStreak && s.longest > 1 && <li className={chip}>{bn.public.diaryStatLongest(s.longest)}</li>}
     </ul>
   );
 }

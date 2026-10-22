@@ -5,12 +5,11 @@ import { CalendarKeepPos } from "./CalendarKeepPos";
 import { KEEP_POS_HIDE } from "./keepPosScript";
 import { TodayMark } from "./TodayMark";
 
-// হিটম্যাপ: accent-এর স্বচ্ছতা বাড়ে (০ = লেখা নেই); আজ = accent রিং + বোল্ড (ভরাট নয়), নির্বাচিত = accent-ভরা, লেখার দিন = টিন্ট — তিনটা আলাদা
-const HEAT = ["", "bg-accent/15", "bg-accent/30", "bg-accent/50", "bg-accent/70"] as const;
-const base = "flex min-h-11 items-center justify-center rounded-lg data-[today=true]:ring-2 data-[today=true]:ring-accent-text data-[today=true]:font-bold data-[today=true]:text-accent-text";
+// লেখার দিন = শুধু ছোট ডট (ড্যাশবোর্ডের দিনলিপির মতো; owner-সিদ্ধান্ত ২০২৬-১০-২২, শেডিং নেই); আজ = accent রিং + বোল্ড, নির্বাচিত = accent-ভরা — তিনটা আলাদা
+const base = "relative flex min-h-11 items-center justify-center rounded-lg data-[today=true]:ring-2 data-[today=true]:ring-accent-text data-[today=true]:font-bold data-[today=true]:text-accent-text";
 const nav = "inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg";
 
-/** "দিনলিপি পঞ্জিকা": লেখা-আছে এমন দিন হিটম্যাপ-রঙে ও লিংক; নির্বাচিত দিনে রিং; আজ আলাদা রঙে ভরা (TodayMark)। সাইডবার ও /diary দুই জায়গায় একই */
+/** "দিনলিপি পঞ্জিকা": লেখা-আছে এমন দিন নিচে ছোট ডট-সহ লিংক (রঙ-শেড নেই; বছরের হিটম্যাপ আলাদা, অপরিবর্তিত); নির্বাচিত দিনে রিং; আজ আলাদা রঙে ভরা (TodayMark)। সাইডবার ও /diary দুই জায়গায় একই */
 export function DiaryCalendar({ view, selected, timeZone }: { view: DiaryMonthView; selected?: string; timeZone: string }) {
   const slots = [...Array<null>(view.lead).fill(null), ...view.cells];
   while (slots.length < 42 || slots.length % 7 !== 0) slots.push(null); // সবসময় ৬ সারি: মাস বদলালে উচ্চতা লাফায় না
@@ -59,9 +58,10 @@ export function DiaryCalendar({ view, selected, timeZone }: { view: DiaryMonthVi
                         scroll={false}
                         data-day={c.key}
                         aria-current={selected === c.key ? "page" : undefined}
-                        className={`${base} ${HEAT[c.level]} font-semibold ${selected === c.key ? "bg-btn-bg! text-btn-tx!" : ""}`}
+                        className={`${base} ${selected === c.key ? "bg-btn-bg! text-btn-tx!" : ""}`}
                       >
                         {c.day.toLocaleString("bn-BD")}
+                        <span aria-hidden="true" className={`absolute bottom-1 size-1.5 rounded-full ${selected === c.key ? "bg-btn-tx" : "bg-accent-text"}`} />
                       </Link>
                     ) : (
                       <span data-day={c.key} className={`${base} text-muted`}>
@@ -75,11 +75,10 @@ export function DiaryCalendar({ view, selected, timeZone }: { view: DiaryMonthVi
         </tbody>
       </table>
       <p className="mt-2 flex flex-wrap items-center gap-x-1 text-xs text-muted" aria-hidden="true">
-        {bn.public.diaryLess}
-        {HEAT.slice(1).map((h) => (
-          <span key={h} className={`inline-block size-3 rounded-sm border border-line ${h}`} />
-        ))}
-        {bn.public.diaryMore}
+        <span className="inline-flex items-center gap-1">
+          <span className="inline-block size-1.5 rounded-full bg-accent-text" />
+          {bn.public.diaryHasEntry}
+        </span>
         <span className="ms-2 inline-block size-3 rounded-sm border-2 border-accent-text" />
         {bn.public.diaryToday}
       </p>

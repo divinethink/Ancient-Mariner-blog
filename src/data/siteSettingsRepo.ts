@@ -74,6 +74,7 @@ const fields = {
   feedMode: FeedMode,
   subscribeUrl: z.union([z.literal(""), FollowItUrl]).optional(), // ইমেইল-সাবস্ক্রাইব (follow.it); খালি/নেই = ফর্ম লুকানো; পুরনো doc-এ নেই
   subscribeLink: z.union([z.literal(""), FollowItPageUrl]).optional(), // সাবস্ক্রাইব-পেজের লিংক (বোতাম); থাকলে ফর্মের বদলে এটাই দেখায়
+  showDiaryStreak: z.boolean().optional(), // পাবলিক দিনলিপিতে টানা-লেখার ব্যাজ; নেই/false = লুকানো (additive; পুরনো doc-এ নেই)
   socialLinks: z.object({ facebook: z.union([z.literal(""), HttpUrl]) }),
   links: z.array(z.object({ label: z.string().trim().min(1).max(60), url: HttpUrl })).max(LINKS_MAX),
   layout: z.object({ sidebar: z.array(LayoutItem).max(30), home: z.array(LayoutItem).max(30) }),

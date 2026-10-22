@@ -299,6 +299,15 @@ export function SettingsForm() {
         </label>
       </Section>
 
+      <Section title={bn.settings.diarySection} summary={draft.showDiaryStreak ? bn.customize.enabled : bn.customize.off}>
+        <Toggle
+          checked={draft.showDiaryStreak === true}
+          onChange={(v) => set("showDiaryStreak", v)}
+          label={bn.settings.showDiaryStreak}
+          hint={bn.settings.showDiaryStreakHint}
+        />
+      </Section>
+
       <Section title={bn.settings.search} summary={draft.allowIndexing ? bn.customize.enabled : bn.customize.off}>
         <Toggle
           checked={draft.allowIndexing}

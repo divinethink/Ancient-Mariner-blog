@@ -21,6 +21,8 @@ import { getPostRepo } from "@/data/postRepo.wire";
 import { bn } from "@/i18n/bn";
 import { dayKey, formatDate } from "@/lib/datetime";
 import { DIARY_TEXT_MAX, isValidDayKey, textToDoc } from "@/lib/diary";
+import { promptFor } from "@/lib/diaryPrompts";
+import { WriteTimer } from "./WriteTimer";
 import { MAX_LOCATION } from "@/data/postRepo";
 import { countWords, docToText, makeExcerpt, serializeDoc } from "@/lib/editorDoc";
 import { newId } from "@/lib/id";
@@ -63,6 +65,7 @@ export function AddProvider({ children }: { children: ReactNode }) {
   const [diaryTitle, setDiaryTitle] = useState("");
   const [diaryPlace, setDiaryPlace] = useState("");
   const [diaryDay, setDiaryDay] = useState(""); // খালি = আজ
+  const [promptShift, setPromptShift] = useState(0); // 'অন্য প্রশ্ন'; sheet খুললে ০
   const [todayKey, setTodayKey] = useState(""); // sheet খোলার সময় বসে (render-এ Date.now() নয়)
   const [diaryVersion, setDiaryVersion] = useState(0);
   const diaryIdRef = useRef<string>("");
@@ -84,6 +87,7 @@ export function AddProvider({ children }: { children: ReactNode }) {
     if (diaryIdRef.current === "") diaryIdRef.current = newId();
     setStatus("idle");
     setTodayKey(dayKey(Date.now(), tz));
+    setPromptShift(0);
     setMode(m);
   }, [tz]);
   const openMenu = useCallback(() => open("menu"), [open]);
@@ -359,6 +363,18 @@ export function AddProvider({ children }: { children: ReactNode }) {
                         className="min-h-11 w-full min-w-0 rounded-xl border border-line bg-surface px-3 text-base field-clean text-text"
                       />
                     </div>
+                  </div>
+                )}
+                {isDiary && (
+                  <div className="mb-2 flex flex-wrap items-center gap-x-2">
+                    <p className="min-w-0 flex-1 font-serif text-base">
+                      <span className="sr-only">{d.promptLabel}: </span>
+                      {promptFor(todayKey, promptShift)}
+                    </p>
+                    <button type="button" onClick={() => setPromptShift((n) => n + 1)} className="min-h-11 rounded-full px-3 text-sm text-accent-text underline">
+                      {d.promptOther}
+                    </button>
+                    <WriteTimer />
                   </div>
                 )}
                 <textarea

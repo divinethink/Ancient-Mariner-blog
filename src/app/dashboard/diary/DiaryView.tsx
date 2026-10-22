@@ -182,7 +182,7 @@ export function DiaryView() {
         )}
       </section>
 
-      <OnThisDay />
+      <OnThisDay always />
     </div>
   );
 }
