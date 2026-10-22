@@ -37,7 +37,7 @@ export function TopNav() {
     const on = isOn(href) || also.some(isOn);
     return (
       <Link href={href} aria-current={on ? "page" : undefined} className={`${item} ${on ? "font-semibold text-accent-text" : ""}`}>
-        <span className={`flex h-7 w-14 items-center justify-center rounded-full ${on ? "bg-line" : ""}`}>
+        <span className="flex h-7 w-14 items-center justify-center">
           <Icon name={icon} strokeWidth={on ? 2.4 : 1.8} />
         </span>
         <span className="max-w-full truncate px-1">{label}</span>
