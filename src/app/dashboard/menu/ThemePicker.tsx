@@ -44,7 +44,7 @@ export function ThemePicker() {
   return (
     <section aria-label={bn.dashboard.themeTitle} className="mb-5">
       <h2 className="mb-1.5 px-1 text-sm text-muted">{bn.dashboard.themeTitle}</h2>
-      <div className="grid grid-cols-3 gap-2.5">
+      <div className="grid grid-cols-3 gap-2">
         {THEME_PREFS.map((k) => {
           const on = theme === k;
           const c = PREVIEW[k];
@@ -54,27 +54,26 @@ export function ThemePicker() {
               type="button"
               aria-pressed={on}
               onClick={() => pick(k)}
-              className={`relative overflow-hidden rounded-2xl border-2 text-center transition-shadow ${
-                on ? "border-accent shadow-md" : "border-line"
+              className={`flex min-h-11 items-center gap-1.5 rounded-xl border px-1 py-1 text-[12.5px] ${
+                on ? "border-accent bg-surface font-semibold ring-1 ring-accent" : "border-line"
               }`}
             >
-              <span aria-hidden className="block px-3 pb-2 pt-3 text-left" style={{ background: previewBg(k) }}>
-                <span className="block font-serif text-2xl font-bold leading-none" style={{ color: c.text }}>
+              <span
+                aria-hidden
+                className="relative flex size-6 shrink-0 flex-col items-center justify-center rounded-lg border border-line"
+                style={{ background: previewBg(k) }}
+              >
+                <span className="font-serif text-xs font-bold leading-none" style={{ color: c.text }}>
                   আ
                 </span>
-                <span className="mt-2 block h-1 w-full rounded-full" style={{ background: c.text, opacity: 0.35 }} />
-                <span className="mt-1 block h-1 w-3/4 rounded-full" style={{ background: c.text, opacity: 0.35 }} />
-                <span className="mt-1.5 block h-1.5 w-1/3 rounded-full" style={{ background: c.accent }} />
+                <span className="mt-0.5 h-0.5 w-3 rounded-full" style={{ background: c.accent }} />
+                {on && (
+                  <span className="absolute -right-1 -top-1 flex size-3.5 items-center justify-center rounded-full bg-btn-bg text-btn-tx">
+                    <Icon name="check" size={9} strokeWidth={3.5} />
+                  </span>
+                )}
               </span>
-              <span className={`block bg-surface py-1.5 text-[13px] ${on ? "font-semibold" : "text-muted"}`}>{LABEL[k]}</span>
-              {on && (
-                <span
-                  aria-hidden
-                  className="absolute right-1.5 top-1.5 flex size-5 items-center justify-center rounded-full bg-btn-bg text-btn-tx"
-                >
-                  <Icon name="check" size={13} strokeWidth={3} />
-                </span>
-              )}
+              <span className="whitespace-nowrap">{LABEL[k]}</span>
             </button>
           );
         })}
