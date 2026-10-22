@@ -18,7 +18,8 @@ export const metadata: Metadata = {
   icons: { icon: [{ url: "/icons/site-icon.png", type: "image/png" }], apple: "/icons/site-icon-apple.png" },
 };
 
-export const viewport: Viewport = { themeColor: "#faf9f5" };
+// minimumScale 1: কোনো এলিমেন্ট চওড়া হলেও ব্রাউজার পাতা ছোট করে (zoom-out) নিচের নেভ স্ক্রিনের নিচে ফেলে না; zoom-in চলে
+export const viewport: Viewport = { themeColor: "#faf9f5", width: "device-width", initialScale: 1, minimumScale: 1 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (

@@ -641,7 +641,7 @@ export function LibraryHome() {
         role="group"
         aria-label={bn.library.filters}
         data-noswipe
-        className="-mx-6 mb-4 flex snap-x scroll-px-6 gap-1.5 overflow-x-auto px-6 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="-mx-6 mb-4 flex snap-x scroll-px-6 gap-1.5 overflow-x-auto overscroll-x-contain px-6 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         {chips.map(([key, label]) => (
           <button

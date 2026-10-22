@@ -32,7 +32,13 @@
   src: url("../fonts/kalpurush-400.woff") format("woff");
 }
 
+/* পাতা ডানে-বামে সরে না (আড়াআড়ি overflow কাটা + পাশের scroll-chaining বন্ধ); উল্লম্ব স্ক্রল/pull-to-refresh অক্ষত */
+html {
+  overflow-x: clip;
+  overscroll-behavior-x: none;
+}
 body {
+  overflow-x: clip;
   background: var(--bg);
   color: var(--text);
   font-family: var(--font-sans);
