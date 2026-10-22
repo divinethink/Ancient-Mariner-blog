@@ -5,11 +5,13 @@ import { CalendarKeepPos } from "./CalendarKeepPos";
 import { KEEP_POS_HIDE } from "./keepPosScript";
 import { TodayMark } from "./TodayMark";
 
-// লেখার দিন = শুধু ছোট ডট (ড্যাশবোর্ডের দিনলিপির মতো; owner-সিদ্ধান্ত ২০২৬-১০-২২, শেডিং নেই); আজ = accent রিং + বোল্ড, নির্বাচিত = accent-ভরা — তিনটা আলাদা
-const base = "relative flex min-h-11 items-center justify-center rounded-lg data-[today=true]:ring-2 data-[today=true]:ring-accent-text data-[today=true]:font-bold data-[today=true]:text-accent-text";
+// আকৃতি + রং দুটোই আলাদা (owner-সিদ্ধান্ত ২০২৬-১০-২২; রঙ-নির্ভর নয়): লেখার দিন = পাতলা রেখার সার্কেল; নির্বাচিত = accent-ভরা সার্কেল;
+// আজ = `--today` রঙের গোল-কোণা স্কয়ার (TodayMark `data-today` বসায়, তাই `group-data`); আজ + লেখা আছে = স্কয়ারের ভেতরে সাদা সার্কেল।
+const base = "group relative flex min-h-11 items-center justify-center";
+const shape = "relative inline-flex size-9 items-center justify-center rounded-full group-data-[today=true]:rounded-lg group-data-[today=true]:bg-today! group-data-[today=true]:text-today-tx group-data-[today=true]:font-bold";
 const nav = "inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg";
 
-/** "দিনলিপি পঞ্জিকা": লেখা-আছে এমন দিন নিচে ছোট ডট-সহ লিংক (রঙ-শেড নেই; বছরের হিটম্যাপ আলাদা, অপরিবর্তিত); নির্বাচিত দিনে রিং; আজ আলাদা রঙে ভরা (TodayMark)। সাইডবার ও /diary দুই জায়গায় একই */
+/** "দিনলিপি পঞ্জিকা": লেখা-আছে এমন দিন সার্কেল-সহ লিংক (রঙ-শেড নেই; বছরের হিটম্যাপ আলাদা, অপরিবর্তিত); নির্বাচিত দিনে রিং; আজ আলাদা রঙে ভরা (TodayMark)। সাইডবার ও /diary দুই জায়গায় একই */
 export function DiaryCalendar({ view, selected, timeZone }: { view: DiaryMonthView; selected?: string; timeZone: string }) {
   const slots = [...Array<null>(view.lead).fill(null), ...view.cells];
   while (slots.length < 42 || slots.length % 7 !== 0) slots.push(null); // সবসময় ৬ সারি: মাস বদলালে উচ্চতা লাফায় না
@@ -58,14 +60,20 @@ export function DiaryCalendar({ view, selected, timeZone }: { view: DiaryMonthVi
                         scroll={false}
                         data-day={c.key}
                         aria-current={selected === c.key ? "page" : undefined}
-                        className={`${base} ${selected === c.key ? "bg-btn-bg! text-btn-tx!" : ""}`}
+                        className={base}
                       >
-                        {c.day.toLocaleString("bn-BD")}
-                        <span aria-hidden="true" className={`absolute bottom-1 size-1.5 rounded-full ${selected === c.key ? "bg-btn-tx" : "bg-accent-text"}`} />
+                        <span
+                          className={`${shape} border-[1.5px] border-accent-text font-semibold group-data-[today=true]:border-transparent ${
+                            selected === c.key ? "bg-btn-bg text-btn-tx group-data-[today=true]:ring-2 group-data-[today=true]:ring-today group-data-[today=true]:ring-offset-2 group-data-[today=true]:ring-offset-bg" : ""
+                          }`}
+                        >
+                          {c.day.toLocaleString("bn-BD")}
+                          <span aria-hidden="true" className="absolute inset-1.5 hidden rounded-full border-[1.5px] border-today-tx group-data-[today=true]:block" />
+                        </span>
                       </Link>
                     ) : (
                       <span data-day={c.key} className={`${base} text-muted`}>
-                        {c.day.toLocaleString("bn-BD")}
+                        <span className={shape}>{c.day.toLocaleString("bn-BD")}</span>
                       </span>
                     ))}
                 </td>
@@ -76,11 +84,13 @@ export function DiaryCalendar({ view, selected, timeZone }: { view: DiaryMonthVi
       </table>
       <p className="mt-2 flex flex-wrap items-center gap-x-1 text-xs text-muted" aria-hidden="true">
         <span className="inline-flex items-center gap-1">
-          <span className="inline-block size-1.5 rounded-full bg-accent-text" />
+          <span className="inline-block size-3.5 rounded-full border-[1.5px] border-accent-text" />
           {bn.public.diaryHasEntry}
         </span>
-        <span className="ms-2 inline-block size-3 rounded-sm border-2 border-accent-text" />
-        {bn.public.diaryToday}
+        <span className="ms-3 inline-flex items-center gap-1">
+          <span className="inline-block size-3.5 rounded bg-today" />
+          {bn.public.diaryToday}
+        </span>
       </p>
     </div>
   );
