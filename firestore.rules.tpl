@@ -1,5 +1,5 @@
 rules_version = '2';
-// P1b: posts / slugs / siteSettings · P2a: drafts · P3a: categories / tags / series · P3b: ideas / notes · P4b: pages · P5a: revisions · P5b: backups · P6: media · P7b: templates · P11b: comments · P11c: shareLinks · P12-৩: bookmarks / highlights · P14a-১: writingProjects / chapters (Arch §৯)। বাকি collection phase-অনুযায়ী যোগ হয়; বাকি সব deny-all।
+// P1b: posts / slugs / siteSettings · P2a: drafts · P3a: categories / tags / series · P3b: ideas / notes · P4b: pages · P5a: revisions · P5b: backups · P6: media · P7b: templates · P11b: comments · P11c: shareLinks · P12-৩: bookmarks / highlights · P14a-১: writingProjects / chapters · দিনলিপি-গ: letters (Arch §৯)। বাকি collection phase-অনুযায়ী যোগ হয়; বাকি সব deny-all।
 // placeholder scripts/render-rules.ts বসায়; rendered firestore.rules git-এ commit হয় না।
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -148,6 +148,11 @@ service cloud.firestore {
 
     // নিজের লেখার ছাঁচ (P7b-২) — শুধু owner; পাবলিক read নেই
     match /templates/{id} {
+      allow read, write: if isOwner();
+    }
+
+    // ভবিষ্যতের চিঠি (দিনলিপি-গ) — শুধু owner; পাবলিক read নেই (তালা UI-তে; Zod boundary-তে মান-যাচাই)
+    match /letters/{id} {
       allow read, write: if isOwner();
     }
 

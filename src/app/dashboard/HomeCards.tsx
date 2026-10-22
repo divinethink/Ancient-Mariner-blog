@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { convertIdeaToPost } from "@/data/ideaConvert";
 import type { IdeaWithId } from "@/data/ideaRepo";
 import { getIdeaRepo } from "@/data/ideaRepo.wire";
+import { getLetterRepo } from "@/data/letterRepo.wire";
 import { goalStore } from "@/data/goalStore";
 import { getPostRepo } from "@/data/postRepo.wire";
 import { bn } from "@/i18n/bn";
@@ -71,9 +72,33 @@ export function HomeCards() {
   if (!prefs) return null;
   return (
     <div className="mb-4 space-y-3">
+      <LetterReady />
       {prefs.pick && <IdeaPick />}
       <OnThisDay />
     </div>
+  );
+}
+
+/** খোলার সময় হয়েছে অথচ পড়া হয়নি এমন চিঠি থাকলে একটা শান্ত কার্ড; না থাকলে/আনা না গেলে কিছুই আঁকে না */
+function LetterReady() {
+  const [n, setN] = useState(0);
+  useEffect(() => {
+    let dead = false;
+    getLetterRepo()
+      .then((r) => r.listReady(Date.now()))
+      .then((l) => {
+        if (!dead) setN(l.length);
+      })
+      .catch(() => undefined);
+    return () => {
+      dead = true;
+    };
+  }, []);
+  if (n === 0) return null;
+  return (
+    <Link href="/dashboard/letters" className="flex min-h-11 items-center rounded-2xl border border-line bg-surface p-4">
+      📬 {bn.letters.ready(bnNum(n))}
+    </Link>
   );
 }
 

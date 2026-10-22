@@ -15,6 +15,7 @@ export default function MenuPage() {
           <IdeaInboxMenuItem />
         </li>
         <MenuRow href="/dashboard/search" icon="search" label={bn.search.navLabel} />
+        <MenuRow href="/dashboard/letters" icon="mail" label={bn.letters.menu} />
         <MenuRow href="/dashboard/bookmarks" icon="bookmark" label={bn.dashboard.bookmarks} />
         <MenuRow href="/dashboard/import" icon="import" label={bn.dashboard.importWp} />
         <MenuRow href="/dashboard/library" icon="organize" label={bn.dashboard.organize} />
