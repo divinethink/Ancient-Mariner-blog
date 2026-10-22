@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { bn } from "@/i18n/bn";
 import type { DiaryMonthView } from "@/lib/diaryCalendar";
+import { CalendarKeepPos } from "./CalendarKeepPos";
 import { TodayMark } from "./TodayMark";
 
 // হিটম্যাপ: accent-এর স্বচ্ছতা বাড়ে (০ = লেখা নেই); আজ = accent রিং + বোল্ড (ভরাট নয়), নির্বাচিত = accent-ভরা, লেখার দিন = টিন্ট — তিনটা আলাদা
@@ -24,8 +25,9 @@ export function DiaryCalendar({ view, selected, timeZone }: { view: DiaryMonthVi
       </span>
     );
   return (
-    <div>
+    <div data-diary-cal="">
       <TodayMark timeZone={timeZone} />
+      <CalendarKeepPos />
       <div className="mb-1 flex items-center justify-between font-semibold">
         {arrow(view.prev, bn.public.prevMonth, "‹")}
         <span>{view.label}</span>
