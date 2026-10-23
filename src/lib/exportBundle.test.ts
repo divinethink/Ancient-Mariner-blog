@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { BackupDoc, BackupSource } from "./backup";
-import { buildHtml, buildMarkdown, exportFileName, groupByCategory, readAllPosts, selectPosts, UNCATEGORIZED } from "./exportBundle";
+import { buildHtml, buildMarkdown, bundleNote, exportFileName, filterByRange, groupByCategory, readAllPosts, selectPosts, UNCATEGORIZED } from "./exportBundle";
 
 const body = (...c: object[]) => JSON.stringify({ type: "doc", content: c });
 const para = (text: string, marks?: object[]) => ({ type: "paragraph", content: [{ type: "text", text, ...(marks ? { marks } : {}) }] });
@@ -148,5 +148,26 @@ describe("ছবি — export-এ স্থানধারক (P6-গ২)", () 
   it("RSS-এর bodyToHtml ডিফল্টে ছবি-স্থানধারক দেয় না", async () => {
     const { bodyToHtml } = await import("./docHtml");
     expect(bodyToHtml(withImg)).toBe("<p>আগে</p><p>পরে</p>");
+  });
+});
+
+describe("filterByRange (দিনলিপি-ছ)", () => {
+  const P = (id: string, iso: string | null) => ({ id, title: id, body: "", category: "x", whenMs: iso === null ? null : Date.parse(iso) });
+  const posts = [P("a", "2026-01-01T00:00:00+06:00"), P("b", "2026-12-31T23:30:00+06:00"), P("c", "2025-12-31T23:30:00+06:00"), P("d", null)];
+  it("সীমা না দিলে সব (তারিখহীনসহ)", () => {
+    expect(filterByRange(posts, undefined, "Asia/Dhaka").map((p) => p.id)).toEqual(["a", "b", "c", "d"]);
+    expect(filterByRange(posts, {}, "Asia/Dhaka")).toHaveLength(4);
+  });
+  it("বছর (সাইট-timezone-এ সহ-সীমা); তারিখহীন বাদ", () => {
+    expect(filterByRange(posts, { from: "2026-01-01", to: "2026-12-31" }, "Asia/Dhaka").map((p) => p.id)).toEqual(["a", "b"]);
+  });
+  it("এক-পাশের সীমা", () => {
+    expect(filterByRange(posts, { from: "2026-06-01" }, "Asia/Dhaka").map((p) => p.id)).toEqual(["b"]);
+    expect(filterByRange(posts, { to: "2025-12-31" }, "Asia/Dhaka").map((p) => p.id)).toEqual(["c"]);
+  });
+  it("bundleNote-এ পরিসর শুধু দিলে আসে", () => {
+    const m = { heading: "h", exportedAt: new Date(0), timeZone: "Asia/Dhaka", mode: "published" as const };
+    expect(bundleNote(m, 2)).not.toContain("পরিসর");
+    expect(bundleNote({ ...m, range: { from: "2026-01-01" } }, 2)).toContain("পরিসর: 2026-01-01 – আজ");
   });
 });

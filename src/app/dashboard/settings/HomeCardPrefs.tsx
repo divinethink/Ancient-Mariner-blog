@@ -9,6 +9,7 @@ const ROWS: [HomeCard, string][] = [
   ["goal", bn.home.prefGoal],
   ["glance", bn.home.prefGlance],
   ["pick", bn.home.prefPick],
+  ["daily", bn.home.prefDaily],
 ];
 
 /** লাইব্রেরি হোমের কার্ড বন্ধ/চালু — প্রতি-ডিভাইস (localStorage) */

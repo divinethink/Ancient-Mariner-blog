@@ -1,6 +1,6 @@
 // P13b: সব লেখা এক ফাইলে (Markdown/HTML) — pure, SDK/UI-মুক্ত। শুধু read; ক্যাটাগরি অনুযায়ী সাজানো।
 // ডিফল্ট = শুধু published+public (ব্যক্তিগত লেখা ভুলে ফাইলে না যাওয়ার জন্য); 'all' = ট্র্যাশ বাদে সব। HTML-এ সব টেক্সট escape, লিংক শুধু http/https/mailto (docHtml)।
-import { formatDate } from "./datetime";
+import { dayKey, formatDate } from "./datetime";
 import { bodyToHtml, escapeHtml } from "./docHtml";
 import { parseBody } from "./editorDoc";
 import { mdEscape, serializeDocShifted } from "./export/serialize";
@@ -42,6 +42,19 @@ export function selectPosts(docs: BackupDoc[], mode: ExportMode): ExportPost[] {
   return out;
 }
 
+/** ঐচ্ছিক দিন-সীমা (সহ, সাইট-timezone-এর দিন-key); 'বছরের বই'-এর জন্য। তারিখহীন লেখা সীমা দিলে বাদ */
+export type DayRange = { from?: string | undefined; to?: string | undefined };
+export const hasRange = (r: DayRange | undefined): r is DayRange => Boolean(r && (r.from || r.to));
+
+export function filterByRange(posts: ExportPost[], range: DayRange | undefined, timeZone: string): ExportPost[] {
+  if (!hasRange(range)) return posts;
+  return posts.filter((p) => {
+    if (p.whenMs === null) return false;
+    const d = dayKey(p.whenMs, timeZone);
+    return (!range.from || d >= range.from) && (!range.to || d <= range.to);
+  });
+}
+
 export type ExportGroup = { category: string; posts: ExportPost[] };
 
 /** ক্যাটাগরি বাংলা-ক্রমে ('অন্যান্য' সবশেষে); ভেতরে তারিখ পুরনো→নতুন (তারিখহীন শেষে), তারপর শিরোনাম, id */
@@ -60,9 +73,11 @@ export function groupByCategory(posts: ExportPost[]): ExportGroup[] {
 const postTitle = (p: ExportPost) => p.title || "(শিরোনামহীন)";
 const dateOf = (p: ExportPost, tz: string) => (p.whenMs === null ? "" : formatDate(p.whenMs, tz));
 
-export type BundleMeta = { heading: string; exportedAt: Date; timeZone: string; mode: ExportMode };
+export type BundleMeta = { heading: string; exportedAt: Date; timeZone: string; mode: ExportMode; range?: DayRange | undefined };
 export const bundleNote = (m: BundleMeta, n: number) =>
-  `${formatDate(m.exportedAt, m.timeZone)} · ${n}টি লেখা · ${m.mode === "all" ? "সব লেখা (ট্র্যাশ বাদে)" : "শুধু প্রকাশিত"}`;
+  `${formatDate(m.exportedAt, m.timeZone)} · ${n}টি লেখা · ${m.mode === "all" ? "সব লেখা (ট্র্যাশ বাদে)" : "শুধু প্রকাশিত"}${
+    hasRange(m.range) ? ` · পরিসর: ${m.range.from ?? "শুরু"} – ${m.range.to ?? "আজ"}` : ""
+  }`;
 
 export function buildMarkdown(posts: ExportPost[], meta: BundleMeta): string {
   const lines = [`# ${mdEscape(meta.heading)}`, "", `*${bundleNote(meta, posts.length)}*`, ""];

@@ -8,12 +8,14 @@ import {
   buildHtml,
   buildMarkdown,
   exportFileName,
+  filterByRange,
   readAllPosts,
   selectPosts,
   type BundleMeta,
   type ExportMode,
   type ExportPost,
 } from "@/lib/exportBundle";
+import { dayKey } from "@/lib/datetime";
 import { DOCX_MIME } from "@/lib/exportDocx"; // শুধু ধ্রুবক — `docx` প্যাকেজ বোতাম চাপলে lazy লোড হয়
 import { useSiteTimezone } from "../SiteSettingsProvider";
 
@@ -27,6 +29,10 @@ const T = bn.backup.textExport;
 export function TextExportPanel() {
   const tz = useSiteTimezone();
   const [all, setAll] = useState(false);
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
+  const [rangeErr, setRangeErr] = useState(false);
+  const [year] = useState(() => dayKey(Date.now(), tz).slice(0, 4));
   const [phase, setPhase] = useState<Phase>("idle");
   const [read, setRead] = useState(0);
   const [files, setFiles] = useState<Files | null>(null);
@@ -70,6 +76,11 @@ export function TextExportPanel() {
 
   async function run() {
     if (phase === "running") return;
+    if (from && to && from > to) {
+      setRangeErr(true);
+      return;
+    }
+    setRangeErr(false);
     const ac = new AbortController();
     abort.current = ac;
     setPhase("running");
@@ -81,13 +92,14 @@ export function TextExportPanel() {
     try {
       const mode: ExportMode = all ? "all" : "published";
       const docs = await readAllPosts(await getBackupSource(), { signal: ac.signal, onProgress: setRead });
-      const posts = selectPosts(docs, mode);
+      const range = { from: from || undefined, to: to || undefined };
+      const posts = filterByRange(selectPosts(docs, mode), range, tz);
       if (posts.length === 0) {
         setPhase("empty");
         return;
       }
       const now = new Date();
-      const meta = { heading: T.heading, exportedAt: now, timeZone: tz, mode };
+      const meta = { heading: T.heading, exportedAt: now, timeZone: tz, mode, range };
       const url = (text: string, type: string) => URL.createObjectURL(new Blob([text], { type: `${type};charset=utf-8` }));
       src.current = { posts, meta, now };
       setFiles({
@@ -116,6 +128,49 @@ export function TextExportPanel() {
         {T.all}
       </label>
       <p className={all ? "text-accent-text" : "text-sm text-muted"}>{all ? T.allWarn : T.onlyPublished}</p>
+
+      <fieldset className="space-y-2" disabled={phase === "running"}>
+        <legend className="font-semibold">{T.rangeTitle}</legend>
+        <p className="text-sm text-muted">{T.rangeHint}</p>
+        <div className="flex flex-wrap gap-3">
+          <label className="text-sm">
+            {T.rangeFrom}
+            <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="mt-1 block min-h-11 rounded-xl border border-line bg-surface px-3" />
+          </label>
+          <label className="text-sm">
+            {T.rangeTo}
+            <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="mt-1 block min-h-11 rounded-xl border border-line bg-surface px-3" />
+          </label>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              setFrom(`${year}-01-01`);
+              setTo(`${year}-12-31`);
+            }}
+            className="min-h-11 rounded-full border border-line px-4 text-sm"
+          >
+            {T.rangeThisYear}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setFrom("");
+              setTo("");
+              setRangeErr(false);
+            }}
+            className="min-h-11 rounded-full border border-line px-4 text-sm"
+          >
+            {T.rangeClear}
+          </button>
+        </div>
+        {rangeErr && (
+          <p role="alert" className="text-accent-text">
+            {T.rangeInvalid}
+          </p>
+        )}
+      </fieldset>
 
       {phase === "error" && (
         <p role="alert" className="text-accent-text">

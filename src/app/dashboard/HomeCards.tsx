@@ -15,6 +15,7 @@ import { getPostRepo } from "@/data/postRepo.wire";
 import { bn } from "@/i18n/bn";
 import { dayKey } from "@/lib/datetime";
 import { DEFAULT_GOAL, goalPercent, pickRandom } from "@/lib/goal";
+import { dailyTaskFor } from "@/lib/dailyTask";
 import { newId } from "@/lib/id";
 import { ideaToPostSeed } from "@/lib/idea";
 import { daysSince, isSnoozed, pickStaleDraft } from "@/lib/staleDrafts";
@@ -80,6 +81,7 @@ export function HomeCards() {
   return (
     <div className="mb-4 space-y-3">
       <LetterReady />
+      {prefs.daily && <DailyTask />}
       {prefs.pick && <StaleDraft />}
       {prefs.pick && <IdeaPick />}
       {prefs.pick && <PromptCard />}
@@ -107,6 +109,22 @@ function LetterReady() {
   return (
     <Link href="/dashboard/letters" className="flex min-h-11 items-center rounded-2xl border border-line bg-surface p-4">
       📬 {bn.letters.ready(bnNum(n))}
+    </Link>
+  );
+}
+
+/** 'আজকের একটি কাজ': দিন-অনুযায়ী একটাই ছোট সুপারিশ (ডিফল্ট বন্ধ; Settings-এ চালু)। গোনা/streak/অপরাধবোধ নেই */
+function DailyTask() {
+  const tz = useSiteTimezone();
+  const [today] = useState(() => dayKey(Date.now(), tz));
+  const t = dailyTaskFor(today);
+  return (
+    <Link href={t.href} className="flex min-h-11 items-center justify-between gap-2 rounded-2xl border border-line bg-surface p-4">
+      <span>
+        <span className="block text-sm text-muted">🎯 {bn.home.dailyTitle}</span>
+        <span className="font-serif text-lg">{bn.home.dailyTasks[t.id]}</span>
+      </span>
+      <span aria-hidden="true">→</span>
     </Link>
   );
 }

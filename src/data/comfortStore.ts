@@ -54,9 +54,10 @@ export const readNavCollapsed = (): boolean => prefs.get(NAV_KEY) === "1";
 export const saveNavCollapsed = (on: boolean): void => prefs.set(NAV_KEY, on ? "1" : "0");
 
 // লাইব্রেরি হোমের কার্ড (দৈনিক-লক্ষ্য / At a Glance / আইডিয়া-বাছাই) — প্রতি-ডিভাইস, default চালু (P7a)
-export type HomeCard = "goal" | "glance" | "pick";
+export type HomeCard = "goal" | "glance" | "pick" | "daily";
 const HOME_KEY = (c: HomeCard) => `homeCard:${c}`;
-export const readHomeCard = (c: HomeCard): boolean => prefs.get(HOME_KEY(c)) !== "0";
+// goal/glance/pick ডিফল্ট চালু; daily (আজকের একটি কাজ) ডিফল্ট বন্ধ — শুধু স্পষ্টভাবে চালু করলে দেখায়
+export const readHomeCard = (c: HomeCard): boolean => (c === "daily" ? prefs.get(HOME_KEY(c)) === "1" : prefs.get(HOME_KEY(c)) !== "0");
 export const HOME_CARDS_EVENT = "homecards-change";
 export const saveHomeCard = (c: HomeCard, on: boolean): void => {
   prefs.set(HOME_KEY(c), on ? "1" : "0");
