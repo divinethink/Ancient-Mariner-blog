@@ -47,6 +47,9 @@ export const PROJECT_STATUS = ["draft", "published", "archived"] as const;
 export const PROJECT_VISIBILITY = ["private", "public"] as const;
 export const CHAPTER_STATUS = ["draft", "published", "trashed"] as const;
 export const CHAPTER_VISIBILITY = ["private", "public"] as const;
+// দিনলিপি-ঘ: books (Arch §৬) — rules-এ enum-তালিকা বসে (পাবলিক-read শর্ত: visibility == 'public'); quotes সবসময় private (enum নেই)
+export const BOOK_STATUS = ["wishlist", "reading", "finished"] as const;
+export const BOOK_VISIBILITY = ["private", "public"] as const;
 // Auto = সিস্টেম অনুযায়ী light/dark (Arch §১১)
 export const THEME = ["auto", "light", "sepia", "warm", "dark", "amoled"] as const;
 
@@ -64,6 +67,8 @@ export const ProjectStatus = z.enum(PROJECT_STATUS);
 export const ProjectVisibility = z.enum(PROJECT_VISIBILITY);
 export const ChapterStatus = z.enum(CHAPTER_STATUS);
 export const ChapterVisibility = z.enum(CHAPTER_VISIBILITY);
+export const BookStatus = z.enum(BOOK_STATUS);
+export const BookVisibility = z.enum(BOOK_VISIBILITY);
 
 /** RSS: পূর্ণ লেখা না সারাংশ (P4b-২) — শুধু siteSettings-এ; Firestore rules-এ নেই */
 export const FEED_MODE = ["full", "excerpt"] as const;
@@ -90,6 +95,8 @@ export type ProjectStatus = z.infer<typeof ProjectStatus>;
 export type ProjectVisibility = z.infer<typeof ProjectVisibility>;
 export type ChapterStatus = z.infer<typeof ChapterStatus>;
 export type ChapterVisibility = z.infer<typeof ChapterVisibility>;
+export type BookStatus = z.infer<typeof BookStatus>;
+export type BookVisibility = z.infer<typeof BookVisibility>;
 export type FeedMode = z.infer<typeof FeedMode>;
 export type RevisionTargetType = z.infer<typeof RevisionTargetType>;
 export type RevisionTrigger = z.infer<typeof RevisionTrigger>;

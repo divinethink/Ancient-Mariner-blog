@@ -11,7 +11,7 @@ export const PAGE_TITLE_MAX = 120;
  */
 export const RESERVED_SLUGS: ReadonlySet<string> = new Set([
   "blog", "category", "tag", "series", "search", "works", "book", "login", "dashboard", "api", "offline", "archive",
-  "data", "icons", "_next", "404", "rss", "sitemap", "robots", "build", "manifest", "sw",
+  "diary", "shelf", "data", "icons", "_next", "404", "rss", "sitemap", "robots", "build", "manifest", "sw",
 ]);
 
 export type SystemPage = { slug: string; title: string; body: string };

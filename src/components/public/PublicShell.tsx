@@ -9,6 +9,7 @@ import { ThemeToggle } from "@/components/public/ThemeToggle";
 import { getPopular } from "@/data/popularSnapshot";
 import { getPublicDiary } from "@/data/publicDiary";
 import { getPublicScopes } from "@/data/publicLists";
+import { getPublicShelf } from "@/data/shelfSnapshot";
 import { getPublicPages, getPublicSettings } from "@/data/publicSnapshot";
 import { bn } from "@/i18n/bn";
 import { headFontStyle } from "@/lib/design";
@@ -38,11 +39,11 @@ function NavLink({ l, className }: { l: ResolvedLink; className: string }) {
 /** পাবলিক পেজের header/footer (Arch §১৭ P4a, P9a)। `siteSettings.menu/footer` খালি হলে আগের default; নইলে owner-এর মেনু (draft/মোছা আইটেম লুকানো)। */
 /** home=true: header = ব্যানার (সবার উপরে) → নাম+স্লোগান (`hero`; মোবাইলে ডানে ☰) → ডেস্কটপে নেভ বার। অন্য পেজে সাইটের নাম + নেভ। ≥৯০০px-এ পুরো সাইট ওয়ার্ডপ্রেসের মতো একটি বক্স-পেজে (ধাপ ১) */
 export async function PublicShell({ children, sidebar = false, home = false, banner = null, hero = null }: { children: ReactNode; sidebar?: boolean; home?: boolean; banner?: ReactNode; hero?: ReactNode }) {
-  const [settings, scopes, pages, popular, diary] = await Promise.all([getPublicSettings(), getPublicScopes(), getPublicPages(), getPopular(), getPublicDiary()]);
+  const [settings, scopes, pages, popular, diary, shelf] = await Promise.all([getPublicSettings(), getPublicScopes(), getPublicPages(), getPopular(), getPublicDiary(), getPublicShelf()]);
   // default মেনু/footer: শুধু published system পেজের লিংক
   const about = pages.find((p) => p.slug === "about");
   const privacy = pages.find((p) => p.slug === "privacy");
-  const side = sidebar ? sidebarContent(settings, scopes, popular, diary) : null;
+  const side = sidebar ? sidebarContent(settings, scopes, popular, diary, shelf) : null;
   const rssInSide = !!side && hasFollowWidget(settings); // sidebar-এ RSS থাকলে footer-এ নয়
   const cats = scopes.filter((s) => s.kind === "category" && s.term);
   const top = cats.filter((s) => !s.term?.parentCategoryId);

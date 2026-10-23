@@ -3,7 +3,7 @@
 export type LayoutItem = { id: string; enabled: boolean; /** owner-দেওয়া নিজের নাম (ঐচ্ছিক; খালি = ডিফল্ট) */ title?: string };
 export const LAYOUT_TITLE_MAX = 40;
 
-export const SIDEBAR_WIDGETS = ["search", "facebook", "category", "popular", "archive", "calendar", "links", "follow", "recent", "author"] as const;
+export const SIDEBAR_WIDGETS = ["search", "facebook", "category", "popular", "archive", "calendar", "shelf", "links", "follow", "recent", "author"] as const;
 export type SidebarWidget = (typeof SIDEBAR_WIDGETS)[number];
 export const HOME_SECTIONS = ["hero", "featured", "recent"] as const;
 export type HomeSection = (typeof HOME_SECTIONS)[number];
@@ -16,6 +16,7 @@ export const DEFAULT_SIDEBAR: readonly { id: SidebarWidget; enabled: boolean }[]
   { id: "popular", enabled: true }, // P11a-২: ডেটা না থাকলে (গণনা শুরু হয়নি) এমনিতেই লুকানো
   { id: "archive", enabled: true },
   { id: "calendar", enabled: true },
+  { id: "shelf", enabled: true }, // দিনলিপি-ঘ: পাবলিক বইয়ের মধ্যে 'পড়ছি' না থাকলে এমনিতেই লুকানো
   { id: "links", enabled: true },
   { id: "follow", enabled: true },
   { id: "recent", enabled: false },

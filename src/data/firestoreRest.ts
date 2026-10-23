@@ -75,6 +75,17 @@ const eqFilter = (field: string, value: string) => ({
   fieldFilter: { field: { fieldPath: field }, op: "EQUAL", value: { stringValue: value } },
 });
 
+/** build-এর পাবলিক বই query (দিনলিপি-ঘ): `visibility=='public'` (rules-সম্মত; শুধু equality ⇒ নতুন index লাগে না) */
+export function publicBooksQuery(limit = 500) {
+  return {
+    structuredQuery: {
+      from: [{ collectionId: "books" }],
+      where: eqFilter("visibility", "public"),
+      limit,
+    },
+  };
+}
+
 /** build-এর পাবলিক প্রজেক্ট query (P14c-১): published+public (rules-সম্মত; শুধু equality ⇒ নতুন index লাগে না) */
 export function publishedProjectsQuery() {
   return {

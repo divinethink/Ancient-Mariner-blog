@@ -1,5 +1,5 @@
 rules_version = '2';
-// P1b: posts / slugs / siteSettings · P2a: drafts · P3a: categories / tags / series · P3b: ideas / notes · P4b: pages · P5a: revisions · P5b: backups · P6: media · P7b: templates · P11b: comments · P11c: shareLinks · P12-৩: bookmarks / highlights · P14a-১: writingProjects / chapters · দিনলিপি-গ: letters (Arch §৯)। বাকি collection phase-অনুযায়ী যোগ হয়; বাকি সব deny-all।
+// P1b: posts / slugs / siteSettings · P2a: drafts · P3a: categories / tags / series · P3b: ideas / notes · P4b: pages · P5a: revisions · P5b: backups · P6: media · P7b: templates · P11b: comments · P11c: shareLinks · P12-৩: bookmarks / highlights · P14a-১: writingProjects / chapters · দিনলিপি-গ: letters · দিনলিপি-ঘ: books / quotes (Arch §৯)। বাকি collection phase-অনুযায়ী যোগ হয়; বাকি সব deny-all।
 // placeholder scripts/render-rules.ts বসায়; rendered firestore.rules git-এ commit হয় না।
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -41,6 +41,14 @@ service cloud.firestore {
           && request.resource.data.order is int
           && request.resource.data.status in __CHAPTER_STATUS__
           && request.resource.data.visibility in __CHAPTER_VISIBILITY__;
+    }
+
+    function validBook() {
+      return request.resource.data.title is string
+          && request.resource.data.title.size() <= 150
+          && request.resource.data.ownerUid == '__OWNER_UID__'
+          && request.resource.data.status in __BOOK_STATUS__
+          && request.resource.data.visibility in __BOOK_VISIBILITY__;
     }
 
     match /posts/{postId} {
@@ -153,6 +161,16 @@ service cloud.firestore {
 
     // ভবিষ্যতের চিঠি (দিনলিপি-গ) — শুধু owner; পাবলিক read নেই (তালা UI-তে; Zod boundary-তে মান-যাচাই)
     match /letters/{id} {
+      allow read, write: if isOwner();
+    }
+
+    // পড়ার তাক (দিনলিপি-ঘ): পাবলিক-read শুধু visibility=='public' বইয়ে (query-তে explicit filter); বাকি owner। উদ্ধৃতি সবসময় শুধু owner
+    match /books/{id} {
+      allow read: if resource.data.visibility == 'public';
+      allow read, delete: if isOwner();
+      allow create, update: if isOwner() && validBook();
+    }
+    match /quotes/{id} {
       allow read, write: if isOwner();
     }
 

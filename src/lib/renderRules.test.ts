@@ -23,6 +23,9 @@ describe("renderRules", () => {
       "['draft', 'published', 'archived'] ['private', 'public'] ['draft', 'published', 'trashed'] ['private', 'public']",
     );
   });
+  it("book enum-তালিকা বসায়", () => {
+    expect(renderRules("__BOOK_STATUS__ __BOOK_VISIBILITY__", UID)).toBe("['wishlist', 'reading', 'finished'] ['private', 'public']");
+  });
   it("অবৈধ uid-এ ব্যর্থ", () => {
     expect(() => renderRules("x", "")).toThrow();
     expect(() => renderRules("x", "a'b")).toThrow();

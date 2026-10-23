@@ -17,6 +17,9 @@ import { POPULAR_DAYS, POPULAR_LIMIT, pickPopular, type PopularRow } from "../sr
 import { addDays } from "../src/lib/stats";
 import { getPublicWorksSource, type PublicWorks } from "../src/data/worksRepo.server";
 import { writeWorks } from "../src/data/worksSnapshot";
+import { getPublicShelfSource } from "../src/data/shelfRepo.server";
+import { writeShelf } from "../src/data/shelfSnapshot";
+import type { BookWithId } from "../src/data/bookRepo";
 
 /** 'পঠিত' (P11a-২): D1 থেকে শেষ ৩০ দিনের top-N। যেকোনো ব্যর্থতায় খালি — widget লুকানো, build কখনো থামে না (ভিউ-গণনা সাইটের মূল কাজ নয়) */
 async function loadPopular(publishedIds: Set<string>, timeZone: string, now: Date): Promise<PopularRow[]> {
@@ -70,6 +73,16 @@ async function main() {
   }
   await writeWorks(works.projects, works.chapters);
   console.log(`✅ /works: ${works.projects.length}টি প্রজেক্ট, ${works.chapters.length}টি অধ্যায়`);
+  // দিনলিপি-ঘ ধাপ ২: পাবলিক বই (`/shelf`, sidebar)। rules query না মানলে (403 — rules-deploy বাকি?) খালি + সতর্কতা; ব্লগের বাকি build থামে না; অন্য ত্রুটিতে build থামে
+  let shelf: BookWithId[] = [];
+  try {
+    shelf = await getPublicShelfSource().listPublic();
+  } catch (e) {
+    if (!(e instanceof Error && /Firestore REST 403/.test(e.message))) throw e;
+    console.warn("⚠️ পড়ার তাক পড়া যায়নি (403 — rules deploy হয়নি?) — তাক ছাড়া এগোচ্ছি");
+  }
+  await writeShelf(shelf);
+  console.log(`✅ পড়ার তাক: ${shelf.length}টি পাবলিক বই`);
   console.log(`✅ ${posts.length}টি published+public লেখা + সাইট-সেটিং (ইনডেক্স: ${settings.allowIndexing ? "চালু" : "বন্ধ"}) + ${terms.categories.length} ক্যাটাগরি/${terms.tags.length} ট্যাগ/${terms.series.length} সিরিজ + ${pages.length}টি পেজ + ${media.length}/${coverIds.length}টি cover/gallery-ছবি → ${SNAPSHOT_PATH}`);
 }
 

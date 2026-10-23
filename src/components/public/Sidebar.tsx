@@ -9,6 +9,8 @@ import type { PopularRow } from "@/lib/popular";
 import type { Scope } from "@/lib/publicLists";
 import { FEED_PATH } from "@/lib/rss";
 import type { PublicDiary } from "@/data/publicDiary";
+import type { BookWithId } from "@/data/bookRepo";
+import { publicShelf, SHELF_PATH } from "@/lib/books";
 import { AuthorBox } from "./AuthorBox";
 import { SubscribeBox } from "./SubscribeBox";
 import { DiaryCalendar } from "./DiaryCalendar";
@@ -46,7 +48,7 @@ function Box({ title, children, collapsible = false }: { title: string; children
 }
 
 /** একটা widget; দেখানোর মতো কিছু না থাকলে null (খালি ফেসবুক/লিংক/ক্যাটাগরি লুকানো — Mockup §৫) */
-function widget(id: SidebarWidget, s: SiteSettings, scopes: readonly Scope[], popular: readonly PopularRow[], diary?: PublicDiary, custom?: string): ReactNode {
+function widget(id: SidebarWidget, s: SiteSettings, scopes: readonly Scope[], popular: readonly PopularRow[], diary?: PublicDiary, custom?: string, shelf: readonly BookWithId[] = []): ReactNode {
   const ti = (d: string) => custom || d; // owner-দেওয়া নাম থাকলে সেটা
   const blogCards = () => scopes.find((x) => x.kind === "blog")?.cards ?? [];
   switch (id) {
@@ -97,6 +99,25 @@ function widget(id: SidebarWidget, s: SiteSettings, scopes: readonly Scope[], po
           </Link>
         </Box>
       );
+    }
+    case "shelf": {
+      // এখন যা পড়ছি: শুধু পাবলিক বইয়ের মধ্যে 'পড়ছি' (সর্বোচ্চ ৩); না থাকলে লুকানো
+      const reading = publicShelf(shelf).reading.slice(0, 3);
+      return reading.length ? (
+        <Box title={ti(bn.public.shelfWidgetTitle)}>
+          <ul className={list}>
+            {reading.map((b) => (
+              <li key={b.id} className="py-2 leading-snug">
+                {b.title}
+                {b.author && <span className="block text-xs text-muted">{bn.public.shelfAuthor(b.author)}</span>}
+              </li>
+            ))}
+          </ul>
+          <Link href={SHELF_PATH} prefetch={false} className="mt-2 inline-flex min-h-11 items-center text-accent-text underline">
+            {bn.public.shelfAll} →
+          </Link>
+        </Box>
+      ) : null;
     }
     case "facebook":
       return s.socialLinks.facebook ? (
@@ -207,11 +228,11 @@ export const hasFollowWidget = (s: SiteSettings): boolean =>
   !hasSubscribe(s) && resolveLayout(s.layout.sidebar, DEFAULT_SIDEBAR).some((w) => w.id === "follow" && w.enabled);
 
 /** `layout.sidebar` অনুযায়ী চালু widget-গুলো; কিছুই না থাকলে null (কলার গ্রিড বানায় না) */
-export function sidebarContent(s: SiteSettings, scopes: readonly Scope[], popular: readonly PopularRow[], diary?: PublicDiary): ReactNode {
+export function sidebarContent(s: SiteSettings, scopes: readonly Scope[], popular: readonly PopularRow[], diary?: PublicDiary, shelf: readonly BookWithId[] = []): ReactNode {
   const blocks = resolveLayout(s.layout.sidebar, DEFAULT_SIDEBAR)
     .filter((w) => w.enabled)
     .flatMap((w) => {
-      const b = widget(w.id, s, scopes, popular, diary, w.title);
+      const b = widget(w.id, s, scopes, popular, diary, w.title, shelf);
       return b ? [<div key={w.id}>{b}</div>] : [];
     });
   return blocks.length ? <aside aria-label={bn.public.sidebarLabel} className="space-y-4">{blocks}</aside> : null;

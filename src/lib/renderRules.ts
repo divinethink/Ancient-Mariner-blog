@@ -1,5 +1,7 @@
 // firestore.rules.tpl-এর placeholder বসানো (Arch §৪, §৯); বাকি placeholder থাকলে বা uid ফাঁকা হলে ব্যর্থ
 import {
+  BOOK_STATUS,
+  BOOK_VISIBILITY,
   CHAPTER_STATUS,
   CHAPTER_VISIBILITY,
   MEDIA_DELIVERY,
@@ -27,7 +29,9 @@ export function renderRules(tpl: string, ownerUid: string): string {
     .replaceAll("__PROJECT_STATUS__", list(PROJECT_STATUS))
     .replaceAll("__PROJECT_VISIBILITY__", list(PROJECT_VISIBILITY))
     .replaceAll("__CHAPTER_STATUS__", list(CHAPTER_STATUS))
-    .replaceAll("__CHAPTER_VISIBILITY__", list(CHAPTER_VISIBILITY));
+    .replaceAll("__CHAPTER_VISIBILITY__", list(CHAPTER_VISIBILITY))
+    .replaceAll("__BOOK_STATUS__", list(BOOK_STATUS))
+    .replaceAll("__BOOK_VISIBILITY__", list(BOOK_VISIBILITY));
   const left = out.match(/__[A-Z_]+__/);
   if (left) throw new Error(`অবসমাপ্ত placeholder: ${left[0]}`);
   return out;

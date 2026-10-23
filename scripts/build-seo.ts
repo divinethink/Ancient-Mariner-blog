@@ -12,6 +12,8 @@ import { parseBody } from "../src/lib/editorDoc";
 import { postExcerpt } from "../src/lib/publicSite";
 import { writeCardChunks } from "./cardChunks";
 import { readWorks } from "../src/data/worksSnapshot";
+import { readShelf } from "../src/data/shelfSnapshot";
+import { SHELF_PATH } from "../src/lib/books";
 import { chapterFeedItems, mergeFeed } from "../src/lib/works";
 import { worksPath } from "../src/lib/projects";
 
@@ -46,6 +48,7 @@ async function main() {
   // P4a-২: [আরও দেখান] card-JSON chunk (assets/data/cards) — package.json অপরিবর্তিত রাখতে এই ধাপেই (build:cf-এ আগে থেকেই চলে)
   const scopes = await writeCardChunks(snap, DIR);
   const works = await readWorks();
+  const shelf = await readShelf();
   const feedAll = mergeFeed(snap.posts, chapterFeedItems(works));
   // P4b-২: RSS (সবসময় তৈরি — পাঠক/রিডার-অ্যাপের জন্য; ইনডেক্স-টগল শুধু সার্চ-ইঞ্জিন নিয়ন্ত্রণ করে)
   await writeFile(`${DIR}/rss.xml`, renderRss({ siteUrl, title: siteTitle, description: tagline, posts: feedAll, items: feedItems, mode: feedMode }), "utf8");
@@ -64,7 +67,7 @@ async function main() {
   await writeFile(`${DIR}${SEARCH_INDEX_PATH}`, JSON.stringify(searchIndex), "utf8");
   await writeFile(`${DIR}/robots.txt`, renderRobots({ siteUrl, allowIndexing, blockAiCrawlers }), "utf8");
   if (allowIndexing) {
-    await writeFile(`${DIR}/sitemap.xml`, renderSitemap(siteUrl, snap.posts, [...scopes.filter((x) => x.kind !== "archive").map((x) => x.path), ...snap.pages.map((pg) => pagePath(pg.slug)), ...diaryPaths(snap)], worksEntries(works)), "utf8");
+    await writeFile(`${DIR}/sitemap.xml`, renderSitemap(siteUrl, snap.posts, [...scopes.filter((x) => x.kind !== "archive").map((x) => x.path), ...snap.pages.map((pg) => pagePath(pg.slug)), ...diaryPaths(snap), ...(shelf.length ? [SHELF_PATH] : [])], worksEntries(works)), "utf8");
   }
   console.log(`✅ search-index.json (${searchIndex.items.length} লেখা)`);
   console.log(`✅ rss.xml (${Math.min(feedItems, feedAll.length)} আইটেম (অধ্যায় সহ), ${feedMode}) + robots.txt (ইনডেক্স ${allowIndexing ? "চালু" : "বন্ধ"}, AI-ব্লক ${blockAiCrawlers ? "চালু" : "বন্ধ"})${allowIndexing ? ` + sitemap.xml (${snap.posts.length + snap.pages.length + worksEntries(works).length + 1} URL)` : "; sitemap নেই"}`);

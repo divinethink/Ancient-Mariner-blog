@@ -128,7 +128,7 @@ describe("siteSettings", () => {
 });
 
 // নতুন owner-only collection যোগে এই তালিকায় এক লাইন (Arch §৯)
-const OWNER_ONLY_COLLECTIONS = ["drafts", "ideas", "notes", "templates", "letters"];
+const OWNER_ONLY_COLLECTIONS = ["drafts", "ideas", "notes", "templates", "letters", "quotes"];
 describe.each(OWNER_ONLY_COLLECTIONS)("owner-only: %s", (name) => {
   it("owner read/write পারে; non-owner ও anonymous পারে না", async () => {
     await seed(name, "a", { title: "x", ownerUid: OWNER });
@@ -537,5 +537,35 @@ describe("chapter drafts/revisions গোপনীয়তা (P14a-৩)", () =
     await assertSucceeds(deleteDoc(doc(owner(), "drafts", "c1")));
     await assertSucceeds(setDoc(doc(owner(), "revisions", "r1"), crev));
     await assertFails(deleteDoc(doc(owner(), "revisions", "r1")));
+  });
+});
+
+// দিনলিপি-ঘ: books — পাবলিক-read শুধু visibility=='public'; owner write + enum/ownerUid/দৈর্ঘ্য যাচাই। quotes = OWNER_ONLY_COLLECTIONS-এ
+describe("books (দিনলিপি-ঘ)", () => {
+  const book = (o: Record<string, unknown> = {}) => ({ title: "বই", status: "reading", visibility: "private", ownerUid: OWNER, ...o });
+
+  it("owner create/update পারে; অবৈধ enum/ownerUid/দৈর্ঘ্য ও non-owner পারে না", async () => {
+    await assertSucceeds(setDoc(doc(owner(), "books", "b1"), book()));
+    await assertSucceeds(updateDoc(doc(owner(), "books", "b1"), { status: "finished", endDay: "2026-10-22" }));
+    await assertFails(setDoc(doc(owner(), "books", "b2"), book({ status: "dropped" })));
+    await assertFails(setDoc(doc(owner(), "books", "b2"), book({ visibility: "unlisted" })));
+    await assertFails(setDoc(doc(owner(), "books", "b2"), book({ ownerUid: "someoneElse123456" })));
+    await assertFails(setDoc(doc(owner(), "books", "b2"), book({ title: "ক".repeat(151) })));
+    await assertFails(setDoc(doc(owner(), "books", "b2"), book({ title: 5 })));
+    await assertFails(updateDoc(doc(owner(), "books", "b1"), { ownerUid: "someoneElse123456" }));
+    await assertFails(setDoc(doc(other(), "books", "b3"), book()));
+    await assertFails(setDoc(doc(anon(), "books", "b3"), book()));
+    await assertFails(deleteDoc(doc(other(), "books", "b1")));
+  });
+
+  it("public বই পাবলিক পায়; private পায় না (owner পায়); filter ছাড়া query ব্যর্থ", async () => {
+    await seed("books", "pub", book({ visibility: "public" }));
+    await seed("books", "priv", book({ visibility: "private" }));
+    await assertSucceeds(getDoc(doc(anon(), "books", "pub")));
+    await assertFails(getDoc(doc(anon(), "books", "priv")));
+    await assertFails(getDoc(doc(other(), "books", "priv")));
+    await assertSucceeds(getDoc(doc(owner(), "books", "priv")));
+    await assertFails(getDocs(collection(anon(), "books")));
+    await assertSucceeds(getDocs(query(collection(anon(), "books"), where("visibility", "==", "public"))));
   });
 });
