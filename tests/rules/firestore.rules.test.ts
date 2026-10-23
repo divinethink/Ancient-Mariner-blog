@@ -569,3 +569,39 @@ describe("books (দিনলিপি-ঘ)", () => {
     await assertSucceeds(getDocs(query(collection(anon(), "books"), where("visibility", "==", "public"))));
   });
 });
+
+// দিনলিপি-চ: trips / specialDays — শুধু owner; enum, ownerUid, দৈর্ঘ্য ও পূর্ণসংখ্যা-খরচ/মাস-দিন যাচাই
+describe("trips (দিনলিপি-চ)", () => {
+  const trip = (o: Record<string, unknown> = {}) => ({ place: "কক্সবাজার", status: "wish", ownerUid: OWNER, ...o });
+  it("owner ঠিক ডেটা পারে; অবৈধ status/ownerUid/place/খরচ ও non-owner পারে না", async () => {
+    await assertSucceeds(setDoc(doc(owner(), "trips", "t1"), trip()));
+    await assertSucceeds(setDoc(doc(owner(), "trips", "t2"), trip({ status: "been", costTaka: 12000 })));
+    await assertSucceeds(updateDoc(doc(owner(), "trips", "t1"), { status: "been", costTaka: 0 }));
+    await assertFails(setDoc(doc(owner(), "trips", "t3"), trip({ status: "maybe" })));
+    await assertFails(setDoc(doc(owner(), "trips", "t3"), trip({ place: "" })));
+    await assertFails(setDoc(doc(owner(), "trips", "t3"), trip({ place: "ক".repeat(101) })));
+    await assertFails(setDoc(doc(owner(), "trips", "t3"), trip({ costTaka: 12.5 })));
+    await assertFails(setDoc(doc(owner(), "trips", "t3"), trip({ costTaka: -1 })));
+    await assertFails(setDoc(doc(owner(), "trips", "t3"), trip({ ownerUid: "someoneElse123456" })));
+    await assertFails(setDoc(doc(other(), "trips", "t4"), trip()));
+    await assertFails(getDoc(doc(other(), "trips", "t1")));
+    await assertFails(getDoc(doc(anon(), "trips", "t1")));
+  });
+});
+
+describe("specialDays (দিনলিপি-চ)", () => {
+  const sd = (o: Record<string, unknown> = {}) => ({ name: "আম্মু", kind: "birthday", month: 10, day: 22, ownerUid: OWNER, ...o });
+  it("owner ঠিক ডেটা পারে; অবৈধ kind/মাস/দিন/ownerUid ও non-owner পারে না", async () => {
+    await assertSucceeds(setDoc(doc(owner(), "specialDays", "d1"), sd()));
+    await assertSucceeds(setDoc(doc(owner(), "specialDays", "d2"), sd({ year: 1990 })));
+    await assertFails(setDoc(doc(owner(), "specialDays", "d3"), sd({ kind: "holiday" })));
+    await assertFails(setDoc(doc(owner(), "specialDays", "d3"), sd({ month: 13 })));
+    await assertFails(setDoc(doc(owner(), "specialDays", "d3"), sd({ day: 0 })));
+    await assertFails(setDoc(doc(owner(), "specialDays", "d3"), sd({ month: "10" })));
+    await assertFails(setDoc(doc(owner(), "specialDays", "d3"), sd({ name: "" })));
+    await assertFails(setDoc(doc(owner(), "specialDays", "d3"), sd({ ownerUid: "someoneElse123456" })));
+    await assertFails(setDoc(doc(other(), "specialDays", "d4"), sd()));
+    await assertFails(getDoc(doc(anon(), "specialDays", "d1")));
+    await assertFails(getDocs(collection(other(), "specialDays")));
+  });
+});

@@ -1,5 +1,5 @@
 rules_version = '2';
-// P1b: posts / slugs / siteSettings · P2a: drafts · P3a: categories / tags / series · P3b: ideas / notes · P4b: pages · P5a: revisions · P5b: backups · P6: media · P7b: templates · P11b: comments · P11c: shareLinks · P12-৩: bookmarks / highlights · P14a-১: writingProjects / chapters · দিনলিপি-গ: letters · দিনলিপি-ঘ: books / quotes (Arch §৯)। বাকি collection phase-অনুযায়ী যোগ হয়; বাকি সব deny-all।
+// P1b: posts / slugs / siteSettings · P2a: drafts · P3a: categories / tags / series · P3b: ideas / notes · P4b: pages · P5a: revisions · P5b: backups · P6: media · P7b: templates · P11b: comments · P11c: shareLinks · P12-৩: bookmarks / highlights · P14a-১: writingProjects / chapters · দিনলিপি-গ: letters · দিনলিপি-ঘ: books / quotes · দিনলিপি-চ: trips / specialDays (Arch §৯)। বাকি collection phase-অনুযায়ী যোগ হয়; বাকি সব deny-all।
 // placeholder scripts/render-rules.ts বসায়; rendered firestore.rules git-এ commit হয় না।
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -49,6 +49,26 @@ service cloud.firestore {
           && request.resource.data.ownerUid == '__OWNER_UID__'
           && request.resource.data.status in __BOOK_STATUS__
           && request.resource.data.visibility in __BOOK_VISIBILITY__;
+    }
+
+    function validTrip() {
+      return request.resource.data.place is string
+          && request.resource.data.place.size() >= 1
+          && request.resource.data.place.size() <= 100
+          && request.resource.data.ownerUid == '__OWNER_UID__'
+          && request.resource.data.status in __TRIP_STATUS__
+          && (!('costTaka' in request.resource.data)
+              || (request.resource.data.costTaka is int && request.resource.data.costTaka >= 0));
+    }
+
+    function validSpecialDay() {
+      return request.resource.data.name is string
+          && request.resource.data.name.size() >= 1
+          && request.resource.data.name.size() <= 80
+          && request.resource.data.ownerUid == '__OWNER_UID__'
+          && request.resource.data.kind in __SPECIAL_DAY_KIND__
+          && request.resource.data.month is int && request.resource.data.month >= 1 && request.resource.data.month <= 12
+          && request.resource.data.day is int && request.resource.data.day >= 1 && request.resource.data.day <= 31;
     }
 
     match /posts/{postId} {
@@ -169,6 +189,15 @@ service cloud.firestore {
       allow read: if resource.data.visibility == 'public';
       allow read, delete: if isOwner();
       allow create, update: if isOwner() && validBook();
+    }
+    // ঘোরার তালিকা ও বিশেষ দিন (দিনলিপি-চ) — শুধু owner; পাবলিক read নেই
+    match /trips/{id} {
+      allow read, delete: if isOwner();
+      allow create, update: if isOwner() && validTrip();
+    }
+    match /specialDays/{id} {
+      allow read, delete: if isOwner();
+      allow create, update: if isOwner() && validSpecialDay();
     }
     match /quotes/{id} {
       allow read, write: if isOwner();

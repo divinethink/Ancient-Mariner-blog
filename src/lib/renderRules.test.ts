@@ -26,6 +26,9 @@ describe("renderRules", () => {
   it("book enum-তালিকা বসায়", () => {
     expect(renderRules("__BOOK_STATUS__ __BOOK_VISIBILITY__", UID)).toBe("['wishlist', 'reading', 'finished'] ['private', 'public']");
   });
+  it("trip/specialDay enum-তালিকা বসায়", () => {
+    expect(renderRules("__TRIP_STATUS__ __SPECIAL_DAY_KIND__", UID)).toBe("['wish', 'been'] ['birthday', 'anniversary', 'other']");
+  });
   it("অবৈধ uid-এ ব্যর্থ", () => {
     expect(() => renderRules("x", "")).toThrow();
     expect(() => renderRules("x", "a'b")).toThrow();

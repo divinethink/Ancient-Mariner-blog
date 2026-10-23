@@ -2,6 +2,8 @@
 import {
   BOOK_STATUS,
   BOOK_VISIBILITY,
+  SPECIAL_DAY_KIND,
+  TRIP_STATUS,
   CHAPTER_STATUS,
   CHAPTER_VISIBILITY,
   MEDIA_DELIVERY,
@@ -31,7 +33,9 @@ export function renderRules(tpl: string, ownerUid: string): string {
     .replaceAll("__CHAPTER_STATUS__", list(CHAPTER_STATUS))
     .replaceAll("__CHAPTER_VISIBILITY__", list(CHAPTER_VISIBILITY))
     .replaceAll("__BOOK_STATUS__", list(BOOK_STATUS))
-    .replaceAll("__BOOK_VISIBILITY__", list(BOOK_VISIBILITY));
+    .replaceAll("__BOOK_VISIBILITY__", list(BOOK_VISIBILITY))
+    .replaceAll("__TRIP_STATUS__", list(TRIP_STATUS))
+    .replaceAll("__SPECIAL_DAY_KIND__", list(SPECIAL_DAY_KIND));
   const left = out.match(/__[A-Z_]+__/);
   if (left) throw new Error(`অবসমাপ্ত placeholder: ${left[0]}`);
   return out;

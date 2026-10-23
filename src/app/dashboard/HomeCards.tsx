@@ -7,6 +7,8 @@ import { convertIdeaToPost } from "@/data/ideaConvert";
 import type { IdeaWithId } from "@/data/ideaRepo";
 import { getIdeaRepo } from "@/data/ideaRepo.wire";
 import { getLetterRepo } from "@/data/letterRepo.wire";
+import type { SpecialDayWithId } from "@/data/specialDayRepo";
+import { getSpecialDayRepo } from "@/data/specialDayRepo.wire";
 import { goalStore } from "@/data/goalStore";
 import { localStore } from "@/data/localStore";
 import type { PostWithId } from "@/data/postRepo";
@@ -18,6 +20,7 @@ import { DEFAULT_GOAL, goalPercent, pickRandom } from "@/lib/goal";
 import { dailyTaskFor } from "@/lib/dailyTask";
 import { newId } from "@/lib/id";
 import { ideaToPostSeed } from "@/lib/idea";
+import { sortUpcoming, yearsAt } from "@/lib/specialDays";
 import { daysSince, isSnoozed, pickStaleDraft } from "@/lib/staleDrafts";
 import { PROMPT_TYPES, writingPromptFor, type PromptType } from "@/lib/writingPrompts";
 import { OnThisDay } from "./OnThisDay";
@@ -81,6 +84,7 @@ export function HomeCards() {
   return (
     <div className="mb-4 space-y-3">
       <LetterReady />
+      <UpcomingDays />
       {prefs.daily && <DailyTask />}
       {prefs.pick && <StaleDraft />}
       {prefs.pick && <IdeaPick />}
@@ -110,6 +114,46 @@ function LetterReady() {
     <Link href="/dashboard/letters" className="flex min-h-11 items-center rounded-2xl border border-line bg-surface p-4">
       📬 {bn.letters.ready(bnNum(n))}
     </Link>
+  );
+}
+
+/** পরের ১৪ দিনে বিশেষ দিন (জন্মদিন/বার্ষিকী) থাকলে একটা কার্ড; না থাকলে/আনা না গেলে কিছুই আঁকে না */
+function UpcomingDays() {
+  const tz = useSiteTimezone();
+  const [today] = useState(() => dayKey(Date.now(), tz));
+  const [items, setItems] = useState<SpecialDayWithId[]>([]);
+  useEffect(() => {
+    let dead = false;
+    getSpecialDayRepo()
+      .then((r) => r.list())
+      .then((l) => {
+        if (!dead) setItems(l);
+      })
+      .catch(() => undefined);
+    return () => {
+      dead = true;
+    };
+  }, []);
+  const soon = sortUpcoming(items, today, 14).slice(0, 3);
+  if (soon.length === 0) return null;
+  return (
+    <section aria-label={bn.days.upcoming} className="rounded-2xl border border-line bg-surface p-4">
+      <h2 className="mb-2 text-sm text-muted">🎂 {bn.days.upcoming}</h2>
+      <ul className="space-y-1">
+        {soon.map((d) => {
+          const n = yearsAt(d.next, d.year);
+          return (
+            <li key={d.id} className="font-serif text-base">
+              {d.name}
+              {n !== undefined && <span className="text-sm text-muted"> · {bn.days.years(bnNum(n))}</span>} — {d.inDays === 0 ? bn.days.today : bn.days.inDays(bnNum(d.inDays))}
+            </li>
+          );
+        })}
+      </ul>
+      <Link href="/dashboard/days" className="mt-1 inline-flex min-h-11 items-center text-accent-text underline">
+        {bn.days.upcomingAll}
+      </Link>
+    </section>
   );
 }
 

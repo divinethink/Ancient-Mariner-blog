@@ -50,6 +50,9 @@ export const CHAPTER_VISIBILITY = ["private", "public"] as const;
 // দিনলিপি-ঘ: books (Arch §৬) — rules-এ enum-তালিকা বসে (পাবলিক-read শর্ত: visibility == 'public'); quotes সবসময় private (enum নেই)
 export const BOOK_STATUS = ["wishlist", "reading", "finished"] as const;
 export const BOOK_VISIBILITY = ["private", "public"] as const;
+// দিনলিপি-চ: trips (ঘোরার তালিকা) ও specialDays (বিশেষ দিন) — দুটোই শুধু owner; rules-এ enum-তালিকা বসে
+export const TRIP_STATUS = ["wish", "been"] as const;
+export const SPECIAL_DAY_KIND = ["birthday", "anniversary", "other"] as const;
 // Auto = সিস্টেম অনুযায়ী light/dark (Arch §১১)
 export const THEME = ["auto", "light", "sepia", "warm", "dark", "amoled"] as const;
 
@@ -69,6 +72,8 @@ export const ChapterStatus = z.enum(CHAPTER_STATUS);
 export const ChapterVisibility = z.enum(CHAPTER_VISIBILITY);
 export const BookStatus = z.enum(BOOK_STATUS);
 export const BookVisibility = z.enum(BOOK_VISIBILITY);
+export const TripStatus = z.enum(TRIP_STATUS);
+export const SpecialDayKind = z.enum(SPECIAL_DAY_KIND);
 
 /** RSS: পূর্ণ লেখা না সারাংশ (P4b-২) — শুধু siteSettings-এ; Firestore rules-এ নেই */
 export const FEED_MODE = ["full", "excerpt"] as const;
@@ -97,6 +102,8 @@ export type ChapterStatus = z.infer<typeof ChapterStatus>;
 export type ChapterVisibility = z.infer<typeof ChapterVisibility>;
 export type BookStatus = z.infer<typeof BookStatus>;
 export type BookVisibility = z.infer<typeof BookVisibility>;
+export type TripStatus = z.infer<typeof TripStatus>;
+export type SpecialDayKind = z.infer<typeof SpecialDayKind>;
 export type FeedMode = z.infer<typeof FeedMode>;
 export type RevisionTargetType = z.infer<typeof RevisionTargetType>;
 export type RevisionTrigger = z.infer<typeof RevisionTrigger>;
