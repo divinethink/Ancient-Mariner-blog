@@ -18,13 +18,13 @@
 }
 [data-theme="sepia"] {
   color-scheme: light;
-  --bg: #f7e0bc;
-  --surface: #fbe9cc;
+  --bg: #f4ecd8;
+  --surface: #f9f3e3;
   --text: #45301c;
   --muted: #785c40;
   --accent: #b9531a;
   --accent-text: #94420f;
-  --line: #e6c89e;
+  --line: #e4dac0;
   --btn-bg: #94420f;
   --btn-tx: #ffffff;
   --today: #2a6580;
@@ -32,13 +32,13 @@
 }
 [data-theme="warm"] {
   color-scheme: light;
-  --bg: #eec58a;
-  --surface: #f4d6a6;
+  --bg: #f7e8d0;
+  --surface: #fbf0dc;
   --text: #45301c;
   --muted: #6b4c2a;
   --accent: #a84a12;
   --accent-text: #8a3a0a;
-  --line: #d9b27a;
+  --line: #e8d5b5;
   --btn-bg: #8a3a0a;
   --btn-tx: #ffffff;
   --today: #265f78;

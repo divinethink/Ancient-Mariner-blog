@@ -49,8 +49,8 @@ export type ThemePref = (typeof THEME_PREFS)[number];
 // public/theme-init.js ও tokens.css-এর --bg-র সাথে মিলিয়ে রাখতে হবে (theme-color meta)
 export const THEME_BG: Record<string, string> = {
   light: "#faf9f5",
-  sepia: "#f7e0bc",
-  warm: "#eec58a",
+  sepia: "#f4ecd8",
+  warm: "#f7e8d0",
   dark: "#1c1b19",
   amoled: "#000000",
 };
