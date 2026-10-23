@@ -3,6 +3,7 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { parseBook, type BookWithId } from "./bookRepo";
+import { dayKey } from "../lib/datetime";
 
 export const SHELF_FILE = join(".build-data", "shelf.json");
 
@@ -27,6 +28,9 @@ export async function readShelf(path = SHELF_FILE): Promise<BookWithId[]> {
     }
   });
 }
+
+/** build-মুহূর্তের বছর (সাইট-timezone-এ) — 'এ বছর N বই'-এর জন্য; component-এর বাইরে, যাতে render-এ impure call না থাকে */
+export const buildYear = (timeZone: string): number => Number(dayKey(Date.now(), timeZone).slice(0, 4));
 
 let memo: Promise<BookWithId[]> | undefined;
 /** Next build-এর পাবলিক পেজের জন্য (প্রতি worker-এ ফাইল একবার পড়ে); ফাইল না থাকলে খালি */

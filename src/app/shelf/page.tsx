@@ -5,10 +5,9 @@ import { ShelfSection } from "@/components/public/ShelfBooks";
 import { safeSiteUrl } from "@/components/public/worksRoute";
 import { hasDefaultOgImage } from "@/data/publicAssets";
 import { getPublicSettings } from "@/data/publicSnapshot";
-import { getPublicShelf } from "@/data/shelfSnapshot";
+import { buildYear, getPublicShelf } from "@/data/shelfSnapshot";
 import { bn } from "@/i18n/bn";
 import { finishedInYear, publicShelf, SHELF_PATH } from "@/lib/books";
-import { dayKey } from "@/lib/datetime";
 import { buildSeo } from "@/lib/seo";
 
 // build-সময়ে static; ডেটা `.build-data/shelf.json` (শুধু পাবলিক বই) থেকে। প্রাইভেট বই ও উদ্ধৃতি এখানে কখনো আসে না
@@ -31,7 +30,7 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function ShelfPage() {
   const [books, { timezone }] = await Promise.all([getPublicShelf(), getPublicSettings()]);
   const g = publicShelf(books);
-  const year = Number(dayKey(Date.now(), timezone).slice(0, 4));
+  const year = buildYear(timezone);
   const yearCount = finishedInYear(g.finished, year);
   const empty = g.reading.length + g.finished.length + g.wishlist.length === 0;
   return (
