@@ -60,12 +60,11 @@ export function DiaryCalendar({ view, selected, timeZone }: { view: DiaryMonthVi
                         scroll={false}
                         data-day={c.key}
                         aria-current={selected === c.key ? "page" : undefined}
+                        data-sel={selected === c.key ? "true" : "false"}
                         className={base}
                       >
                         <span
-                          className={`${shape} border-[1.5px] border-accent-text font-semibold group-data-[today=true]:border-transparent ${
-                            selected === c.key ? "bg-btn-bg text-btn-tx group-data-[today=true]:ring-2 group-data-[today=true]:ring-today group-data-[today=true]:ring-offset-2 group-data-[today=true]:ring-offset-bg" : ""
-                          }`}
+                          className={`${shape} border-[1.5px] border-accent-text font-semibold group-data-[today=true]:border-transparent group-data-[sel=true]:bg-btn-bg group-data-[sel=true]:text-btn-tx group-data-[sel=true]:group-data-[today=true]:ring-2 group-data-[sel=true]:group-data-[today=true]:ring-today group-data-[sel=true]:group-data-[today=true]:ring-offset-2 group-data-[sel=true]:group-data-[today=true]:ring-offset-bg`}
                         >
                           {c.day.toLocaleString("bn-BD")}
                           <span aria-hidden="true" className="absolute inset-1.5 hidden rounded-full border-[1.5px] border-today-tx group-data-[today=true]:block" />

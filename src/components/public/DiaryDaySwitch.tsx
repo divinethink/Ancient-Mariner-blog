@@ -20,8 +20,7 @@ export function DiaryDaySwitch() {
       });
       document.querySelectorAll<HTMLElement>("[data-diary-cal] a[data-day]").forEach((a) => {
         const on = a.dataset.day === day;
-        a.classList.toggle("bg-btn-bg!", on);
-        a.classList.toggle("text-btn-tx!", on);
+        a.setAttribute("data-sel", on ? "true" : "false"); // আকৃতি/রং DiaryCalendar-এর ভেতরের সার্কেলে (group-data-[sel]); লিংক-বাক্সে নয়
         if (on) {
           if (a.getAttribute("aria-current") !== "date") a.setAttribute("aria-current", "page");
         } else if (a.getAttribute("aria-current") === "page") a.removeAttribute("aria-current");
