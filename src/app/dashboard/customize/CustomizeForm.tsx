@@ -325,7 +325,7 @@ export function CustomizeForm({ initialTab }: { initialTab?: Tab }) {
 
   return (
     <div className="space-y-6">
-      <div role="tablist" aria-label={t.tabsLabel} className="-m-1 flex gap-2 overflow-x-auto p-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div role="tablist" aria-label={t.tabsLabel} data-noswipe className="-mx-6 flex snap-x scroll-px-6 gap-2 overflow-x-auto overscroll-x-contain px-6 py-1 [mask-image:linear-gradient(to_right,#000_calc(100%_-_1.5rem),transparent)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden min-[1024px]:[mask-image:none]">
         {(["menu", "footer", "sidebar", "home", "design"] as const).map((k) => (
           <button
             key={k}
