@@ -126,3 +126,17 @@ describe("dryRun / runRestore", () => {
     expect(r).toMatchObject({ failedDocs: 1, failedChunks: 1, added: 1 });
   });
 });
+
+describe("comments — backup-এ আছে, client-restore-এ নয় (rules: client write false)", () => {
+  it("dry-run: comments-এর add=০; run: কিছু লেখে না, বাকি collection স্বাভাবিক", async () => {
+    const p = parsed({ posts: [e("p1")], comments: [e("c1"), e("c2")] });
+    const { t, writes } = target();
+    const plan = await dryRun(p, t);
+    expect(plan.rows.comments).toEqual({ total: 2, add: 0, existing: 0 });
+    expect(plan.add).toBe(1);
+    const r = await runRestore(p, t, { overwrite: true });
+    expect(writes).toEqual(["posts/p1"]);
+    expect(r.added).toBe(1);
+    expect(r.failedDocs).toBe(0);
+  });
+});

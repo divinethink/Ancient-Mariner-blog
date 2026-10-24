@@ -73,6 +73,25 @@ export function planRetention(folders: readonly DriveFolder[], now: Date): { kee
   return { keep, remove };
 }
 
+/** শ্রিঙ্ক-গার্ড: এই collection-গুলোর doc হঠাৎ কমলে স্বয়ংক্রিয় backup থামে (drafts বাদ — স্বাভাবিকভাবেই ওঠানামা করে) */
+export const SHRINK_GUARD_COLLECTIONS = ["posts", "chapters", "pages"] as const;
+export const SHRINK_MIN_PREV = 10; // আগে এর কম থাকলে গার্ড নিষ্ক্রিয় (ছোট সংখ্যায় শতাংশ অর্থহীন)
+export const SHRINK_MAX_DROP = 0.2; // ২০%-এর বেশি কমলে সন্দেহজনক
+
+export type Shrink = { col: string; prev: number; next: number };
+
+/** আগের সম্পূর্ণ backup-এর counts-এর তুলনায় সন্দেহজনক হ্রাসের তালিকা (খালি = ঠিক আছে) */
+export function findShrink(prev: Readonly<Record<string, number>> | undefined, next: Readonly<Record<string, number>>): Shrink[] {
+  if (!prev) return [];
+  const out: Shrink[] = [];
+  for (const col of SHRINK_GUARD_COLLECTIONS) {
+    const p = prev[col];
+    const n = next[col] ?? 0;
+    if (typeof p === "number" && p >= SHRINK_MIN_PREV && n < p * (1 - SHRINK_MAX_DROP)) out.push({ col, prev: p, next: n });
+  }
+  return out;
+}
+
 /** সর্বশেষ সফল backup ৩ দিনের বেশি পুরনো (বা একটাও নেই) হলে true; ঘড়ি পিছিয়ে থাকলে false */
 export const isBackupStale = (lastCompletedAt: Date | undefined, now: Date): boolean =>
   lastCompletedAt === undefined || now.getTime() - lastCompletedAt.getTime() > BACKUP_STALE_DAYS * DAY_MS;

@@ -117,6 +117,8 @@ const backupJobSchema = z.object({
   GOOGLE_OAUTH_CLIENT_SECRET: z.string().min(1),
   GOOGLE_OAUTH_REFRESH_TOKEN: z.string().min(1),
   BACKUP_TYPE: z.enum(["auto", "manual"]).default("manual"),
+  // ঐচ্ছিক: প্রতি ফাইল এই ফোল্ডারেও লেখা হয় (workflow এটা encrypt করে অফসাইট artifact বানায়)
+  BACKUP_LOCAL_DIR: z.string().min(1).optional(),
   OWNER_UID: z.string().optional(),
 });
 export const getBackupJobEnv = (source: unknown = process.env) => parse(backupJobSchema, source);

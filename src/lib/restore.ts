@@ -9,6 +9,10 @@ export const EXISTS_CHUNK = 30; // `documentId() in` সীমা
 /** rules-এ `slugs` update নিষিদ্ধ (uniqueness-lock) — overwrite-মোডেও বিদ্যমান slug ছোঁয়া হয় না */
 export const NEVER_OVERWRITE: ReadonlySet<string> = new Set(["slugs"]);
 
+/** backup-এ থাকে, কিন্তু client-restore-এ নয় — rules-এ client write `false` (comments শুধু privileged পথে লেখা হয়) */
+export const NON_RESTORABLE: ReadonlySet<string> = new Set(["comments"]);
+const RESTORABLE = BACKUP_COLLECTIONS.filter((c) => !NON_RESTORABLE.has(c));
+
 export type RestoreEntry = { id: string; data: Record<string, unknown> };
 export type ParsedBackup = {
   collections: Record<BackupCollection, RestoreEntry[]>;
@@ -147,6 +151,10 @@ export async function dryRun(p: ParsedBackup, t: RestoreTarget): Promise<DryRun>
   let existing = 0;
   for (const c of BACKUP_COLLECTIONS) {
     const entries = p.collections[c];
+    if (NON_RESTORABLE.has(c)) {
+      rows[c] = { total: entries.length, add: 0, existing: 0 };
+      continue;
+    }
     const ex = entries.length
       ? await existingOf(
           t,
@@ -186,9 +194,9 @@ export async function runRestore(
     failedDocs: 0,
     failedChunks: 0,
   };
-  const total = BACKUP_COLLECTIONS.reduce((s, c) => s + p.collections[c].length, 0);
+  const total = RESTORABLE.reduce((s, c) => s + p.collections[c].length, 0);
   let done = 0;
-  for (const c of BACKUP_COLLECTIONS) {
+  for (const c of RESTORABLE) {
     for (const part of chunkOf(p.collections[c], RESTORE_CHUNK)) {
       try {
         const ex = await existingOf(

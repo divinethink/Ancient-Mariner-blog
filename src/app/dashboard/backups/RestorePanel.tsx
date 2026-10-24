@@ -8,6 +8,7 @@ import { triggerSiteRebuild } from "@/data/rebuildClient";
 import { bn } from "@/i18n/bn";
 import { BACKUP_COLLECTIONS } from "@/lib/backup";
 import {
+  NON_RESTORABLE,
   RESTORE_MAX_BYTES,
   dryRun,
   parseBackupTexts,
@@ -130,7 +131,7 @@ export function RestorePanel() {
         <div className="space-y-3">
           <p>{t.summary(parsed.files, plan.total)}</p>
           <ul className="space-y-1 text-sm">
-            {BACKUP_COLLECTIONS.filter((c) => plan.rows[c].total > 0).map((c) => (
+            {BACKUP_COLLECTIONS.filter((c) => plan.rows[c].total > 0 && !NON_RESTORABLE.has(c)).map((c) => (
               <li key={c}>
                 {t.row(
                   bn.backup.col[c],

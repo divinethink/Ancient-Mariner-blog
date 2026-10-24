@@ -1,5 +1,7 @@
 // Drive auto-backup (P5b-২): GitHub Actions `backup.yml` থেকে চলে (Node, tsx) — Worker-এ নয় (CPU সীমা)।
 // Firestore শুধু পড়া + এক নতুন `backups` doc; Drive-এ তারিখ-ফোল্ডার লেখা; শেষে retention। ব্যর্থ হলে exit 1 (workflow লাল, owner-এর ৩ দিনের সতর্কতাও ধরে)।
+import { mkdir, writeFile } from "node:fs/promises";
+import { join } from "node:path";
 import { getBackupJobEnv } from "../src/config/env";
 import { createBackupDocWriter } from "../src/data/privileged/backupDoc";
 import { runBackupJob } from "../src/data/privileged/backupJob";
@@ -27,6 +29,25 @@ async function main() {
     refreshToken: env.GOOGLE_OAUTH_REFRESH_TOKEN,
   });
 
+  // আগের সবচেয়ে সাম্প্রতিক সম্পূর্ণ backup-এর counts (শ্রিঙ্ক-গার্ডের জন্য)
+  const prev = await db.runQuery({
+    from: [{ collectionId: "backups" }],
+    select: { fields: [{ fieldPath: "completedAt" }, { fieldPath: "counts" }] },
+    limit: 400,
+  });
+  const latest = prev.docs
+    .filter(
+      (d) =>
+        d.data.completedAt instanceof Date &&
+        typeof d.data.counts === "object" &&
+        d.data.counts !== null,
+    )
+    .sort(
+      (a, b) => (b.data.completedAt as Date).getTime() - (a.data.completedAt as Date).getTime(),
+    )[0];
+  const prevCounts = latest ? (latest.data.counts as Record<string, number>) : undefined;
+  if (env.BACKUP_LOCAL_DIR) await mkdir(env.BACKUP_LOCAL_DIR, { recursive: true });
+
   const r = await runBackupJob({
     readPage: createCollectionReader({ projectId: env.FIREBASE_PROJECT_ID, getToken }),
     drive,
@@ -45,6 +66,10 @@ async function main() {
         }));
     },
     type: env.BACKUP_TYPE,
+    prevCounts,
+    onFile: env.BACKUP_LOCAL_DIR
+      ? (name, content) => writeFile(join(env.BACKUP_LOCAL_DIR!, name), content, "utf8")
+      : undefined,
     ownerUid: env.OWNER_UID || undefined,
     log,
   });

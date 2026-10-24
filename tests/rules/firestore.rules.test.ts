@@ -58,7 +58,21 @@ describe("posts", () => {
     await assertFails(setDoc(doc(anon(), "posts", "b"), post()));
     await assertFails(updateDoc(doc(other(), "posts", "a"), { title: "হ্যাক" }));
     await assertFails(deleteDoc(doc(other(), "posts", "a")));
+    // স্থায়ী মোছা শুধু ট্র্যাশে-থাকা লেখায়; আগে ট্র্যাশ, তারপর মোছা ('ট্র্যাশ খালি করুন' পথ)
+    await assertFails(deleteDoc(doc(owner(), "posts", "a")));
+    await assertSucceeds(updateDoc(doc(owner(), "posts", "a"), { status: "trashed" }));
     await assertSucceeds(deleteDoc(doc(owner(), "posts", "a")));
+  });
+
+  it("(১ক) draft/published/archived পোস্ট সরাসরি মোছা যায় না; trashed যায়; non-owner trashed-ও পারে না", async () => {
+    await seed("posts", "d", post({ status: "draft" }));
+    await seed("posts", "p", post({ status: "published", visibility: "public" }));
+    await seed("posts", "r", post({ status: "archived" }));
+    await seed("posts", "t", post({ status: "trashed" }));
+    for (const id of ["d", "p", "r"]) await assertFails(deleteDoc(doc(owner(), "posts", id)));
+    await assertFails(deleteDoc(doc(other(), "posts", "t")));
+    await assertFails(deleteDoc(doc(anon(), "posts", "t")));
+    await assertSucceeds(deleteDoc(doc(owner(), "posts", "t")));
   });
 
   it("(২) ownerUid immutable ও অবৈধ মান/enum আটকায়", async () => {

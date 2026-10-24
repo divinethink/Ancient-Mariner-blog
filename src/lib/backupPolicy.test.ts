@@ -3,6 +3,7 @@ import {
   BACKUP_STALE_DAYS,
   backupFolderName,
   backupPartName,
+  findShrink,
   isBackupStale,
   parseBackupFolderName,
   planRetention,
@@ -98,5 +99,23 @@ describe("splitIntoParts / backupPartName", () => {
   it("ফাইল-নাম", () => {
     expect(backupPartName("posts", 1, 1)).toBe("posts.json");
     expect(backupPartName("posts", 2, 3)).toBe("posts-2.json");
+  });
+});
+
+describe("findShrink (শ্রিঙ্ক-গার্ড)", () => {
+  it("আগের backup না থাকলে বা সংখ্যা কম (<১০) হলে নিষ্ক্রিয়", () => {
+    expect(findShrink(undefined, { posts: 0 })).toEqual([]);
+    expect(findShrink({ posts: 9 }, { posts: 0 })).toEqual([]);
+  });
+  it("২০%-এর বেশি কমলে ধরে; ঠিক ২০% বা কম হলে ধরে না", () => {
+    expect(findShrink({ posts: 100 }, { posts: 79 })).toEqual([
+      { col: "posts", prev: 100, next: 79 },
+    ]);
+    expect(findShrink({ posts: 100 }, { posts: 80 })).toEqual([]);
+    expect(findShrink({ posts: 100 }, { posts: 150 })).toEqual([]);
+  });
+  it("collection অনুপস্থিত = ০ ধরে; drafts/অন্য collection উপেক্ষিত", () => {
+    expect(findShrink({ chapters: 50 }, {})).toEqual([{ col: "chapters", prev: 50, next: 0 }]);
+    expect(findShrink({ drafts: 50, ideas: 50 }, { drafts: 0, ideas: 0 })).toEqual([]);
   });
 });

@@ -115,3 +115,43 @@ describe("runBackupJob", () => {
     expect(uploads.some((u) => u.name === "notes.json")).toBe(true);
   });
 });
+
+describe("runBackupJob — শ্রিঙ্ক-গার্ড ও onFile", () => {
+  const many = (n: number) =>
+    Array.from({ length: n }, (_, i) => ({ id: `p${i}`, data: { ownerUid: "OWN", title: "t" } }));
+
+  it("auto: posts ১০০→৫০ ⇒ throw; backup doc লেখা বা কিছু মোছা হয় না", async () => {
+    const { deps, docs, deleted } = mk({ prevCounts: { posts: 100 } }, { posts: many(50) });
+    await expect(runBackupJob(deps)).rejects.toThrow(/সন্দেহজনক হ্রাস.*posts: 100→50/);
+    expect(docs).toHaveLength(0);
+    expect(deleted).toHaveLength(0);
+  });
+  it("manual: একই হ্রাসে গার্ড নেই — সম্পূর্ণ হয় (নতুন baseline)", async () => {
+    const { deps, docs } = mk({ type: "manual", prevCounts: { posts: 100 } }, { posts: many(50) });
+    await runBackupJob(deps);
+    expect(docs).toHaveLength(1);
+  });
+  it("auto: স্বাভাবিক (২০%-এর মধ্যে) বা prevCounts না থাকলে সম্পূর্ণ", async () => {
+    const a = mk({ prevCounts: { posts: 60 } }, { posts: many(50) });
+    await runBackupJob(a.deps);
+    expect(a.docs).toHaveLength(1);
+    const b = mk({}, { posts: many(50) });
+    await runBackupJob(b.deps);
+    expect(b.docs).toHaveLength(1);
+  });
+  it("onFile প্রতি যাচাইকৃত ফাইলে একবার; comments-ও backup হয়", async () => {
+    const seen: string[] = [];
+    const { deps } = mk(
+      { onFile: (n) => void seen.push(n) },
+      { posts, comments: [{ id: "c1", data: { postId: "p1", status: "approved" } }] },
+    );
+    await runBackupJob(deps);
+    expect(seen).toHaveLength(BACKUP_COLLECTIONS.length);
+    expect(seen).toContain("comments.json");
+  });
+  it("onFile ব্যর্থ ⇒ backup ব্যর্থ (doc লেখা নয়)", async () => {
+    const { deps, docs } = mk({ onFile: () => Promise.reject(new Error("disk")) }, { posts });
+    await expect(runBackupJob(deps)).rejects.toThrow("disk");
+    expect(docs).toHaveLength(0);
+  });
+});

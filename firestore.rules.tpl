@@ -75,7 +75,9 @@ service cloud.firestore {
       // পাবলিক query-তে explicit status/visibility filter বাধ্যতামূলক (Arch §২)
       allow read: if resource.data.status == 'published'
                   && resource.data.visibility in ['public', 'unlisted'];
-      allow read, delete: if isOwner();
+      allow read: if isOwner();
+      // স্থায়ী মোছা শুধু ট্র্যাশে-থাকা লেখায় (bug/চুরি-হওয়া session এক ধাপে লেখা মুছতে পারে না); 'ট্র্যাশ খালি করুন' এতে অক্ষত
+      allow delete: if isOwner() && resource.data.status == 'trashed';
       allow create: if isOwner() && validPost();
       allow update: if isOwner() && validPost()
                     && request.resource.data.ownerUid == resource.data.ownerUid;

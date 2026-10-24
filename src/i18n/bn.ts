@@ -124,6 +124,7 @@ export const bn = {
       quotes: "উদ্ধৃতি",
       trips: "ট্যুর লিস্ট",
       specialDays: "বিশেষ দিন",
+      comments: "মন্তব্য",
     } as Record<string, string>,
     estimate: (n: number, pct: number, limit: number) =>
       `~${n}টি read লাগবে — দিনের ${limit.toLocaleString("en-US")} read-সীমার ${pct}%।`,

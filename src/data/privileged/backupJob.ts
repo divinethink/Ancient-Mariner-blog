@@ -15,6 +15,7 @@ import {
   BACKUP_FOLDER_PREFIX,
   backupFolderName,
   backupPartName,
+  findShrink,
   planRetention,
   splitIntoParts,
   type DriveFolder,
@@ -39,6 +40,10 @@ export type BackupJobDeps = {
   /** আগের সম্পূর্ণ backup-গুলো (`backups` doc থেকে) — retention-এর 'complete' চিহ্নের উৎস */
   listCompleted(): Promise<{ driveFolderId: string; type?: "auto" | "manual" }[]>;
   type: "auto" | "manual";
+  /** আগের সম্পূর্ণ backup-এর counts — স্বয়ংক্রিয় (auto) backup-এ শ্রিঙ্ক-গার্ডের তুলনা; manual-এ গার্ড নেই (সচেতন সিদ্ধান্ত, নতুন baseline) */
+  prevCounts?: Record<string, number>;
+  /** প্রতি যাচাইকৃত ফাইল (আপলোডের পর) — অফসাইট/লোকাল কপির জন্য; ব্যর্থ হলে backup ব্যর্থ */
+  onFile?: (name: string, content: string) => void | Promise<void>;
   /** জানা না থাকলে পড়া doc-এর `ownerUid` থেকে নেওয়া হয় */
   ownerUid?: string;
   now?: () => Date;
@@ -101,6 +106,7 @@ export async function runBackupJob(deps: BackupJobDeps): Promise<BackupJobResult
       // যাচাই: Drive-এর নিজের জানানো আকার = আমাদের পাঠানো byte
       if (up.size !== byteLen(content))
         throw new Error(`${name}: আকার মেলেনি (Drive ${up.size ?? "?"} ≠ ${byteLen(content)})`);
+      await deps.onFile?.(name, content);
       files++;
     }
   }
@@ -108,6 +114,16 @@ export async function runBackupJob(deps: BackupJobDeps): Promise<BackupJobResult
   const total = totalDocs(counts);
   if (total === 0)
     throw new Error("সব collection খালি পড়া গেছে — সন্দেহজনক, backup বাতিল (কিছু মোছা হয়নি)");
+
+  // শ্রিঙ্ক-গার্ড (শুধু auto): হঠাৎ বড় হ্রাস = সম্ভাব্য ভুল-মোছা/bug — এই backup 'সম্পূর্ণ' চিহ্নিত নয়, retention-ও চলে না (ভালো পুরনো কপি অক্ষত)।
+  // বৈধ কারণে কমলে (যেমন ট্র্যাশ খালি) হাতে manual backup নিন — সেটাই নতুন baseline
+  if (deps.type === "auto") {
+    const shrink = findShrink(deps.prevCounts, counts);
+    if (shrink.length > 0)
+      throw new Error(
+        `সন্দেহজনক হ্রাস (${shrink.map((s) => `${s.col}: ${s.prev}→${s.next}`).join(", ")}) — backup বাতিল, কিছু মোছা হয়নি। ইচ্ছাকৃত হলে manual backup নিন`,
+      );
+  }
 
   const completedAt = now();
   const w = await deps.writeDoc(folderName, {
