@@ -4,6 +4,7 @@ import type { z } from "zod";
 import { getCloudinaryEnv } from "@/config/env";
 import { createLogger } from "@/lib/logger";
 import { isSameOrigin } from "@/lib/session";
+import { requireOwner } from "../requireOwner";
 
 export const noStore = { "Cache-Control": "no-store" };
 const log = createLogger();
@@ -14,6 +15,8 @@ export async function guard<S extends z.ZodType>(
   req: NextRequest,
   schema: S,
 ): Promise<{ ok: true; cfg: Cld; body: z.infer<S> } | { ok: false; res: NextResponse }> {
+  const denied = await requireOwner(req);
+  if (denied) return { ok: false as const, res: denied };
   const fail = (status: number, error: string, detail?: string) => ({
     ok: false as const,
     res: NextResponse.json(detail ? { error, detail } : { error }, { status, headers: noStore }),

@@ -11,6 +11,7 @@ import { dayKey } from "@/lib/datetime";
 import { bn } from "@/i18n/bn";
 import { createLogger } from "@/lib/logger";
 import { isSameOrigin } from "@/lib/session";
+import { requireOwner } from "../requireOwner";
 
 export const dynamic = "force-dynamic";
 
@@ -19,6 +20,8 @@ const noStore = { "Cache-Control": "no-store" };
 const fail = (error: string, status: number) => NextResponse.json({ error }, { status, headers: noStore });
 
 export async function POST(req: NextRequest) {
+  const denied = await requireOwner(req);
+  if (denied) return denied;
   let env: ReturnType<typeof getOwnerCommentEnv>;
   try {
     env = getOwnerCommentEnv();

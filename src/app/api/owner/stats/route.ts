@@ -5,6 +5,7 @@ import { getViewEnv } from "@/config/env";
 import { getCounterDb, readStats } from "@/data/counterRepo";
 import { createLogger } from "@/lib/logger";
 import { isStatsRange, statsWindow } from "@/lib/stats";
+import { requireOwner } from "../requireOwner";
 
 export const dynamic = "force-dynamic";
 
@@ -12,6 +13,8 @@ const log = createLogger();
 const noStore = { "Cache-Control": "no-store" };
 
 export async function GET(req: NextRequest) {
+  const denied = await requireOwner(req);
+  if (denied) return denied;
   const range = req.nextUrl.searchParams.get("range") ?? "7d";
   if (!isStatsRange(range)) return NextResponse.json({ error: "bad_range" }, { status: 400, headers: noStore });
   let tz: string;

@@ -5,6 +5,7 @@ import { getRebuildEnv } from "@/config/env";
 import { dispatchDeploy, dispatchDetail } from "@/data/privileged/githubDispatch";
 import { createLogger } from "@/lib/logger";
 import { isSameOrigin } from "@/lib/session";
+import { requireOwner } from "../requireOwner";
 
 export const dynamic = "force-dynamic";
 
@@ -12,6 +13,8 @@ const log = createLogger();
 const noStore = { "Cache-Control": "no-store" };
 
 export async function POST(req: NextRequest) {
+  const denied = await requireOwner(req);
+  if (denied) return denied;
   let env: ReturnType<typeof getRebuildEnv>;
   try {
     env = getRebuildEnv();
