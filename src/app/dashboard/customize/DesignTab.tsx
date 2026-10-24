@@ -63,10 +63,6 @@ export function DesignTab({ value, onChange }: { value: Design; onChange: (d: De
   // বর্তমান থিমেই প্রিভিউ (৫ থিমেই tokens মেলে); effect+setState নয় (lint) — সার্ভার-snapshot "light"
   const theme = useSyncExternalStore(noSubscribe, readTheme, () => "light");
   const set = (p: Partial<Design>) => onChange({ ...value, ...p });
-  // প্যালেট শুধু light/dark-এ কাজ করে: sepia/warm → light, amoled → dark হিসেবে দেখাই (classic-এ বর্তমান থিমই)
-  const darkish = theme === "dark" || theme === "amoled";
-  const pTheme = darkish ? "dark" : "light";
-  const previewTheme = value.palette === "classic" ? theme : pTheme;
 
   return (
     <section className="space-y-4" aria-label={bn.customize.tabDesign}>
@@ -84,7 +80,7 @@ export function DesignTab({ value, onChange }: { value: Design; onChange: (d: De
           <div>
             <h2 className={heading}>{t.palette}</h2>
             <p className="mb-2 text-sm text-muted">{t.paletteHint}</p>
-            <PaletteGrid current={value.palette} theme={pTheme} onPick={(palette) => set({ palette })} />
+            <PaletteGrid current={value.palette} theme={theme} onPick={(palette) => set({ palette })} />
           </div>
           <div>
             <h2 className={heading}>{t.accent}</h2>
@@ -116,7 +112,7 @@ export function DesignTab({ value, onChange }: { value: Design; onChange: (d: De
         <div className={preview ? "" : "hidden min-[1024px]:block"}>
           <h2 className="mb-2 font-serif text-lg font-bold">{t.previewTitle}</h2>
           <div
-            data-theme={previewTheme}
+            data-theme={theme}
             data-palette={value.palette}
             data-accent={value.accent}
             data-font={value.fontPair}

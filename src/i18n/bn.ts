@@ -604,8 +604,8 @@ export const bn = {
     design: {
       hint: "সাইটের রঙ, ফন্ট ও কার্ডের ধরন। পাশে/নিচে প্রিভিউ দেখুন; সেভ করলে সাইটে আসতে ~১–২ মিনিট লাগবে।",
       palette: "রঙের থিম",
-      paletteHint: "পুরো সাইট ও ড্যাশবোর্ডের রং। Light/Dark-এ প্রযোজ্য; Sepia/Warm/AMOLED পাঠকের নিজের পছন্দ হিসেবে অপরিবর্তিত।",
-      palettes: { classic: "ক্রিম-টেরাকোটা (ডিফল্ট)", slate: "গ্রিন স্লেট", oyster: "অয়েস্টার-ওয়ালনাট", midnight: "মধ্যরাতের নাবিক", paper: "কাগজ-কালি" },
+      paletteHint: "পুরো সাইট ও ড্যাশবোর্ডের রং; Light, Sepia, Warm, Dark, AMOLED — সব মোডেই কাজ করে।",
+      palettes: { classic: "ক্রিম-টেরাকোটা (ডিফল্ট)", slate: "গ্রিন স্লেট", oyster: "অয়েস্টার-ওয়ালনাট", midnight: "মধ্যরাতের নাবিক", paper: "কাগজ-কালি", nord: "নর্ড", gruvbox: "গ্রুভবক্স", rosepine: "রোজ-পাইন", catppuccin: "ক্যাটপুচিন", dhan: "ধানক্ষেত", pradip: "মাটির প্রদীপ", nodi: "নদী-ভোর" },
       accent: "মূল রঙ",
       font: "ফন্ট",
       card: "কার্ডের ধরন",

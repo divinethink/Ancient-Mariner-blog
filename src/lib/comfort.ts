@@ -56,10 +56,10 @@ export const THEME_BG: Record<string, string> = {
   amoled: "#000000",
 };
 
-/** theme-color meta-র রং: সাইটের প্যালেট (শুধু light/dark-এ) নইলে THEME_BG */
+/** theme-color meta-র রং: সাইটের প্যালেট (৫ মোডেই) নইলে THEME_BG */
 export function themeColor(t: string, palette: string | null | undefined): string {
   const pb = palette && palette !== "classic" ? PALETTE_BG[palette as Exclude<Palette, "classic">] : undefined;
-  const fromPalette = pb && (t === "light" || t === "dark") ? pb[t] : undefined;
+  const fromPalette = pb ? (pb as Record<string, string>)[t] : undefined;
   return fromPalette ?? THEME_BG[t] ?? THEME_BG.light!;
 }
 

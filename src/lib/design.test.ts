@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
-import { ACCENTS, CARD_STYLES, DEFAULT_DESIGN, FONT_PAIRS, PALETTES, PALETTE_BG, applyDesign, designMediaIds, resolveDesign } from "./design";
+import { ACCENTS, CARD_STYLES, DEFAULT_DESIGN, FONT_PAIRS, PALETTES, PALETTE_BG, PALETTE_MODES, applyDesign, designMediaIds, resolveDesign } from "./design";
 
 describe("resolveDesign", () => {
   it("খালি/অবৈধ ইনপুট ⇒ ডিফল্ট; আংশিক বৈধ মান রাখে", () => {
@@ -45,12 +45,12 @@ describe("প্যালেট bg-মিল (tokens.css ↔ PALETTE_BG ↔ them
   const css = readFileSync("src/theme/tokens.css", "utf8");
   const init = readFileSync("public/theme-init.js", "utf8");
   for (const [name, bg] of Object.entries(PALETTE_BG)) {
-    for (const t of ["light", "dark"] as const) {
+    for (const t of PALETTE_MODES) {
       it(`${name}/${t}`, () => {
         const rule = css.split("\n").find((l) => l.startsWith(`[data-palette="${name}"][data-theme="${t}"]`));
         expect(rule).toBeDefined();
         expect(rule).toContain(`--bg: ${bg[t]};`);
-        expect(init).toContain(`${name}: { light: "${bg.light}", dark: "${bg.dark}" }`);
+        expect(init).toContain(`${name}: { ` + PALETTE_MODES.map((m) => `${m}: "${bg[m]}"`).join(", ") + " }");
       });
     }
   }

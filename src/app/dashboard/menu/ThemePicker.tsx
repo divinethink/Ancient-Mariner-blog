@@ -4,7 +4,7 @@
 import { useSyncExternalStore } from "react";
 import { readThemePref, saveThemePref } from "@/data/comfortStore";
 import { bn } from "@/i18n/bn";
-import { THEME_BG, THEME_PREFS, type ThemePref } from "@/lib/comfort";
+import { THEME_PREFS, type ThemePref, themeColor } from "@/lib/comfort";
 
 const names = bn.editor.comfort;
 const LABEL: Record<ThemePref, string> = {
@@ -16,8 +16,11 @@ const LABEL: Record<ThemePref, string> = {
   amoled: names.themeAmoled,
 };
 // auto = আধা-আলো আধা-গাঢ় নমুনা
-const swatch = (k: ThemePref) =>
-  k === "auto" ? `linear-gradient(135deg, ${THEME_BG.light} 50%, ${THEME_BG.dark} 50%)` : THEME_BG[k];
+const swatch = (k: ThemePref, palette: string) =>
+  k === "auto" ? `linear-gradient(135deg, ${themeColor("light", palette)} 50%, ${themeColor("dark", palette)} 50%)` : themeColor(k, palette);
+// সাইটের প্যালেট (hydration-নিরাপদ: সার্ভারে classic)
+const noSubscribe = () => () => {};
+const readPalette = () => document.documentElement.getAttribute("data-palette") ?? "classic";
 
 // hydration-নিরাপদ: সার্ভারে "light", ক্লায়েন্টে আসল পছন্দ; বদলালে listener-দের জানানো
 const listeners = new Set<() => void>();
@@ -28,6 +31,7 @@ const subscribe = (fn: () => void) => {
 
 export function ThemePicker() {
   const theme = useSyncExternalStore(subscribe, readThemePref, () => "light");
+  const palette = useSyncExternalStore(noSubscribe, readPalette, () => "classic");
   const pick = (p: ThemePref) => {
     saveThemePref(p);
     listeners.forEach((fn) => fn());
@@ -49,7 +53,7 @@ export function ThemePicker() {
               <span
                 aria-hidden
                 className={`size-9 rounded-full border ${on ? "border-accent ring-2 ring-accent ring-offset-2 ring-offset-[var(--bg)]" : "border-line"}`}
-                style={{ background: swatch(k) }}
+                style={{ background: swatch(k, palette) }}
               />
               <span className={`whitespace-nowrap ${on ? "font-semibold text-accent-text" : "text-muted"}`}>{LABEL[k]}</span>
             </button>
