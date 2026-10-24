@@ -54,9 +54,4 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh workflow run ci.yml --ref main
-
-      # একই কারণে deploy-ও স্পষ্টভাবে চালু; concurrency (group: deploy) বলে একসাথে দুটো চলে না
-      - name: Trigger deploy
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh workflow run deploy.yml --ref main
+      # deploy এখানে আর সরাসরি চালু হয় না: ci সফল হলে deploy.yml নিজে (workflow_run) চলে — CI-gate এড়ানো যাবে না
