@@ -1,5 +1,5 @@
 // আরাম-সেটিং ও থিম-পছন্দ: পড়া/সংরক্ষণ/DOM-এ প্রয়োগ (প্রতি-ডিভাইস; Arch §১১)
-import { type Comfort, type ThemePref, THEME_BG, comfortVars, parseComfort, resolveTheme } from "@/lib/comfort";
+import { type Comfort, type ThemePref, comfortVars, parseComfort, resolveTheme, themeColor } from "@/lib/comfort";
 import { prefs } from "./localStore";
 
 const COMFORT_KEY = "comfort";
@@ -25,7 +25,7 @@ export function saveThemePref(p: ThemePref): void {
   prefs.set(THEME_KEY, p);
   const t = resolveTheme(p, window.matchMedia("(prefers-color-scheme: dark)").matches);
   document.documentElement.setAttribute("data-theme", t);
-  document.querySelector('meta[name="theme-color"]')?.setAttribute("content", THEME_BG[t] ?? THEME_BG.light);
+  document.querySelector('meta[name="theme-color"]')?.setAttribute("content", themeColor(t, document.documentElement.getAttribute("data-palette")));
 }
 
 const FOCUS_KEY = "focusMode";

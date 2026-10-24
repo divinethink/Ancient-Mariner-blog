@@ -1,6 +1,7 @@
 // লেখার ঘরের আরাম-সেটিং ও থিম-পছন্দের pure যুক্তি (Arch §১১) — SDK/UI-মুক্ত।
 // অবৈধ/ভাঙা মান সবসময় default-এ ফেরে (defensive read)।
 import { z } from "zod";
+import { PALETTE_BG, type Palette } from "./design";
 import { FONT_IDS, fontStack } from "./fonts";
 
 export const FONTS = FONT_IDS;
@@ -54,6 +55,13 @@ export const THEME_BG: Record<string, string> = {
   dark: "#1c1b19",
   amoled: "#000000",
 };
+
+/** theme-color meta-র রং: সাইটের প্যালেট (শুধু light/dark-এ) নইলে THEME_BG */
+export function themeColor(t: string, palette: string | null | undefined): string {
+  const pb = palette && palette !== "classic" ? PALETTE_BG[palette as Exclude<Palette, "classic">] : undefined;
+  const fromPalette = pb && (t === "light" || t === "dark") ? pb[t] : undefined;
+  return fromPalette ?? THEME_BG[t] ?? THEME_BG.light!;
+}
 
 /** Typewriter scroll: caret যেখানে থাকতে চায় (viewport-উচ্চতার অনুপাত) */
 export const TYPEWRITER_RATIO = 0.4;

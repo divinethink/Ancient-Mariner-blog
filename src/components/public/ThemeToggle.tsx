@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { Icon } from "@/components/icons";
 import { bn } from "@/i18n/bn";
-import { THEME_BG, THEME_PREFS, type ThemePref, resolveTheme } from "@/lib/comfort";
+import { THEME_PREFS, type ThemePref, resolveTheme, themeColor } from "@/lib/comfort";
 
 const names = bn.editor.comfort;
 const NAME: Record<ThemePref, string> = {
@@ -34,7 +34,7 @@ export function ThemeToggle({ inMenu = false }: { inMenu?: boolean }) {
     setPref(n);
     const t = resolveTheme(n, window.matchMedia("(prefers-color-scheme: dark)").matches);
     document.documentElement.setAttribute("data-theme", t);
-    document.querySelector('meta[name="theme-color"]')?.setAttribute("content", THEME_BG[t] ?? THEME_BG.light!);
+    document.querySelector('meta[name="theme-color"]')?.setAttribute("content", themeColor(t, document.documentElement.getAttribute("data-palette")));
     try {
       localStorage.setItem("theme", n);
     } catch {

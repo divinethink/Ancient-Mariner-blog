@@ -72,6 +72,16 @@
   --today: #6fb3d2;
   --today-tx: #000000;
 }
+/* পূর্ণ-প্যালেট (সাইট-design): <html data-palette="slate|oyster|midnight|paper"> — শুধু light ও dark ওভাররাইড (sepia/warm/amoled পাঠকের পছন্দ, অপরিবর্তিত); 'classic' = কোনো ওভাররাইড নেই।
+   AA ≥ ৪.৫:১ (লেখা/বোতাম), accent ≥ ৩:১ — স্ক্রিপ্টে গণনা-করা। accent-ব্লকের আগে, তাই [data-accent=teal] প্যালেটের accent/btn ওভাররাইড করে। --bg বদলালে design.ts-এর PALETTE_BG ও theme-init.js-এর PBG-ও মেলাতে হবে। */
+[data-palette="slate"][data-theme="light"] { color-scheme: light; --bg: #f6f5ee; --surface: #fcfbf6; --text: #232a1e; --muted: #5b6253; --accent: #6b7a55; --accent-text: #4a5838; --line: #e1e0d2; --btn-bg: #4a5838; --btn-tx: #ffffff; --today: #8a4b2f; --today-tx: #ffffff; }
+[data-palette="slate"][data-theme="dark"] { color-scheme: dark; --bg: #171b14; --surface: #20251c; --text: #e8eadf; --muted: #a4aa98; --accent: #9bb083; --accent-text: #aec497; --line: #2f362a; --btn-bg: #9bb083; --btn-tx: #171b14; --today: #d99a73; --today-tx: #171b14; }
+[data-palette="oyster"][data-theme="light"] { color-scheme: light; --bg: #eeece6; --surface: #f6f4ef; --text: #25221e; --muted: #625c55; --accent: #a67c52; --accent-text: #765536; --line: #dcd8ce; --btn-bg: #765536; --btn-tx: #ffffff; --today: #3f5a66; --today-tx: #ffffff; }
+[data-palette="oyster"][data-theme="dark"] { color-scheme: dark; --bg: #1d1c1a; --surface: #272522; --text: #ebe7df; --muted: #aaa49a; --accent: #c9a27a; --accent-text: #d6b38f; --line: #38352f; --btn-bg: #c9a27a; --btn-tx: #1d1c1a; --today: #8fb0bd; --today-tx: #1d1c1a; }
+[data-palette="midnight"][data-theme="light"] { color-scheme: light; --bg: #f5f2ea; --surface: #fbf9f3; --text: #14213a; --muted: #4f5973; --accent: #a87a22; --accent-text: #7f5c10; --line: #e2ddd0; --btn-bg: #14213a; --btn-tx: #ffffff; --today: #2a5a7a; --today-tx: #ffffff; }
+[data-palette="midnight"][data-theme="dark"] { color-scheme: dark; --bg: #0f1a2b; --surface: #17243a; --text: #e9edf5; --muted: #9fabc2; --accent: #d9a441; --accent-text: #e5b85c; --line: #25364f; --btn-bg: #d9a441; --btn-tx: #0f1a2b; --today: #7fb2d9; --today-tx: #0f1a2b; }
+[data-palette="paper"][data-theme="light"] { color-scheme: light; --bg: #fcfcfa; --surface: #ffffff; --text: #111111; --muted: #5a5a56; --accent: #2b4a8c; --accent-text: #213b73; --line: #e6e6e1; --btn-bg: #213b73; --btn-tx: #ffffff; --today: #a94e2f; --today-tx: #ffffff; }
+[data-palette="paper"][data-theme="dark"] { color-scheme: dark; --bg: #121212; --surface: #1b1b1b; --text: #ececec; --muted: #a3a3a0; --accent: #7da2e8; --accent-text: #94b3ee; --line: #2c2c2c; --btn-bg: #7da2e8; --btn-tx: #121212; --today: #e0805f; --today-tx: #121212; }
 /* সাইট-accent (P9b-১): <html data-accent="teal"> — শুধু accent/accent-text/btn ওভাররাইড; AA ≥ ৪.৫:১ (লেখা/বোতাম), accent ≥ ৩:১ — স্ক্রিপ্টে গণনা-করা।
    specificity: [data-accent][data-theme] > [data-theme] */
 [data-accent="teal"][data-theme="light"] { --accent: #2a8f8f; --accent-text: #0b6666; --btn-bg: #0b6666; --btn-tx: #ffffff; --today: #a94e2f; --today-tx: #ffffff; }

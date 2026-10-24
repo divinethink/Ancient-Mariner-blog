@@ -21,7 +21,7 @@ import {
   isValidTimeZone,
 } from "@/lib/siteSettings";
 import { bn } from "@/i18n/bn";
-import { ACCENTS, CARD_STYLES, DEFAULT_DESIGN, DEFAULT_HEAD, FONT_PAIRS, HEAD_FONTS, HEAD_SIZES, MEDIA_ID_MAX } from "@/lib/design";
+import { ACCENTS, CARD_STYLES, DEFAULT_DESIGN, DEFAULT_HEAD, FONT_PAIRS, HEAD_FONTS, HEAD_SIZES, MEDIA_ID_MAX, PALETTES } from "@/lib/design";
 import {
   FOOTER_LINKS_MAX,
   FOOTER_TEXT_MAX,
@@ -49,6 +49,7 @@ const MenuItemSchema = z
 
 // প্রতিটা উপ-ফিল্ড আলাদাভাবে `.catch` — একটা অজানা মান পুরো design নষ্ট করে না
 const DesignSchema = z.object({
+  palette: z.enum(PALETTES).catch(DEFAULT_DESIGN.palette), // পূর্ণ-প্যালেট (additive; পুরনো ডকে না থাকলে classic)
   accent: z.enum(ACCENTS).catch(DEFAULT_DESIGN.accent),
   fontPair: z.enum(FONT_PAIRS).catch(DEFAULT_DESIGN.fontPair),
   cardStyle: z.enum(CARD_STYLES).catch(DEFAULT_DESIGN.cardStyle),

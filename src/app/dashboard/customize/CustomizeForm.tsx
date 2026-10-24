@@ -168,6 +168,7 @@ export function CustomizeForm({ initialTab }: { initialTab?: Tab }) {
     footLinks.length === 0 &&
     JSON.stringify(cleanTitles(sidebar)) === JSON.stringify(resolveLayout([], DEFAULT_SIDEBAR)) &&
     JSON.stringify(home) === JSON.stringify(resolveLayout([], DEFAULT_HOME)) &&
+    design.palette === DEFAULT_DESIGN.palette &&
     design.accent === DEFAULT_DESIGN.accent &&
     design.fontPair === DEFAULT_DESIGN.fontPair &&
     design.cardStyle === DEFAULT_DESIGN.cardStyle;

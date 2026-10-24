@@ -12,7 +12,7 @@ async function main() {
   const next = applyDesign(applyDefaultTheme(await readFile(FILE, "utf8"), snap.settings.defaultTheme), snap.settings.design);
   await writeFile(FILE, next, "utf8");
   const d = snap.settings.design;
-  console.log(`✅ theme-init.js: default থিম = ${snap.settings.defaultTheme}; design = ${d.accent}/${d.fontPair}/${d.cardStyle}`);
+  console.log(`✅ theme-init.js: default থিম = ${snap.settings.defaultTheme}; design = ${d.palette}/${d.accent}/${d.fontPair}/${d.cardStyle}`);
 }
 
 main().catch((e) => {

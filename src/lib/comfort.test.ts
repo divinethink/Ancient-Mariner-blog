@@ -6,6 +6,7 @@ import {
   comfortVars,
   parseComfort,
   resolveTheme,
+  themeColor,
   typewriterDelta,
 } from "./comfort";
 
@@ -77,5 +78,16 @@ describe("resolveTheme", () => {
     expect(resolveTheme("sepia", true)).toBe("sepia");
     expect(resolveTheme("neon", true)).toBe("light");
     expect(resolveTheme(null, true)).toBe("light");
+  });
+});
+
+describe("themeColor", () => {
+  it("classic/অনুপস্থিত = THEME_BG; প্যালেট শুধু light/dark-এ", () => {
+    expect(themeColor("light", null)).toBe(THEME_BG.light);
+    expect(themeColor("dark", "classic")).toBe(THEME_BG.dark);
+    expect(themeColor("light", "midnight")).toBe("#f5f2ea");
+    expect(themeColor("dark", "midnight")).toBe("#0f1a2b");
+    expect(themeColor("sepia", "midnight")).toBe(THEME_BG.sepia);
+    expect(themeColor("light", "bogus")).toBe(THEME_BG.light);
   });
 });
