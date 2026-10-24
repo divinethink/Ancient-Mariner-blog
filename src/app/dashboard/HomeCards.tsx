@@ -45,46 +45,53 @@ export function ResumeGoalCard({ latest }: { latest: { id: string; title: string
   }, [tz]);
   const showGoal = !!prefs?.goal;
   const pct = goalPercent(words, DEFAULT_GOAL);
-  const goal = showGoal ? (
-    <span className="mt-2 block">
-      <span className="flex items-center justify-between gap-2 text-sm">
-        <span>{bn.home.goalWords(words, DEFAULT_GOAL)}</span>
-        <span aria-hidden>{bnNum(pct)}%</span>
-      </span>
-      <span
-        role="progressbar"
-        aria-label={bn.home.goalTitle}
-        aria-valuemin={0}
-        aria-valuemax={100}
-        aria-valuenow={pct}
-        className="mt-1 block h-1.5 overflow-hidden rounded-full"
-        style={{ background: "color-mix(in srgb, currentColor 25%, transparent)" }}
-      >
-        <span className="block h-full rounded-full bg-current" style={{ width: `${pct}%` }} />
-      </span>
+  const stat = showGoal ? (
+    <span className="shrink-0 text-xs opacity-90">
+      {bn.home.goalWords(words, DEFAULT_GOAL)} · <span aria-hidden>{bnNum(pct)}%</span>
     </span>
   ) : null;
-  if (!latest) return goal ? <div className="h-full rounded-2xl border border-line bg-surface p-4">{goal}</div> : null;
+  const bar = showGoal ? (
+    <span
+      role="progressbar"
+      aria-label={bn.home.goalTitle}
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-valuenow={pct}
+      className="mt-1.5 block h-1 overflow-hidden rounded-full"
+      style={{ background: "color-mix(in srgb, currentColor 25%, transparent)" }}
+    >
+      <span className="block h-full rounded-full bg-current" style={{ width: `${pct}%` }} />
+    </span>
+  ) : null;
+  if (!latest)
+    return showGoal ? (
+      <div className="rounded-2xl border border-line bg-surface px-4 py-3">
+        <span className="flex text-sm">{stat}</span>
+        {bar}
+      </div>
+    ) : null;
   return (
-    <Link href={`/dashboard/posts/${latest.id}/edit`} className="block h-full min-w-0 rounded-2xl bg-btn-bg p-4 text-btn-tx">
-      <span className="text-sm opacity-90">▶ {bn.library.resume}</span>
-      <span className="block truncate font-serif text-lg font-bold">{latest.title || bn.library.untitled}</span>
-      {goal}
+    <Link href={`/dashboard/posts/${latest.id}/edit`} className="block rounded-2xl bg-btn-bg px-4 py-3 text-btn-tx">
+      <span className="flex items-center justify-between gap-2">
+        <span className="text-xs opacity-90">▶ {bn.library.resume}</span>
+        {stat}
+      </span>
+      <span className="block truncate font-serif text-lg font-bold leading-snug">{latest.title || bn.library.untitled}</span>
+      {bar}
     </Link>
   );
 }
 
-/** হোমের ওপরের সারি: বামে চালিয়ে যান (+লক্ষ্য), ডানে 'আজকের একটি কাজ' (চালু থাকলে); একটা না থাকলে অন্যটা পুরো চওড়ায় */
+/** হোমের ওপরের দুই কার্ড: চালিয়ে যান (+লক্ষ্য), তার নিচে 'আজকের একটি কাজ' (চালু থাকলে) — কম উচ্চতা */
 export function HomeTopRow({ latest }: { latest: { id: string; title: string } | null }) {
   const prefs = useHomeCards();
   const daily = !!prefs?.daily;
   const hasResume = !!latest || !!prefs?.goal;
   if (!hasResume && !daily) return null;
-  const split = hasResume && daily;
   return (
-    <div className={`mb-4 grid gap-3 ${split ? "grid-cols-[3fr_2fr]" : ""}`}>
+    <div className="mb-4 space-y-2">
       {hasResume && <ResumeGoalCard latest={latest} />}
-      {daily && <DailyTask compact={split} />}
+      {daily && <DailyTask />}
     </div>
   );
 }
@@ -168,17 +175,21 @@ function UpcomingDays() {
 }
 
 /** 'আজকের একটি কাজ': দিন-অনুযায়ী একটাই ছোট সুপারিশ (ডিফল্ট বন্ধ; Settings-এ চালু)। গোনা/streak/অপরাধবোধ নেই */
-function DailyTask({ compact = false }: { compact?: boolean }) {
+function DailyTask() {
   const tz = useSiteTimezone();
   const [today] = useState(() => dayKey(Date.now(), tz));
   const t = dailyTaskFor(today);
   return (
-    <Link href={t.href} className="flex h-full min-h-11 min-w-0 items-center justify-between gap-2 rounded-2xl border border-line bg-surface p-4">
-      <span className="min-w-0">
-        <span className="block text-sm text-muted">🎯 {bn.home.dailyTitle}</span>
-        <span className={compact ? "font-serif text-base" : "font-serif text-lg"}>{bn.home.dailyTasks[t.id]}</span>
+    <Link
+      href={t.href}
+      aria-label={`${bn.home.dailyTitle}: ${bn.home.dailyTasks[t.id]}`}
+      className="flex min-h-11 items-center justify-between gap-2 rounded-2xl border border-line bg-surface px-4 py-2"
+    >
+      <span className="min-w-0 truncate">
+        <span aria-hidden>🎯 </span>
+        <span className="font-serif text-base">{bn.home.dailyTasks[t.id]}</span>
       </span>
-      {!compact && <span aria-hidden="true">→</span>}
+      <span aria-hidden="true">→</span>
     </Link>
   );
 }
