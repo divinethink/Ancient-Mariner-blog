@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { convertIdeaToPost } from "@/data/ideaConvert";
 import type { IdeaWithId } from "@/data/ideaRepo";
 import { getIdeaRepo } from "@/data/ideaRepo.wire";
@@ -18,11 +18,8 @@ import { bn } from "@/i18n/bn";
 import { dayKey } from "@/lib/datetime";
 import { DEFAULT_GOAL, goalPercent, pickRandom } from "@/lib/goal";
 import { dailyTaskFor } from "@/lib/dailyTask";
-import { newId } from "@/lib/id";
-import { ideaToPostSeed } from "@/lib/idea";
 import { sortUpcoming, yearsAt } from "@/lib/specialDays";
 import { daysSince, isSnoozed, pickStaleDraft } from "@/lib/staleDrafts";
-import { PROMPT_TYPES, writingPromptFor, type PromptType } from "@/lib/writingPrompts";
 import { OnThisDay } from "./OnThisDay";
 import { useSiteTimezone } from "./SiteSettingsProvider";
 import { useHomeCards } from "./useHomeCards";
@@ -88,7 +85,6 @@ export function HomeCards() {
       {prefs.daily && <DailyTask />}
       {prefs.pick && <StaleDraft />}
       {prefs.pick && <IdeaPick />}
-      {prefs.pick && <PromptCard />}
       <OnThisDay />
     </div>
   );
@@ -212,66 +208,6 @@ function StaleDraft() {
           className="min-h-11 rounded-full border border-line px-4 text-sm"
         >
           {bn.home.staleLater}
-        </button>
-      </div>
-    </section>
-  );
-}
-
-/** ধরন বেছে হালকা প্রম্পট; [এটা নিয়ে লিখুন] = ঐ ধরনের নতুন খসড়া (প্রম্পট প্রথম অনুচ্ছেদে) */
-function PromptCard() {
-  const router = useRouter();
-  const tz = useSiteTimezone();
-  const [today] = useState(() => dayKey(Date.now(), tz));
-  const [type, setType] = useState<PromptType>("story");
-  const [shift, setShift] = useState(0);
-  const [busy, setBusy] = useState(false);
-  const [err, setErr] = useState(false);
-  const idRef = useRef("");
-  const prompt = writingPromptFor(type, today, shift);
-
-  async function write() {
-    if (busy) return;
-    if (!idRef.current) idRef.current = newId(); // ব্যর্থ হলে একই id-তে retry ⇒ duplicate খসড়া হয় না
-    setBusy(true);
-    setErr(false);
-    try {
-      const seed = ideaToPostSeed({ text: prompt });
-      const post = await (await getPostRepo()).create({ id: idRef.current, title: "", body: seed.body, excerpt: seed.excerpt, wordCount: seed.wordCount, contentType: type });
-      router.push(`/dashboard/posts/${post.id}/edit`);
-    } catch {
-      setErr(true);
-      setBusy(false);
-    }
-  }
-
-  return (
-    <section aria-label={bn.home.promptTitle} className="rounded-2xl border border-line bg-surface p-4">
-      <h2 className="mb-2 text-sm text-muted">✍️ {bn.home.promptTitle}</h2>
-      <div className="mb-2 flex flex-wrap gap-2" role="group" aria-label={bn.home.promptTitle}>
-        {PROMPT_TYPES.map((t) => (
-          <button
-            key={t}
-            type="button"
-            aria-pressed={type === t}
-            onClick={() => {
-              setType(t);
-              setShift(0);
-            }}
-            className={`min-h-11 rounded-full px-4 text-sm ${type === t ? "bg-btn-bg text-btn-tx" : "border border-line"}`}
-          >
-            {bn.home.promptTypes[t]}
-          </button>
-        ))}
-      </div>
-      <p className="font-serif text-lg">{prompt}</p>
-      {err && <p role="alert" className="mt-2 text-accent-text">{bn.home.promptFailed}</p>}
-      <div className="mt-2 flex flex-wrap gap-2">
-        <button type="button" onClick={() => void write()} aria-disabled={busy} className="min-h-11 rounded-full bg-btn-bg px-4 text-sm text-btn-tx aria-disabled:opacity-60">
-          {bn.home.promptWrite}
-        </button>
-        <button type="button" onClick={() => setShift((n) => n + 1)} className="min-h-11 rounded-full border border-line px-4 text-sm">
-          {bn.home.promptAnother}
         </button>
       </div>
     </section>
