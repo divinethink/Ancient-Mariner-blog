@@ -1,0 +1,34 @@
+name: verify-prod
+
+# শুধু-পড়া (read-only) Production যাচাই — কিছু লেখে/মোছে না। Actions → verify-prod → Run workflow (বা সাপ্তাহিক স্বয়ংক্রিয়)।
+# ১) live Firestore rules = repo-র rules? ২) নামহীন client কী পড়তে পারে (probe)? ৩) সর্বশেষ backup ৩ দিনের মধ্যে?
+# কোনো check ব্যর্থ হলে workflow লাল হয় ⇒ GitHub আপনাকে ইমেইলে জানায়।
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '30 21 * * 0' # প্রতি রবিবার 21:30 UTC = ঢাকায় সোমবার ভোর ৩:৩০
+
+permissions:
+  contents: read
+
+concurrency:
+  group: verify-prod
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      FIREBASE_PROJECT_ID: ancientmarinerblog
+      FIREBASE_SERVER_API_KEY: ${{ secrets.FIREBASE_SERVER_API_KEY }}
+      FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+      OWNER_UID: ${{ secrets.OWNER_UID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx tsx scripts/verify-prod.ts
