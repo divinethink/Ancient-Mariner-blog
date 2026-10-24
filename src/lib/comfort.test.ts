@@ -87,7 +87,7 @@ describe("themeColor", () => {
     expect(themeColor("dark", "classic")).toBe(THEME_BG.dark);
     expect(themeColor("light", "midnight")).toBe("#f5f2ea");
     expect(themeColor("dark", "midnight")).toBe("#0f1a2b");
-    expect(themeColor("sepia", "midnight")).toBe("#f4eedf");
+    expect(themeColor("sepia", "midnight")).toBe(THEME_BG.sepia); // পাঠ-মোড থিম-নিরপেক্ষ
     expect(themeColor("amoled", "nord")).toBe("#000000");
     expect(themeColor("light", "bogus")).toBe(THEME_BG.light);
   });

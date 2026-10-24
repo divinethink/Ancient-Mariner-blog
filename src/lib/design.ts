@@ -52,21 +52,21 @@ export function designMediaIds(d: Partial<DesignMedia>): string[] {
   return [...new Set([d.logoMediaId, d.bannerMediaId].filter((x): x is string => !!x))];
 }
 
-/** প্যালেটের --bg (theme-color meta-র জন্য; ৫ মোডেই); tokens.css ও public/theme-init.js-এর PBG-র সাথে মেলাতে হয় (design.test.ts মেলায়)। classic = THEME_BG */
-export const PALETTE_MODES = ["light", "sepia", "warm", "dark", "amoled"] as const;
+/** প্যালেটের --bg (theme-color meta-র জন্য; শুধু light/dark — sepia/warm/amoled পাঠ-মোডের পটভূমি থিম-নিরপেক্ষ, শুধু accent থিমের); tokens.css ও public/theme-init.js-এর PBG-র সাথে মেলাতে হয় (design.test.ts মেলায়)। classic = THEME_BG */
+export const PALETTE_MODES = ["light", "dark"] as const;
 export type PaletteMode = (typeof PALETTE_MODES)[number];
 export const PALETTE_BG: Record<Exclude<Palette, "classic">, Record<PaletteMode, string>> = {
-  slate: { light: "#f6f5ee", sepia: "#f5f0e1", warm: "#f7eddc", dark: "#171b14", amoled: "#000000" },
-  oyster: { light: "#eeece6", sepia: "#f2ecde", warm: "#f3ead9", dark: "#1d1c1a", amoled: "#000000" },
-  midnight: { light: "#f5f2ea", sepia: "#f4eedf", warm: "#f6ecda", dark: "#0f1a2b", amoled: "#000000" },
-  paper: { light: "#fcfcfa", sepia: "#f7f2e6", warm: "#f9f0e1", dark: "#121212", amoled: "#000000" },
-  nord: { light: "#eceff4", sepia: "#f1ede3", warm: "#f3ebde", dark: "#2e3440", amoled: "#000000" },
-  gruvbox: { light: "#fbf1c7", sepia: "#f7eed1", warm: "#f9eccc", dark: "#282828", amoled: "#000000" },
-  rosepine: { light: "#faf4ed", sepia: "#f6efe0", warm: "#f8eddc", dark: "#191724", amoled: "#000000" },
-  catppuccin: { light: "#eff1f5", sepia: "#f2eee4", warm: "#f4ecdf", dark: "#1e1e2e", amoled: "#000000" },
-  dhan: { light: "#f7f4df", sepia: "#f5efdb", warm: "#f7edd6", dark: "#151a10", amoled: "#000000" },
-  pradip: { light: "#f6ebdc", sepia: "#f5ecda", warm: "#f7e9d5", dark: "#1a110a", amoled: "#000000" },
-  nodi: { light: "#fbf1ec", sepia: "#f7eee0", warm: "#f9ecdb", dark: "#131c2a", amoled: "#000000" },
+  slate: { light: "#f6f5ee", dark: "#171b14" },
+  oyster: { light: "#eeece6", dark: "#1d1c1a" },
+  midnight: { light: "#f5f2ea", dark: "#0f1a2b" },
+  paper: { light: "#fcfcfa", dark: "#121212" },
+  nord: { light: "#eceff4", dark: "#2e3440" },
+  gruvbox: { light: "#fbf1c7", dark: "#282828" },
+  rosepine: { light: "#faf4ed", dark: "#191724" },
+  catppuccin: { light: "#eff1f5", dark: "#1e1e2e" },
+  dhan: { light: "#f7f4df", dark: "#151a10" },
+  pradip: { light: "#f6ebdc", dark: "#1a110a" },
+  nodi: { light: "#fbf1ec", dark: "#131c2a" },
 };
 
 const DESIGN_MARK = /var DESIGN = \{[^}\n]*\};/;
