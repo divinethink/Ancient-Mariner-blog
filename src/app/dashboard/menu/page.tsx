@@ -16,7 +16,7 @@ export default function MenuPage() {
         </li>
         <MenuRow href="/dashboard/search" icon="search" label={bn.search.navLabel} />
         <MenuRow href="/dashboard/trips" icon="globe" label={bn.trips.menu} />
-        <MenuRow href="/dashboard/days" icon="bookmark" label={bn.days.menu} />
+        <MenuRow href="/dashboard/days" icon="calendar" label={bn.days.menu} />
         <MenuRow href="/dashboard/review" icon="diary" label={bn.review.menu} />
         <MenuRow href="/dashboard/shelf" icon="projects" label={bn.shelf.menu} />
         <MenuRow href="/dashboard/letters" icon="mail" label={bn.letters.menu} />

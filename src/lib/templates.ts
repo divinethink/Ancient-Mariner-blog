@@ -3,7 +3,7 @@ import { EMPTY_DOC, type DocNode } from "./editorDoc";
 
 export const TEMPLATE_NAME_MAX = 60;
 export const TEMPLATES_PAGE = 50;
-export const BUILTIN_IDS = ["diary", "travel", "story", "poem"] as const;
+export const BUILTIN_IDS = ["travel", "story", "poem"] as const;
 export type BuiltinId = (typeof BUILTIN_IDS)[number];
 
 export type TemplateDef = { ref: string; name: string; title: string; doc: DocNode };
@@ -18,13 +18,8 @@ const doc = (...content: DocNode[]): DocNode => ({ type: "doc", content });
 
 /** `today` = দেখানোর তারিখ-লেবেল (call-site সাইট-timezone-এ বানায়; এখানে ঘড়ি নেই) */
 export function builtinTemplates(today: string): TemplateDef[] {
+  void today; // এখন কোনো বিল্ট-ইনে তারিখ-লেবেল নেই; call-site অপরিবর্তিত রাখতে প্যারামিটার থাকল
   return [
-    {
-      ref: "b:diary",
-      name: "আজকের ডায়েরি",
-      title: `ডায়েরি — ${today}`,
-      doc: doc(h2("আজ যা ঘটল"), p(), h2("যা ভাবছি"), p(), h2("কাল"), p()),
-    },
     {
       ref: "b:travel",
       name: "ভ্রমণ",

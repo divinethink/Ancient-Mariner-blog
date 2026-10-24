@@ -1,23 +1,21 @@
 import { describe, expect, it } from "vitest";
-import { parseBody, docToText } from "./editorDoc";
+import { parseBody } from "./editorDoc";
 import {
   BUILTIN_IDS,
   TEMPLATE_NAME_MAX,
-  builtinFor,
   builtinTemplates,
   cleanTemplateName,
   parseTplParam,
 } from "./templates";
 
 describe("builtinTemplates", () => {
-  it("চারটি; ref অনন্য; প্রতিটির doc allowlist-sanitize-এ অক্ষত", () => {
+  it("তিনটি; ref অনন্য; প্রতিটির doc allowlist-sanitize-এ অক্ষত", () => {
     const t = builtinTemplates("১০ অক্টোবর ২০২৬");
-    expect(t.map((x) => x.ref)).toEqual(["b:diary", "b:travel", "b:story", "b:poem"]);
+    expect(t.map((x) => x.ref)).toEqual(["b:travel", "b:story", "b:poem"]);
     for (const x of t) expect(parseBody(JSON.stringify(x.doc))).toEqual(x.doc);
   });
-  it("ডায়েরির শিরোনামে আজকের তারিখ-লেবেল", () => {
-    expect(builtinFor("diary", "১০ অক্টোবর").title).toBe("ডায়েরি — ১০ অক্টোবর");
-    expect(docToText(builtinFor("diary", "x").doc)).toContain("আজ যা ঘটল");
+  it("বাদ-দেওয়া diary টেমপ্লেট এখন অচেনা", () => {
+    expect(parseTplParam("b:diary")).toBeNull();
   });
 });
 

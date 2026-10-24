@@ -1655,7 +1655,7 @@ export const bn = {
     newPost: "নতুন লেখা",
     newChapter: "নতুন অধ্যায়",
     fromTemplate: "টেমপ্লেট থেকে লিখুন",
-    fromTemplateHint: "ডায়েরি, ভ্রমণ, গল্প, কবিতা — আগে থেকে সাজানো লেখা",
+    fromTemplateHint: "ভ্রমণ, গল্প, কবিতা — আগে থেকে সাজানো লেখা",
     templatesTitle: "টেমপ্লেট বাছুন",
     templatesBack: "← ফিরুন",
     templatesMine: "আমার টেমপ্লেট",

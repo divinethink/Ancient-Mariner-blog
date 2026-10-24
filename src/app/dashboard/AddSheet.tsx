@@ -307,10 +307,6 @@ export function AddProvider({ children }: { children: ReactNode }) {
                   <span aria-hidden>💡</span>
                   {t.quickTitle}
                 </button>
-                <button type="button" onClick={() => setMode("diary")} className={row}>
-                  <span aria-hidden>📔</span>
-                  {d.sheetEntry}
-                </button>
               </div>
             ) : mode === "templates" ? (
               <TemplatePicker
