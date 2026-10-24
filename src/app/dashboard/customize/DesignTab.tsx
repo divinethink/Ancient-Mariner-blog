@@ -6,7 +6,7 @@ import { useState, useSyncExternalStore } from "react";
 import type { SiteSettings } from "@/data/siteSettingsRepo";
 import { Segmented } from "@/components/ui/Segmented";
 import { bn } from "@/i18n/bn";
-import { ACCENTS, CARD_STYLES, FONT_PAIRS, PALETTES } from "@/lib/design";
+import { CARD_STYLES, DEFAULT_DESIGN, FONT_PAIRS, PALETTES } from "@/lib/design";
 import { CoverPicker } from "../posts/[postId]/edit/CoverPicker";
 
 type Design = SiteSettings["design"];
@@ -38,26 +38,6 @@ function PaletteGrid({ current, theme, onPick }: { current: Design["palette"]; t
   );
 }
 
-/** মূল রঙের swatch-grid: রঙ আসে বিদ্যমান টোকেন থেকে (data-accent + data-theme), নতুন hardcode নয় */
-function AccentGrid({ current, theme, onPick }: { current: Design["accent"]; theme: string; onPick: (v: Design["accent"]) => void }) {
-  return (
-    <div role="group" aria-label={t.accent} className="grid grid-cols-2 gap-2 min-[420px]:grid-cols-3">
-      {ACCENTS.map((v) => (
-        <button
-          key={v}
-          type="button"
-          aria-pressed={current === v}
-          onClick={() => onPick(v)}
-          className={`flex min-h-11 items-center gap-2 rounded-2xl border bg-surface px-3 py-2 text-left ${current === v ? "border-accent font-semibold" : "border-line"}`}
-        >
-          <span aria-hidden="true" data-accent={v} data-theme={theme} className="size-7 shrink-0 rounded-full border border-line bg-accent" />
-          <span className="min-w-0 text-sm">{t.accents[v]}</span>
-        </button>
-      ))}
-    </div>
-  );
-}
-
 export function DesignTab({ value, onChange }: { value: Design; onChange: (d: Design) => void }) {
   const [preview, setPreview] = useState(false); // শুধু মোবাইলে অর্থবহ
   // বর্তমান থিমেই প্রিভিউ (৫ থিমেই tokens মেলে); effect+setState নয় (lint) — সার্ভার-snapshot "light"
@@ -80,11 +60,7 @@ export function DesignTab({ value, onChange }: { value: Design; onChange: (d: De
           <div>
             <h2 className={heading}>{t.palette}</h2>
             <p className="mb-2 text-sm text-muted">{t.paletteHint}</p>
-            <PaletteGrid current={value.palette} theme={theme} onPick={(palette) => set({ palette })} />
-          </div>
-          <div>
-            <h2 className={heading}>{t.accent}</h2>
-            <AccentGrid current={value.accent} theme={theme} onPick={(accent) => set({ accent })} />
+            <PaletteGrid current={value.palette} theme={theme} onPick={(palette) => set({ palette, accent: DEFAULT_DESIGN.accent })} />
           </div>
           <div>
             <h2 className={heading}>{t.font}</h2>
