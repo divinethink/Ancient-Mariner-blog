@@ -19,6 +19,8 @@ jobs:
       GOOGLE_OAUTH_CLIENT_SECRET: ${{ secrets.GOOGLE_OAUTH_CLIENT_SECRET }}
       GOOGLE_OAUTH_REFRESH_TOKEN: ${{ secrets.GOOGLE_OAUTH_REFRESH_TOKEN }}
       BACKUP_TYPE: ${{ github.event_name == 'schedule' && 'auto' || 'manual' }}
+      # অফসাইট (Google-বহির্ভূত) encrypted কপি: secret BACKUP_PASSPHRASE না থাকলে এই অংশ বাদ যায় (Drive-backup অক্ষত)
+      BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -27,3 +29,23 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx tsx scripts/backup.ts
+        env:
+          BACKUP_LOCAL_DIR: ${{ runner.temp }}/backup-out
+      - name: অফসাইট কপি — secret নেই
+        if: ${{ success() && env.BACKUP_PASSPHRASE == '' }}
+        run: echo "::warning::BACKUP_PASSPHRASE secret নেই — Google-বহির্ভূত encrypted কপি তৈরি হয়নি"
+      - name: অফসাইট কপি — encrypt (AES-256, PBKDF2)
+        if: ${{ success() && env.BACKUP_PASSPHRASE != '' }}
+        run: |
+          set -euo pipefail
+          tar -C "$RUNNER_TEMP/backup-out" -cf - . | openssl enc -aes-256-cbc -pbkdf2 -iter 600000 -salt \
+            -pass env:BACKUP_PASSPHRASE -out "$RUNNER_TEMP/offsite-backup-$(date -u +%Y%m%d-%H%M).tar.enc"
+          ls -l "$RUNNER_TEMP"/offsite-backup-*.tar.enc
+      - name: অফসাইট কপি — private artifact (৯০ দিন)
+        if: ${{ success() && env.BACKUP_PASSPHRASE != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: offsite-backup-encrypted
+          path: ${{ runner.temp }}/offsite-backup-*.tar.enc
+          retention-days: 90
+          if-no-files-found: error
