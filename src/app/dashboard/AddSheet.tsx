@@ -360,10 +360,6 @@ export function AddProvider({ children }: { children: ReactNode }) {
                     <span className="text-xs font-normal text-muted">{t.fromTemplateHint}</span>
                   </span>
                 </button>
-                <button type="button" onClick={() => setMode("idea")} className={row}>
-                  <span aria-hidden>💡</span>
-                  {t.quickTitle}
-                </button>
               </div>
             ) : mode === "templates" ? (
               <TemplatePicker
