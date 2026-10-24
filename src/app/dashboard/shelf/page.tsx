@@ -6,7 +6,7 @@ import { ShelfView } from "./ShelfView";
 export default function ShelfPage() {
   return (
     <>
-      <MenuBack />
+      <MenuBack to="library" />
       <h1 className="mb-2 font-serif text-3xl font-bold">{bn.shelf.title}</h1>
       <p className="mb-1 text-sm text-muted">{bn.shelf.intro}</p>
       <p className="mb-2 text-sm text-muted">{bn.shelf.intro2}</p>

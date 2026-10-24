@@ -20,7 +20,7 @@ import { FIND_LIMIT } from "@/lib/postFind";
 import { buildCategoryTree } from "@/lib/taxonomy";
 import { trashDaysLeft } from "@/lib/trash";
 import { BulkBar } from "./BulkBar";
-import { HomeCards, ResumeGoalCard } from "./HomeCards";
+import { HomeCards, HomeTopRow } from "./HomeCards";
 import { useSiteTimezone } from "./SiteSettingsProvider";
 import { setPaletteTitles } from "./paletteSource";
 import { useLongPress } from "./useLongPress";
@@ -634,7 +634,7 @@ export function LibraryHome() {
         </p>
       )}
       {filter !== "trash" && !selecting && (
-        <ResumeGoalCard latest={latest ? { id: latest.id, title: latest.title } : null} />
+        <HomeTopRow latest={latest ? { id: latest.id, title: latest.title } : null} />
       )}
       {filter !== "trash" && !selecting && <HomeCards />}
       <div

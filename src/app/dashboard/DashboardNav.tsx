@@ -10,8 +10,6 @@ const item = "flex min-h-14 flex-1 flex-col items-center justify-center gap-0 te
 
 // মেনু থেকে খোলা পাতাগুলো (নিচের নেভে "মেনু" সক্রিয় রাখতে)
 const MENU_PAGES = [
-  "/dashboard/ideas",
-  "/dashboard/inbox",
   "/dashboard/bookmarks",
   "/dashboard/import",
   "/dashboard/library",
@@ -25,10 +23,21 @@ const MENU_PAGES = [
   "/dashboard/settings",
 ];
 
-/** <1024px: bottom-nav (৫ আইটেম: লাইব্রেরি, প্রজেক্ট, ＋, দিনলিপি, মেনু) / উপরের সারি; editor-এ লুকানো (শুধু লেখা) */
+// খাতা থেকে খোলা পাতাগুলো (নিচের নেভে "খাতা" সক্রিয় রাখতে)
+const NOTEBOOK_PAGES = [
+  "/dashboard/shelf",
+  "/dashboard/trips",
+  "/dashboard/review",
+  "/dashboard/letters",
+  "/dashboard/ideas",
+  "/dashboard/inbox",
+  "/dashboard/days",
+];
+
+/** <1024px: bottom-nav (৫ আইটেম: লাইব্রেরি, খাতা, ＋, দিনলিপি, মেনু) / উপরের সারি; editor-এ লুকানো (শুধু লেখা) */
 export function TopNav() {
   const path = usePathname();
-  const { openMenu } = useAdd();
+  const { openMenu, openNotebook } = useAdd();
   if (path.startsWith("/dashboard/posts/")) return null;
   // লাইব্রেরি শুধু ঠিক-মিলে (বাকি সব পেজ /dashboard/... — নইলে সবসময় active); অন্যগুলো সাব-পথসহ
   const isOn = (p: string) => (p === "/dashboard" ? path === p : path === p || path.startsWith(`${p}/`));
@@ -50,7 +59,18 @@ export function TopNav() {
       className="fixed inset-x-0 bottom-0 z-30 flex items-center border-t border-line bg-surface md:static md:mb-4 md:border-t-0 md:border-b md:bg-transparent lg:hidden"
     >
       {link("/dashboard", "library", bn.nav.library)}
-      {link("/dashboard/projects", "projects", bn.nav.projects)}
+      <button
+        type="button"
+        onClick={openNotebook}
+        aria-haspopup="dialog"
+        aria-current={NOTEBOOK_PAGES.some(isOn) ? "page" : undefined}
+        className={`${item} ${NOTEBOOK_PAGES.some(isOn) ? "font-semibold text-accent-text" : ""}`}
+      >
+        <span className="flex h-7 w-14 items-center justify-center">
+          <Icon name="projects" strokeWidth={NOTEBOOK_PAGES.some(isOn) ? 2.4 : 1.8} />
+        </span>
+        <span className="max-w-full truncate px-1">{bn.nav.notebook}</span>
+      </button>
       <button
         type="button"
         onClick={openMenu}

@@ -6,7 +6,7 @@ import { IdeaList } from "../IdeaList";
 export default function IdeasPage() {
   return (
     <>
-      <MenuBack />
+      <MenuBack to="library" />
       <h1 className="mb-4 font-serif text-3xl font-bold">{bn.dashboard.ideasInbox}</h1>
       <IdeaInboxTabs active="ideas" />
       <IdeaList />

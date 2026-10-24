@@ -64,13 +64,28 @@ export function ResumeGoalCard({ latest }: { latest: { id: string; title: string
       </span>
     </span>
   ) : null;
-  if (!latest) return goal ? <div className="mb-4 rounded-2xl border border-line bg-surface p-4">{goal}</div> : null;
+  if (!latest) return goal ? <div className="h-full rounded-2xl border border-line bg-surface p-4">{goal}</div> : null;
   return (
-    <Link href={`/dashboard/posts/${latest.id}/edit`} className="mb-4 block rounded-2xl bg-btn-bg p-4 text-btn-tx">
+    <Link href={`/dashboard/posts/${latest.id}/edit`} className="block h-full min-w-0 rounded-2xl bg-btn-bg p-4 text-btn-tx">
       <span className="text-sm opacity-90">▶ {bn.library.resume}</span>
       <span className="block truncate font-serif text-lg font-bold">{latest.title || bn.library.untitled}</span>
       {goal}
     </Link>
+  );
+}
+
+/** হোমের ওপরের সারি: বামে চালিয়ে যান (+লক্ষ্য), ডানে 'আজকের একটি কাজ' (চালু থাকলে); একটা না থাকলে অন্যটা পুরো চওড়ায় */
+export function HomeTopRow({ latest }: { latest: { id: string; title: string } | null }) {
+  const prefs = useHomeCards();
+  const daily = !!prefs?.daily;
+  const hasResume = !!latest || !!prefs?.goal;
+  if (!hasResume && !daily) return null;
+  const split = hasResume && daily;
+  return (
+    <div className={`mb-4 grid gap-3 ${split ? "grid-cols-[3fr_2fr]" : ""}`}>
+      {hasResume && <ResumeGoalCard latest={latest} />}
+      {daily && <DailyTask compact={split} />}
+    </div>
   );
 }
 
@@ -82,7 +97,6 @@ export function HomeCards() {
     <div className="mb-4 space-y-3">
       <LetterReady />
       <UpcomingDays />
-      {prefs.daily && <DailyTask />}
       {prefs.pick && <StaleDraft />}
       {prefs.pick && <IdeaPick />}
       <OnThisDay />
@@ -154,17 +168,17 @@ function UpcomingDays() {
 }
 
 /** 'আজকের একটি কাজ': দিন-অনুযায়ী একটাই ছোট সুপারিশ (ডিফল্ট বন্ধ; Settings-এ চালু)। গোনা/streak/অপরাধবোধ নেই */
-function DailyTask() {
+function DailyTask({ compact = false }: { compact?: boolean }) {
   const tz = useSiteTimezone();
   const [today] = useState(() => dayKey(Date.now(), tz));
   const t = dailyTaskFor(today);
   return (
-    <Link href={t.href} className="flex min-h-11 items-center justify-between gap-2 rounded-2xl border border-line bg-surface p-4">
-      <span>
+    <Link href={t.href} className="flex h-full min-h-11 min-w-0 items-center justify-between gap-2 rounded-2xl border border-line bg-surface p-4">
+      <span className="min-w-0">
         <span className="block text-sm text-muted">🎯 {bn.home.dailyTitle}</span>
-        <span className="font-serif text-lg">{bn.home.dailyTasks[t.id]}</span>
+        <span className={compact ? "font-serif text-base" : "font-serif text-lg"}>{bn.home.dailyTasks[t.id]}</span>
       </span>
-      <span aria-hidden="true">→</span>
+      {!compact && <span aria-hidden="true">→</span>}
     </Link>
   );
 }

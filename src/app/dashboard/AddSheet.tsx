@@ -17,6 +17,7 @@ import {
 } from "react";
 import { IdeaTextSchema } from "@/data/ideaRepo";
 import { getIdeaRepo } from "@/data/ideaRepo.wire";
+import { getNoteRepo } from "@/data/noteRepo.wire";
 import { getPostRepo } from "@/data/postRepo.wire";
 import { bn } from "@/i18n/bn";
 import { dayKey, formatDate } from "@/lib/datetime";
@@ -30,10 +31,11 @@ import { IDEA_TEXT_MAX } from "@/lib/idea";
 import { useSiteTimezone } from "./SiteSettingsProvider";
 import { TemplatePicker } from "./TemplatePicker";
 
-type Mode = "closed" | "menu" | "idea" | "diary" | "templates";
+type Mode = "closed" | "menu" | "notebook" | "idea" | "diary" | "templates";
 type Status = "idle" | "saving" | "failed" | "invalid" | "badDay";
 type AddCtx = {
   openMenu: () => void;
+  openNotebook: () => void;
   openIdea: () => void;
   openDiary: () => void;
   /** আইডিয়া সংরক্ষণ হলে বাড়ে — আইডিয়া-তালিকা এটা দেখে নতুন করে আনে */
@@ -44,6 +46,7 @@ type AddCtx = {
 
 const Ctx = createContext<AddCtx>({
   openMenu: () => undefined,
+  openNotebook: () => undefined,
   openIdea: () => undefined,
   openDiary: () => undefined,
   ideasVersion: 0,
@@ -73,6 +76,7 @@ export function AddProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<Status>("idle");
   const [version, setVersion] = useState(0);
   const [toast, setToast] = useState<false | "idea" | "diary">(false);
+  const [inboxCount, setInboxCount] = useState(0);
   const idRef = useRef<string>("");
   const textRef = useRef("");
   const savingRef = useRef(false);
@@ -91,6 +95,7 @@ export function AddProvider({ children }: { children: ReactNode }) {
     setMode(m);
   }, [tz]);
   const openMenu = useCallback(() => open("menu"), [open]);
+  const openNotebook = useCallback(() => open("notebook"), [open]);
   const openIdea = useCallback(() => open("idea"), [open]);
   const openDiary = useCallback(() => open("diary"), [open]);
   const close = useCallback(() => {
@@ -101,7 +106,22 @@ export function AddProvider({ children }: { children: ReactNode }) {
   // খোলার পর ফোকাস: আইডিয়া-ফর্মে textarea, নইলে প্রথম বোতাম
   useEffect(() => {
     if (mode === "idea" || mode === "diary") areaRef.current?.focus();
-    else if (mode === "menu" || mode === "templates") dialogRef.current?.querySelector<HTMLElement>(FOCUSABLE)?.focus();
+    else if (mode === "menu" || mode === "notebook" || mode === "templates") dialogRef.current?.querySelector<HTMLElement>(FOCUSABLE)?.focus();
+  }, [mode]);
+
+  // খাতা-শিট খুললে ইনবক্সের সংখ্যা; না এলে (অফলাইন ইত্যাদি) চুপচাপ বাদ
+  useEffect(() => {
+    if (mode !== "notebook") return;
+    let dead = false;
+    getNoteRepo()
+      .then((r) => r.countInbox())
+      .then((n) => {
+        if (!dead) setInboxCount(n);
+      })
+      .catch(() => undefined);
+    return () => {
+      dead = true;
+    };
   }, [mode]);
 
   useEffect(() => {
@@ -222,8 +242,8 @@ export function AddProvider({ children }: { children: ReactNode }) {
   }, [mode, close]);
 
   const value = useMemo(
-    () => ({ openMenu, openIdea, openDiary, ideasVersion: version, diaryVersion }),
-    [openMenu, openIdea, openDiary, version, diaryVersion],
+    () => ({ openMenu, openNotebook, openIdea, openDiary, ideasVersion: version, diaryVersion }),
+    [openMenu, openNotebook, openIdea, openDiary, version, diaryVersion],
   );
   const t = bn.ideas;
   const d = bn.diary;
@@ -274,7 +294,7 @@ export function AddProvider({ children }: { children: ReactNode }) {
           >
             <div className="mb-3 flex items-center justify-between">
               <h2 id="add-sheet-title" className="font-serif text-xl font-bold">
-                {mode === "idea" ? t.quickTitle : mode === "diary" ? d.quickTitle : mode === "templates" ? t.templatesTitle : t.sheetTitle}
+                {mode === "notebook" ? t.notebookTitle : mode === "idea" ? t.quickTitle : mode === "diary" ? d.quickTitle : mode === "templates" ? t.templatesTitle : t.sheetTitle}
               </h2>
               <button
                 type="button"
@@ -286,7 +306,37 @@ export function AddProvider({ children }: { children: ReactNode }) {
               </button>
             </div>
 
-            {mode === "menu" ? (
+            {mode === "notebook" ? (
+              <div className="space-y-2">
+                <Link href="/dashboard/shelf" onClick={() => setMode("closed")} className={row}>
+                  <span aria-hidden>📖</span>
+                  {bn.shelf.menu}
+                </Link>
+                <Link href="/dashboard/trips" onClick={() => setMode("closed")} className={row}>
+                  <span aria-hidden>🧭</span>
+                  {bn.trips.menu}
+                </Link>
+                <Link href="/dashboard/review" onClick={() => setMode("closed")} className={row}>
+                  <span aria-hidden>📝</span>
+                  {bn.review.menu}
+                </Link>
+                <Link href="/dashboard/letters" onClick={() => setMode("closed")} className={row}>
+                  <span aria-hidden>💌</span>
+                  {bn.letters.menu}
+                </Link>
+                <button type="button" onClick={() => setMode("idea")} className={row}>
+                  <span aria-hidden>💡</span>
+                  {t.quickTitle}
+                </button>
+                <Link href="/dashboard/ideas" onClick={() => setMode("closed")} className={row}>
+                  <span aria-hidden>📥</span>
+                  <span className="flex-1">{bn.dashboard.ideasInbox}</span>
+                  {inboxCount > 0 && (
+                    <span className="rounded-full bg-btn-bg px-2 text-sm text-btn-tx">{t.menuCount(inboxCount)}</span>
+                  )}
+                </Link>
+              </div>
+            ) : mode === "menu" ? (
               <div className="space-y-2">
                 <Link href="/dashboard/posts/new" onClick={() => setMode("closed")} className={row}>
                   <span aria-hidden>✏️</span>
@@ -295,6 +345,13 @@ export function AddProvider({ children }: { children: ReactNode }) {
                 <Link href="/dashboard/projects?pick=1" onClick={() => setMode("closed")} className={row}>
                   <span aria-hidden>📖</span>
                   {t.newChapter}
+                </Link>
+                <Link href="/dashboard/projects" onClick={() => setMode("closed")} className={row}>
+                  <span aria-hidden>📚</span>
+                  <span className="flex flex-col">
+                    {t.projectsLink}
+                    <span className="text-xs font-normal text-muted">{t.projectsHint}</span>
+                  </span>
                 </Link>
                 <button type="button" onClick={() => setMode("templates")} className={row}>
                   <span aria-hidden>📄</span>

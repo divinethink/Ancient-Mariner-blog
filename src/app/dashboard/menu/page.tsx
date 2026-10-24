@@ -1,5 +1,4 @@
 import { bn } from "@/i18n/bn";
-import { IdeaInboxMenuItem } from "../IdeaInboxMenuItem";
 import { LogoutButton } from "../LogoutButton";
 import { MenuGroup, MenuRow } from "./MenuRow";
 import { ThemePicker } from "./ThemePicker";
@@ -12,14 +11,6 @@ export default function MenuPage() {
       <ThemePicker />
       <MenuGroup title={bn.dashboard.groupWrite}>
         <MenuRow href="/dashboard/search" icon="search" label={bn.search.navLabel} />
-        <li>
-          <IdeaInboxMenuItem />
-        </li>
-        <MenuRow href="/dashboard/trips" icon="globe" label={bn.trips.menu} />
-        <MenuRow href="/dashboard/days" icon="calendar" label={bn.days.menu} />
-        <MenuRow href="/dashboard/review" icon="review" label={bn.review.menu} />
-        <MenuRow href="/dashboard/shelf" icon="projects" label={bn.shelf.menu} />
-        <MenuRow href="/dashboard/letters" icon="mail" label={bn.letters.menu} />
         <MenuRow href="/dashboard/bookmarks" icon="bookmark" label={bn.dashboard.bookmarks} />
         <MenuRow href="/dashboard/import" icon="import" label={bn.dashboard.importWp} />
         <MenuRow href="/dashboard/library" icon="organize" label={bn.dashboard.organize} />
