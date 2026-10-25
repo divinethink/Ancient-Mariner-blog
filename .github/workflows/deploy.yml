@@ -1,21 +1,21 @@
 name: deploy
 on:
-  # CI-র পর (শুধু সবুজ হলে): push/ZIP-upload ⇒ ci চলে ⇒ সফল হলে এই deploy। CI লাল হলে deploy হয় না।
-  # workflow_dispatch (ড্যাশবোর্ডের rebuild/প্রকাশ, হাতে Run) ও schedule আগের মতোই সরাসরি চলে।
-  workflow_run:
-    workflows: [ci]
-    types: [completed]
-    branches: [main]
+  # ci.yml-এর `deploy` job এটিকে ডাকে (workflow_call): CI-র সাথে একই run-এ, **একসাথে শুরু** — build চলতে থাকে, শেষে CI সবুজ হলেই publish।
+  # workflow_dispatch (ড্যাশবোর্ডের rebuild/প্রকাশ, হাতে Run) ও schedule আগের মতোই সরাসরি চলে (CI ছাড়া, দ্রুত)।
+  workflow_call:
+    inputs:
+      gate:
+        type: boolean
+        default: false
   workflow_dispatch:
   schedule:
     - cron: '7 */6 * * *'
-concurrency:
-  group: deploy
-  cancel-in-progress: false
 jobs:
   deploy:
-    # workflow_run-এ: CI সফল + trigger = এই repo-র নিজের push/dispatch (fork-PR কখনো নয় — পাবলিক repo-তে secret-সহ deploy চলে!); অন্য trigger-এ সবসময়
-    if: ${{ github.event_name != 'workflow_run' || (github.event.workflow_run.conclusion == 'success' && contains(fromJSON('["push","workflow_dispatch"]'), github.event.workflow_run.event) && github.event.workflow_run.head_repository.full_name == github.repository && github.event.workflow_run.head_branch == 'main') }}
+    # একই group ⇒ push-deploy ও ড্যাশবোর্ড-প্রকাশ একটার পর একটা (একসাথে দুটো wrangler deploy নয়)। job-level রাখা হয়েছে (workflow_call-এ নিরাপদ)।
+    concurrency:
+      group: deploy
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     env:
       FIREBASE_PROJECT_ID: ancientmarinerblog
@@ -28,9 +28,6 @@ jobs:
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
     steps:
       - uses: actions/checkout@v4
-        with:
-          # workflow_run-এ ঠিক যে commit-এ CI সবুজ হয়েছে সেটাই deploy (এর মধ্যে নতুন push এলে সেটার নিজস্ব CI-র পর আলাদা deploy)
-          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -44,10 +41,26 @@ jobs:
           restore-keys: |
             next-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-
       - run: npm run build:cf
-      # সাইজ-পরীক্ষা শুধু কোড-push-এ; প্রতি প্রকাশের (schedule/dispatch) ডাবল-bundle বাদ
+      # সাইজ-পরীক্ষা শুধু কোড-push-এ (gate=true); প্রতি প্রকাশের (schedule/dispatch) ডাবল-bundle বাদ
       - name: Size check (Total Upload ≤ 64MiB)
-        if: github.event_name == 'workflow_run'
+        if: ${{ inputs.gate }}
         run: npx wrangler deploy --dry-run
+      # CI-gate: কোড-push-এ build ওপরে CI-র সমান্তরালে হয়ে গেছে; এখানে একই run-এর `check` job সবুজ না হওয়া পর্যন্ত অপেক্ষা (লাল/বাতিল ⇒ publish হয় না)।
+      - name: Wait for CI (publish only if tests pass)
+        if: ${{ inputs.gate }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for i in $(seq 1 120); do
+            c=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/jobs?per_page=100" --jq '[.jobs[] | select(.name == "check")][0].conclusion // "pending"')
+            echo "check: $c"
+            case "$c" in
+              success) exit 0 ;;
+              pending) sleep 10 ;;
+              *) echo "CI $c — deploy বাতিল"; exit 1 ;;
+            esac
+          done
+          echo "CI-র জন্য অপেক্ষার সময় শেষ"; exit 1
       - run: npx wrangler deploy
       # নতুন-প্রকাশ তাৎক্ষণিক (/api/live): Worker-এর server-key (public-read; rules-নিয়ন্ত্রিত)। ব্যর্থ হলে deploy থামে না — route তখন 503, সাধারণ 404 থাকে
       - name: Worker secret FIREBASE_SERVER_API_KEY

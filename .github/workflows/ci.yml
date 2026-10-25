@@ -4,6 +4,10 @@ on:
     paths-ignore: ['*.zip']
   pull_request:
   workflow_dispatch:
+# deploy job-এর gate একই run-এর jobs API পড়ে ⇒ actions: read লাগে
+permissions:
+  contents: read
+  actions: read
 jobs:
   check:
     runs-on: ubuntu-latest
@@ -28,3 +32,10 @@ jobs:
       - run: npm test
       - run: npm run test:rules
       - run: npm run build
+  # CI-র **সাথে একই সময়ে** শুরু (needs নেই): build চলতে থাকে, `check` সবুজ হলেই publish। শুধু main-এর push/dispatch — PR/অন্য branch-এ কখনো না (পাবলিক রেপোতে secret নিরাপদ)।
+  deploy:
+    if: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/main' }}
+    uses: ./.github/workflows/deploy.yml
+    with:
+      gate: true
+    secrets: inherit
