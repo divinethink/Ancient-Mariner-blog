@@ -316,6 +316,10 @@ export function AddProvider({ children }: { children: ReactNode }) {
                   <span aria-hidden>🧭</span>
                   {bn.trips.menu}
                 </Link>
+                <Link href="/dashboard/days" onClick={() => setMode("closed")} className={row}>
+                  <span aria-hidden>🎂</span>
+                  {bn.days.menu}
+                </Link>
                 <Link href="/dashboard/review" onClick={() => setMode("closed")} className={row}>
                   <span aria-hidden>📝</span>
                   {bn.review.menu}

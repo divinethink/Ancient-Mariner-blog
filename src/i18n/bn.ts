@@ -1615,7 +1615,7 @@ export const bn = {
   home: {
     prefDaily: "আজকের একটি কাজ (ছোট সুপারিশ)",
     dailyTitle: "আজকের একটি কাজ",
-    dailyTasks: { read: "আজ ১০ পাতা পড়ুন", write: "আজ ৩ লাইন লিখুন", idea: "একটা আইডিয়া লিখে রাখুন", diary: "আজকের দিনলিপি লিখুন", quote: "প্রিয় একটা উদ্ধৃতি খুলে পড়ুন" } as Record<string, string>,
+    dailyTasks: { read: "আজ কিছুক্ষণ পড়ুন", write: "আজ ৩ লাইন লিখুন", idea: "একটা আইডিয়া লিখে রাখুন", diary: "আজকের দিনলিপি লিখুন", quote: "প্রিয় একটা উদ্ধৃতি খুলে পড়ুন" } as Record<string, string>,
     staleTitle: "অসমাপ্ত লেখা",
     staleAge: (n: string) => `${n} দিন আগে শেষ সম্পাদিত`,
     staleFinish: "শেষ করুন →",
