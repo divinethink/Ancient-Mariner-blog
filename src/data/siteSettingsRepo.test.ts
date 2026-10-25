@@ -146,7 +146,7 @@ describe("design (P9b)", () => {
     const r = parseSiteSettings({ design: { accent: "teal", fontPair: "comic", cardStyle: "flat", logoMediaId: "abc", bannerMediaId: 5 } });
     expect(r.design).toEqual({ ...DEFAULT_SETTINGS.design, accent: "teal", fontPair: "serif-sans", cardStyle: "flat", logoMediaId: "abc", bannerMediaId: "" });
     // নাম/স্লোগানের ফন্ট-সাইজ: অনুপস্থিত/অজানা = ডিফল্ট, বৈধ = রাখে
-    expect(parseSiteSettings({ design: { palette: "midnight" } }).design.palette).toBe("midnight");
+    expect(parseSiteSettings({ design: { palette: "nord" } }).design.palette).toBe("nord");
     expect(parseSiteSettings({ design: { palette: "neon" } }).design.palette).toBe("classic");
     expect(parseSiteSettings({ design: { accent: "teal" } }).design.palette).toBe("classic"); // পুরনো ডক
     expect(parseSiteSettings({ design: { titleFont: "hind", titleSize: "xl", taglineSize: "lg" } }).design).toMatchObject({ titleFont: "hind", titleSize: "md", taglineFont: "theme", taglineSize: "lg" });

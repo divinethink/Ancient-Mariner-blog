@@ -1,6 +1,6 @@
 // সাইটের design (accent / ফন্ট-জোড়া / card-ধরন) — Arch §১৭ P9b। pure, SDK/UI-মুক্ত।
 // শুধু বন্ধ enum-তালিকা (কোনো custom CSS/hex নেই); অজানা মান শুধু ডিফল্টে ফেরে (defensive read)।
-export const PALETTES = ["classic", "slate", "oyster", "midnight", "paper", "nord", "gruvbox", "rosepine", "catppuccin", "dhan", "pradip", "nodi"] as const;
+export const PALETTES = ["classic", "slate", "paper", "nord", "dhan", "pradip", "nodi"] as const;
 export const ACCENTS = ["terracotta", "teal"] as const;
 export const FONT_PAIRS = ["serif-sans", "sans", "serif"] as const;
 export const CARD_STYLES = ["outline", "flat", "shadow"] as const;
@@ -57,16 +57,11 @@ export const PALETTE_MODES = ["light", "dark"] as const;
 export type PaletteMode = (typeof PALETTE_MODES)[number];
 export const PALETTE_BG: Record<Exclude<Palette, "classic">, Record<PaletteMode, string>> = {
   slate: { light: "#f6f5ee", dark: "#171b14" },
-  oyster: { light: "#eeece6", dark: "#1d1c1a" },
-  midnight: { light: "#f5f2ea", dark: "#0f1a2b" },
   paper: { light: "#fcfcfa", dark: "#121212" },
   nord: { light: "#eceff4", dark: "#2e3440" },
-  gruvbox: { light: "#fbf1c7", dark: "#282828" },
-  rosepine: { light: "#faf4ed", dark: "#191724" },
-  catppuccin: { light: "#eff1f5", dark: "#1e1e2e" },
   dhan: { light: "#f7f4df", dark: "#151a10" },
   pradip: { light: "#f6ebdc", dark: "#1a110a" },
-  nodi: { light: "#fbf1ec", dark: "#131c2a" },
+  nodi: { light: "#e8f2f8", dark: "#0f1f2e" },
 };
 
 const DESIGN_MARK = /var DESIGN = \{[^}\n]*\};/;

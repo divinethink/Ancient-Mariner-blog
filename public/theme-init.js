@@ -15,16 +15,11 @@
   // প্যালেটের bg (শুধু light/dark; পাঠ-মোডে সবার একই) — tokens.css ও src/lib/design.ts-এর PALETTE_BG-র সাথে মেলাতে হবে (design.test.ts মেলায়)
   var PBG = {
   slate: { light: "#f6f5ee", dark: "#171b14" },
-  oyster: { light: "#eeece6", dark: "#1d1c1a" },
-  midnight: { light: "#f5f2ea", dark: "#0f1a2b" },
   paper: { light: "#fcfcfa", dark: "#121212" },
   nord: { light: "#eceff4", dark: "#2e3440" },
-  gruvbox: { light: "#fbf1c7", dark: "#282828" },
-  rosepine: { light: "#faf4ed", dark: "#191724" },
-  catppuccin: { light: "#eff1f5", dark: "#1e1e2e" },
   dhan: { light: "#f7f4df", dark: "#151a10" },
   pradip: { light: "#f6ebdc", dark: "#1a110a" },
-  nodi: { light: "#fbf1ec", dark: "#131c2a" },
+  nodi: { light: "#e8f2f8", dark: "#0f1f2e" },
   };
   try {
     var root = document.documentElement;
