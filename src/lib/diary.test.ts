@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { docToText } from "./editorDoc";
-import { isValidDayKey, monthGrid, monthOf, monthRange, onThisDayKeys, shiftMonth, textToDoc } from "./diary";
+import { diaryVisOf, diaryVisPatch, isValidDayKey, monthGrid, monthOf, monthRange, onThisDayKeys, shiftMonth, textToDoc } from "./diary";
 
 describe("diary", () => {
   it("isValidDayKey", () => {
@@ -37,5 +37,18 @@ describe("diary", () => {
     expect(d.content).toHaveLength(3);
     expect(d.content?.[1]).toEqual({ type: "paragraph" });
     expect(docToText(d)).toBe("আজ বৃষ্টি\nচা খেলাম");
+  });
+  it("diaryVisOf: শুধু প্রকাশিত+public = public; বাকি private", () => {
+    expect(diaryVisOf({ status: "published", visibility: "public" })).toBe("public");
+    expect(diaryVisOf({ status: "draft", visibility: "private" })).toBe("private");
+    expect(diaryVisOf({ status: "published", visibility: "private" })).toBe("private");
+    expect(diaryVisOf({ status: "published", visibility: "unlisted" })).toBe("private");
+    expect(diaryVisOf({ status: "scheduled", visibility: "public" })).toBe("private");
+  });
+  it("diaryVisPatch: দুই দিকেই diaryVisOf-এর সাথে মেলে", () => {
+    expect(diaryVisPatch("public")).toEqual({ status: "published", visibility: "public" });
+    expect(diaryVisPatch("private")).toEqual({ status: "draft", visibility: "private" });
+    expect(diaryVisOf(diaryVisPatch("public"))).toBe("public");
+    expect(diaryVisOf(diaryVisPatch("private"))).toBe("private");
   });
 });

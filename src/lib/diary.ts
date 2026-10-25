@@ -72,3 +72,13 @@ export function textToDoc(text: string): DocNode {
 
 /** diary entry-র তালিকা-ক্রম: নতুন আগে (updatedAt) */
 export const byNewest = <T extends { updatedAt: Date }>(a: T, b: T): number => b.updatedAt.getTime() - a.updatedAt.getTime();
+
+/** দিনলিপির দৃশ্যমানতা: পাবলিক = প্রকাশিত + public; বাকি সব (খসড়া/unlisted/private) = ব্যক্তিগত */
+export type DiaryVis = "private" | "public";
+
+export const diaryVisOf = (p: { status: string; visibility: string }): DiaryVis =>
+  p.status === "published" && p.visibility === "public" ? "public" : "private";
+
+/** দৃশ্যমানতা বদলের patch: public → প্রকাশিত; private → খসড়া + private (publishedAt অক্ষত) */
+export const diaryVisPatch = (v: DiaryVis): { status: "published" | "draft"; visibility: "public" | "private" } =>
+  v === "public" ? { status: "published", visibility: "public" } : { status: "draft", visibility: "private" };

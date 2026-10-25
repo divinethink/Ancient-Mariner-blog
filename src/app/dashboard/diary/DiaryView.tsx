@@ -6,7 +6,9 @@ import type { PostWithId } from "@/data/postRepo";
 import { getPostRepo } from "@/data/postRepo.wire";
 import { bn } from "@/i18n/bn";
 import { dayKey } from "@/lib/datetime";
-import { byNewest, monthGrid, monthOf, monthRange, shiftMonth } from "@/lib/diary";
+import { Icon } from "@/components/icons";
+import { triggerSiteRebuild } from "@/data/rebuildClient";
+import { byNewest, diaryVisOf, diaryVisPatch, monthGrid, monthOf, monthRange, shiftMonth, type DiaryVis } from "@/lib/diary";
 import { useAdd } from "../AddSheet";
 import { OnThisDay } from "../OnThisDay";
 import { useSiteTimezone } from "../SiteSettingsProvider";
@@ -20,11 +22,11 @@ type Load = { ym: string; list: PostWithId[] | null }; // list=null ⇒ ব্�
 
 type DayCellProps = { day: number; k: string; selected: boolean; isToday: boolean; dayEntries: PostWithId[] | undefined; onPick: (k: string) => void };
 
-/** পঞ্জিকার একটি দিন: আজ = পটভূমি; নির্বাচিত = ভরাট বাটন (আজও হলে + ring); ডট ভরাট = প্রকাশিত, ফাঁপা = শুধু খসড়া */
+/** পঞ্জিকার একটি দিন: আজ = পটভূমি; নির্বাচিত = ভরাট বাটন (আজও হলে + ring); ডট ভরাট = প্রকাশিত (পাবলিক), ফাঁপা = ব্যক্তিগত */
 function DayCell({ day, k, selected, isToday, dayEntries, onPick }: DayCellProps) {
   const has = !!dayEntries?.length;
-  const published = !!dayEntries?.some((p) => p.status === "published");
-  const state = published ? bn.diary.statusPublished : bn.diary.statusDraft;
+  const published = !!dayEntries?.some((p) => diaryVisOf(p) === "public");
+  const state = published ? bn.diary.visPublic : bn.diary.visPrivate;
   const tone = selected ? "bg-btn-bg text-btn-tx" : isToday ? "bg-line font-semibold" : "hover:bg-line";
   const ring = selected && isToday ? "ring-2 ring-accent-text ring-offset-2 ring-offset-surface" : "";
   const dot = selected ? "border-btn-tx" : "border-accent-text";
@@ -43,22 +45,34 @@ function DayCell({ day, k, selected, isToday, dayEntries, onPick }: DayCellProps
   );
 }
 
-/** এন্ট্রি-কার্ড তালিকা: ≤৮ লাইন প্রিভিউ; excerpt কাটা ("…") হলে 'আরও পড়ুন →'; খসড়া-ব্যাজ */
-function EntryList({ items }: { items: PostWithId[] }) {
+/** এন্ট্রি-কার্ড তালিকা: ≤৮ লাইন প্রিভিউ; excerpt কাটা ("…") হলে 'আরও পড়ুন →'; নিচে ব্যক্তিগত/প্রকাশিত বোতাম (ট্যাপে বদল) */
+function EntryList({ items, busyId, onToggle }: { items: PostWithId[]; busyId: string | null; onToggle: (p: PostWithId) => void }) {
   return (
     <ul className="divide-y divide-line rounded-2xl border border-line bg-surface">
       {items.map((p) => {
         const text = p.excerpt || p.title || bn.diary.untitled;
+        const vis: DiaryVis = diaryVisOf(p);
         return (
           <li key={p.id}>
             <Link href={`/dashboard/posts/${p.id}/edit`} className="block min-h-12 px-4 py-3">
               <span className="line-clamp-8 block whitespace-pre-line font-serif text-base">{text}</span>
               <span className="mt-1 flex flex-wrap items-center gap-x-2 text-sm text-muted">
                 <span className="whitespace-nowrap">{bn.diary.words(bnNum(p.wordCount))}</span>
-                {p.status !== "published" && <span className="rounded-full border border-line px-2 text-xs">{bn.library.draft}</span>}
                 {text.endsWith("…") && <span className="ms-auto font-semibold text-accent-text">{bn.diary.readMore}</span>}
               </span>
             </Link>
+            <div className="px-4 pb-3">
+              <button
+                type="button"
+                disabled={busyId === p.id}
+                aria-label={`${vis === "public" ? bn.diary.visPublic : bn.diary.visPrivate} — ${vis === "public" ? bn.diary.toPrivate : bn.diary.toPublic}`}
+                onClick={() => onToggle(p)}
+                className={`inline-flex min-h-11 items-center gap-1.5 rounded-full border px-3 text-sm disabled:opacity-50 ${vis === "public" ? "border-btn-bg bg-btn-bg text-btn-tx" : "border-line"}`}
+              >
+                <Icon name={vis === "public" ? "globe" : "lock"} size={16} />
+                {vis === "public" ? bn.diary.visPublic : bn.diary.visPrivate}
+              </button>
+            </div>
           </li>
         );
       })}
@@ -76,6 +90,28 @@ export function DiaryView() {
   const [sel, setSel] = useState(today);
   const [load, setLoad] = useState<Load | undefined>();
   const [attempt, setAttempt] = useState(0);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [visErr, setVisErr] = useState(false);
+
+  /** ব্যক্তিগত ⇄ প্রকাশিত: সংরক্ষণ সফল হলে তালিকা নতুন করে আনে ও সাইট rebuild চায়। private করার আগে থাকা অপ্রকাশিত সম্পাদনা posts-এ কপি (কিছু হারায় না) */
+  async function toggleVis(p: PostWithId) {
+    if (busyId) return;
+    const next: DiaryVis = diaryVisOf(p) === "public" ? "private" : "public";
+    if (!confirm(next === "public" ? bn.diary.confirmPublic : bn.diary.confirmPrivate)) return;
+    setBusyId(p.id);
+    setVisErr(false);
+    try {
+      const repo = await getPostRepo();
+      if (next === "private") await repo.applyDraft(p.id, p.wordCount);
+      await repo.update(p.id, diaryVisPatch(next));
+      void triggerSiteRebuild();
+      setAttempt((a) => a + 1);
+    } catch {
+      setVisErr(true);
+    } finally {
+      setBusyId(null);
+    }
+  }
 
   useEffect(() => {
     let dead = false;
@@ -145,6 +181,16 @@ export function DiaryView() {
             ),
           )}
         </div>
+        <p className="mt-2 flex items-center gap-4 px-1 text-xs text-muted">
+          <span className="inline-flex items-center gap-1.5">
+            <span aria-hidden className="size-2 rounded-full border-[1.5px] border-accent-text bg-accent-text" />
+            {bn.diary.legendPublic}
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <span aria-hidden className="size-2 rounded-full border-[1.5px] border-accent-text" />
+            {bn.diary.legendPrivate}
+          </span>
+        </p>
       </section>
 
       <section aria-label={dayLabel(sel)}>
@@ -173,12 +219,17 @@ export function DiaryView() {
                 <h3 className="mb-2 text-sm font-semibold text-muted">
                   {bn.diary.latest} · {dayLabel(latest[0]!.date ?? sel)}
                 </h3>
-                <EntryList items={latest} />
+                <EntryList items={latest} busyId={busyId} onToggle={toggleVis} />
               </div>
             )}
           </>
         ) : (
-          <EntryList items={entries} />
+          <EntryList items={entries} busyId={busyId} onToggle={toggleVis} />
+        )}
+        {visErr && (
+          <p role="alert" className="mt-2 text-sm text-accent-text">
+            {bn.diary.visFailed}
+          </p>
         )}
       </section>
 

@@ -21,7 +21,9 @@ import { getNoteRepo } from "@/data/noteRepo.wire";
 import { getPostRepo } from "@/data/postRepo.wire";
 import { bn } from "@/i18n/bn";
 import { dayKey, formatDate } from "@/lib/datetime";
-import { DIARY_TEXT_MAX, isValidDayKey, textToDoc } from "@/lib/diary";
+import { DIARY_TEXT_MAX, diaryVisPatch, isValidDayKey, textToDoc, type DiaryVis } from "@/lib/diary";
+import { triggerSiteRebuild } from "@/data/rebuildClient";
+import { Segmented } from "@/components/ui/Segmented";
 import { promptFor } from "@/lib/diaryPrompts";
 import { WriteTimer } from "./WriteTimer";
 import { MAX_LOCATION } from "@/data/postRepo";
@@ -68,6 +70,7 @@ export function AddProvider({ children }: { children: ReactNode }) {
   const [diaryTitle, setDiaryTitle] = useState("");
   const [diaryPlace, setDiaryPlace] = useState("");
   const [diaryDay, setDiaryDay] = useState(""); // খালি = আজ
+  const [diaryVis, setDiaryVis] = useState<DiaryVis>("private"); // প্রতিটি নতুন এন্ট্রি ব্যক্তিগত থেকে শুরু
   const [promptShift, setPromptShift] = useState(0); // 'অন্য প্রশ্ন'; sheet খুললে ০
   const [todayKey, setTodayKey] = useState(""); // sheet খোলার সময় বসে (render-এ Date.now() নয়)
   const [diaryVersion, setDiaryVersion] = useState(0);
@@ -75,7 +78,7 @@ export function AddProvider({ children }: { children: ReactNode }) {
   const diaryTextRef = useRef("");
   const [status, setStatus] = useState<Status>("idle");
   const [version, setVersion] = useState(0);
-  const [toast, setToast] = useState<false | "idea" | "diary">(false);
+  const [toast, setToast] = useState<false | "idea" | "diary" | "diaryPub" | "diaryPubFailed">(false);
   const [inboxCount, setInboxCount] = useState(0);
   const idRef = useRef<string>("");
   const textRef = useRef("");
@@ -183,8 +186,9 @@ export function AddProvider({ children }: { children: ReactNode }) {
       const plain = docToText(doc);
       const repo = await getPostRepo();
       const place = diaryPlace.trim();
+      const entryId = diaryIdRef.current;
       await repo.create({
-        id: diaryIdRef.current,
+        id: entryId,
         title: diaryTitle.trim() || formatDate(new Date(`${day}T12:00:00Z`), "UTC"),
         body: serializeDoc(doc),
         excerpt: makeExcerpt(plain),
@@ -194,6 +198,17 @@ export function AddProvider({ children }: { children: ReactNode }) {
         date: day,
         ...(place && { location: place }),
       });
+      // এন্ট্রি আগে ব্যক্তিগত হিসেবে সংরক্ষিত (লেখা হারায় না); প্রকাশ আলাদা ধাপ — ব্যর্থ হলে ব্যক্তিগতই থাকে
+      let shown: "diary" | "diaryPub" | "diaryPubFailed" = "diary";
+      if (diaryVis === "public") {
+        try {
+          await repo.update(entryId, diaryVisPatch("public"));
+          void triggerSiteRebuild();
+          shown = "diaryPub";
+        } catch {
+          shown = "diaryPubFailed";
+        }
+      }
       if (diaryTextRef.current === sent) {
         diaryIdRef.current = newId();
         diaryTextRef.current = "";
@@ -201,10 +216,11 @@ export function AddProvider({ children }: { children: ReactNode }) {
         setDiaryTitle("");
         setDiaryPlace("");
         setDiaryDay("");
+        setDiaryVis("private");
       }
       setDiaryVersion((v) => v + 1);
       setStatus("idle");
-      setToast("diary");
+      setToast(shown);
       close();
     } catch {
       setStatus("failed");
@@ -273,7 +289,7 @@ export function AddProvider({ children }: { children: ReactNode }) {
           role="status"
           className="fixed inset-x-0 bottom-24 z-50 mx-auto w-fit rounded-full bg-btn-bg px-4 py-2 text-sm text-btn-tx shadow-lg"
         >
-          {toast === "diary" ? d.saved : t.saved}
+          {toast === "diary" ? d.saved : toast === "diaryPub" ? d.savedPublic : toast === "diaryPubFailed" ? d.savedPrivate : t.saved}
         </p>
       )}
       {mode !== "closed" && (
@@ -465,6 +481,21 @@ export function AddProvider({ children }: { children: ReactNode }) {
                     <span className="text-muted">{t.counter(curText.length, curMax)}</span>
                   )}
                 </div>
+                {isDiary && (
+                  <div className="mt-2">
+                    <Segmented<DiaryVis>
+                      label={d.visLabel}
+                      showLabel
+                      value={diaryVis}
+                      options={[
+                        { value: "private", label: d.visPrivate },
+                        { value: "public", label: d.visPublic },
+                      ]}
+                      onChange={setDiaryVis}
+                    />
+                    <p className="mt-1 text-sm text-muted">{diaryVis === "public" ? d.visPublicNote : d.visPrivateNote}</p>
+                  </div>
+                )}
                 <button
                   type="submit"
                   aria-disabled={status === "saving"}
