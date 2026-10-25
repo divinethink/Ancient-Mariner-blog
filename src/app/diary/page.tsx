@@ -12,6 +12,7 @@ import { getPublicMedia, getPublicSettings } from "@/data/publicSnapshot";
 import { bn } from "@/i18n/bn";
 import { PLACES_PATH, placeStats } from "@/lib/diarySummary";
 import { buildDiaryMonth, buildYearView, DIARY_FEED_PATH, DIARY_PATH, diaryYears, latestDay, streakStats } from "@/lib/diaryCalendar";
+import { lookFromSettings } from "@/lib/diaryLook";
 import { widgetTitle } from "@/lib/layout";
 import { buildSeo } from "@/lib/seo";
 
@@ -46,7 +47,7 @@ export default async function DiaryHome() {
           </div>
           <DiaryStats s={streakStats(byDay.keys())} showStreak={settings.showDiaryStreak === true} />
           <OnThisDay days={[...byDay.keys()]} timeZone={tz} />
-          <DiaryMonthPanels ym={last.slice(0, 7)} byDay={byDay} selected={last} previewDay={last} latestLabel={bn.public.diaryLatest} media={await getPublicMedia()} />
+          <DiaryMonthPanels ym={last.slice(0, 7)} byDay={byDay} selected={last} previewDay={last} latestLabel={bn.public.diaryLatest} media={await getPublicMedia()} look={lookFromSettings(settings)} />
           <div className="mt-8 rounded-2xl border border-line bg-surface p-4">
             <DiaryYear view={buildYearView(words, Number(last.slice(0, 4)))} years={diaryYears(byDay.keys())} timeZone={tz} />
           </div>

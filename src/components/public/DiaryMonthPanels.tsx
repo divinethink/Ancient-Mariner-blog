@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { bn } from "@/i18n/bn";
 import type { CardMedia } from "@/lib/cards";
+import type { DiaryLook } from "@/lib/diaryLook";
 import { adjacentDays, diaryDayPath, type DiaryEntry } from "@/lib/diaryCalendar";
 import { DiaryDaySwitch } from "./DiaryDaySwitch";
 import { DiaryEntries } from "./DiaryEntries";
@@ -17,6 +18,7 @@ export function DiaryMonthPanels({
   previewDay,
   latestLabel,
   media,
+  look,
 }: {
   ym: string;
   byDay: ReadonlyMap<string, readonly DiaryEntry[]>;
@@ -24,6 +26,7 @@ export function DiaryMonthPanels({
   previewDay?: string;
   latestLabel?: string;
   media?: ReadonlyMap<string, CardMedia>;
+  look?: DiaryLook;
 }) {
   const days = [...byDay.keys()].filter((d) => d.startsWith(ym)).sort();
   return (
@@ -35,7 +38,7 @@ export function DiaryMonthPanels({
         return (
           <div key={day} data-diary-panel={day} hidden={day !== selected}>
             {preview && latestLabel && <p className="mt-6 text-sm font-semibold text-muted">{latestLabel}</p>}
-            <DiaryEntries day={day} entries={byDay.get(day) ?? []} preview={preview} media={media} />
+            <DiaryEntries day={day} entries={byDay.get(day) ?? []} preview={preview} media={media} look={look} />
             {!preview && (
               <nav aria-label={bn.public.diaryNavLabel} className="mt-6 flex items-center justify-between gap-4 border-t border-line pt-3">
                 {adj.prev ? (

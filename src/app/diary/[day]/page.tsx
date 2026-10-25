@@ -10,6 +10,7 @@ import { getPublicDiary } from "@/data/publicDiary";
 import { getPublicMedia, getPublicSettings } from "@/data/publicSnapshot";
 import { bn } from "@/i18n/bn";
 import { buildDiaryMonth, diaryDayPath } from "@/lib/diaryCalendar";
+import { lookFromSettings } from "@/lib/diaryLook";
 import { widgetTitle } from "@/lib/layout";
 import { buildSeo } from "@/lib/seo";
 
@@ -38,7 +39,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function DiaryDay({ params }: Props) {
   const { day } = await params;
   const { tz, byDay, words } = await getPublicDiary();
-  const calTitle = widgetTitle((await getPublicSettings()).layout.sidebar, "calendar", bn.public.calendarTitle);
+  const settings = await getPublicSettings();
+  const calTitle = widgetTitle(settings.layout.sidebar, "calendar", bn.public.calendarTitle);
   const entries = byDay.get(day);
   if (!entries) notFound();
   return (
@@ -48,7 +50,7 @@ export default async function DiaryDay({ params }: Props) {
       <div className="mt-4 rounded-2xl border border-line bg-surface p-4">
         <DiaryCalendar view={buildDiaryMonth(words, day.slice(0, 7))} selected={day} timeZone={tz} />
       </div>
-      <DiaryMonthPanels ym={day.slice(0, 7)} byDay={byDay} selected={day} media={await getPublicMedia()} />
+      <DiaryMonthPanels ym={day.slice(0, 7)} byDay={byDay} selected={day} media={await getPublicMedia()} look={lookFromSettings(settings)} />
     </PublicShell>
   );
 }

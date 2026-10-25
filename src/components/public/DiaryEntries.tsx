@@ -6,6 +6,8 @@ import { collectMediaIds, parseBody } from "@/lib/editorDoc";
 import { resolveMediaMap } from "@/lib/gallery";
 import type { CardMedia } from "@/lib/cards";
 import { diaryDayPath, diaryPreview, type DiaryEntry } from "@/lib/diaryCalendar";
+import type { DiaryLook } from "@/lib/diaryLook";
+import { DiaryPage } from "@/components/diary/DiaryPage";
 
 /** "YYYY-MM-DD" → "শনিবার · ১০ অক্টোবর, ২০২৬" (দিন-key থেকে সরাসরি UTC-তে; timezone-সরণ নেই) */
 export function dayLabel(day: string): string {
@@ -14,14 +16,31 @@ export function dayLabel(day: string): string {
 }
 
 /** দিনের লেখা (পঞ্জিকার নিচে)। `preview` হলে প্রথম ~৩০ শব্দ (বাক্যের শেষে) + আরও পড়ুন; নইলে পুরোটা */
-export function DiaryEntries({ day, entries, preview = false, media }: { day: string; entries: readonly DiaryEntry[]; preview?: boolean; media?: ReadonlyMap<string, CardMedia> }) {
+/** `look` দিলে প্রতিটি লেখা ডায়েরির পাতার চেহারায় (থিম/ফন্ট); না দিলে আগের কার্ড (সাইডবার-উইজেট) */
+export function DiaryEntries({ day, entries, preview = false, media, look }: { day: string; entries: readonly DiaryEntry[]; preview?: boolean; media?: ReadonlyMap<string, CardMedia>; look?: DiaryLook }) {
   return (
     <section aria-label={dayLabel(day)} className="mt-6">
-      <h2 className="font-serif text-xl font-bold">{dayLabel(day)}</h2>
+      <h2 className={look ? "sr-only" : "font-serif text-xl font-bold"}>{dayLabel(day)}</h2>
       {entries.map((e) => {
         const auto = formatDate(new Date(`${day}T12:00:00Z`), "UTC");
         const custom = e.title.trim() !== "" && e.title !== auto;
         const p = preview ? diaryPreview(e.body) : { body: e.body, truncated: false };
+        const readMore = p.truncated ? (
+          <Link href={diaryDayPath(day)} prefetch={false} className="inline-flex min-h-11 items-center">
+            {bn.public.readMore} →
+          </Link>
+        ) : undefined;
+        if (look) {
+          return (
+            <article key={e.id} className="mt-4">
+              <DiaryPage day={day} title={custom ? e.title : undefined} location={e.location} look={look} footer={readMore}>
+                <div className="reading">
+                  <PostBody body={p.body} media={resolveMediaMap(collectMediaIds(parseBody(p.body)), media)} />
+                </div>
+              </DiaryPage>
+            </article>
+          );
+        }
         return (
           <article key={e.id} className="mt-4 rounded-2xl border border-line bg-surface p-4">
             {custom && <h3 className="font-serif text-lg font-bold">{e.title}</h3>}

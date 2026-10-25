@@ -348,3 +348,91 @@ main:has(.dash-shell) {
     animation: diary-fade 0.22s ease-out;
   }
 }
+
+/* ===== দিনলিপির পাতা (ZIP-২): থিম · ফন্ট · আকার — মান `src/lib/diaryLook.ts`-এর সাথে মেলানো ===== */
+@font-face { font-family: "DCharulipi"; src: url("/fonts/diary/charulipi.woff") format("woff"); font-display: swap; }
+@font-face { font-family: "DRabindric"; src: url("/fonts/diary/rabindric.woff") format("woff"); font-display: swap; }
+@font-face { font-family: "DTagore"; src: url("/fonts/diary/tagore.woff") format("woff"); font-display: swap; }
+@font-face { font-family: "DBenSen"; src: url("/fonts/diary/bensen.woff") format("woff"); font-display: swap; }
+@font-face { font-family: "DKaiyum"; src: url("/fonts/diary/kaiyum.woff") format("woff"); font-display: swap; }
+
+[data-dfont="charulipi"] { --dfont: "DCharulipi", var(--font-serif); }
+[data-dfont="rabindric"] { --dfont: "DRabindric", var(--font-serif); }
+[data-dfont="tagore"] { --dfont: "DTagore", var(--font-serif); }
+[data-dfont="bensen"] { --dfont: "DBenSen", var(--font-serif); }
+[data-dfont="kaiyum"] { --dfont: "DKaiyum", var(--font-serif); }
+.dfontpv { font-family: var(--dfont, var(--font-serif)); }
+
+.dpage {
+  --dfs: 22px;
+  --dpl: 52px; /* বাঁ প্যাডিং (মার্জিন-রেখা থাকলে বেশি) */
+  --dpr: 16px;
+  --dmar: transparent;
+  --dbgi: none;
+  --dbgs: auto;
+  --dshadow: none;
+  --dlh: calc(var(--dfs) * 1.75);
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--dborder);
+  border-radius: 18px;
+  background-color: var(--dbgc);
+  background-image: var(--dbgi);
+  background-size: var(--dbgs);
+  box-shadow: var(--dshadow);
+  color: var(--dink);
+  font-family: var(--dfont, var(--font-serif));
+}
+.dpage[data-dsize="s"] { --dfs: 19px; }
+.dpage[data-dsize="m"] { --dfs: 22px; }
+.dpage[data-dsize="l"] { --dfs: 26px; }
+.dpage::before { content: ""; position: absolute; top: 0; bottom: 0; left: 40px; width: 2px; background: var(--dmar); pointer-events: none; }
+.dpage .dheading { display: none; margin: 0; padding: 14px var(--dpr) 0 var(--dpl); font-size: 2.1em; line-height: 1.2; font-weight: 700; }
+.dpage .dhead { display: flex; align-items: flex-end; gap: 12px; padding: 14px var(--dpr) 8px var(--dpl); background: var(--dheadbg, transparent); color: var(--dheadtx, var(--dink)); }
+.dpage .dnum { font-size: 2.6em; line-height: 1; font-weight: 700; color: var(--dheadnum, var(--dacc)); }
+.dpage .dmeta { display: flex; flex-direction: column; font-size: 1em; line-height: 1.35; font-weight: 700; }
+.dpage .dmeta span + span { font-weight: 400; opacity: 0.85; }
+.dpage .dbody { padding: 0 var(--dpr) 4px var(--dpl); }
+.dpage .dtitle { margin: 8px 0 0; font-size: 1.15em; line-height: var(--dlh); font-weight: 700; }
+.dpage .dplace { margin: 0; font-size: 0.85em; line-height: var(--dlh); color: var(--dacc); }
+.dpage .dtext {
+  font-size: var(--dfs);
+  line-height: var(--dlh);
+  min-height: calc(var(--dlh) * 4);
+  background-image: repeating-linear-gradient(to bottom, transparent 0, transparent calc(var(--dlh) - 1px), var(--dline) calc(var(--dlh) - 1px), var(--dline) var(--dlh));
+}
+.dpage .reading { font-family: inherit; font-size: inherit; line-height: inherit; }
+.dpage .reading p { margin: 0; min-height: var(--dlh); }
+.dpage .reading p:empty::after { content: "\200b"; }
+.dpage .dfoot { padding: 6px var(--dpr) 12px var(--dpl); font-size: 0.8em; line-height: 1.5; opacity: 0.85; }
+.dpage a { color: inherit; }
+.dpage .dfoot a { text-decoration: underline; }
+
+[data-dtheme="paper"] { --dbgc: #fbf3dc; --dink: #2b2118; --dline: #dccfa8; --dmar: #c97a7a; --dacc: #8a3b2e; --dborder: #e6d9b4; }
+[data-dtheme="night"] { --dbgc: #1f2230; --dink: #ebe1c9; --dline: #343a53; --dmar: #7d6a3a; --dacc: #d9b36a; --dborder: #343a53; }
+[data-dtheme="dot"] {
+  --dbgc: #f5f2ea; --dink: #1d3a6b; --dline: transparent; --dacc: #1d3a6b; --dborder: #e0dccd; --dpl: 20px;
+  --dbgi: radial-gradient(circle, #b9b3a0 1.2px, transparent 1.6px); --dbgs: 19px 19px;
+}
+[data-dtheme="letter"] {
+  --dbgc: #ecdcbd; --dink: #4a2c1a; --dline: #d4bf94; --dmar: #a5673f; --dacc: #7a3d1c; --dborder: #a5673f;
+  --dshadow: inset 0 0 0 4px #ecdcbd, inset 0 0 0 6px #a5673f;
+}
+[data-dtheme="rose"] {
+  --dbgc: #f9cfc7; --dink: #241210; --dline: rgba(70, 40, 36, 0.38); --dacc: #8a2f26; --dborder: #f0b8ae; --dpl: 24px; --dpr: 24px;
+  --dbgi: radial-gradient(ellipse 60% 22% at 20% 18%, rgba(255, 255, 255, 0.55), transparent 70%), radial-gradient(ellipse 80% 20% at 70% 100%, rgba(232, 120, 104, 0.5), transparent 70%), linear-gradient(to bottom, #fde9e6 0%, #f9cfc7 45%, #f4b3a8 100%);
+}
+[data-dtheme="rose"] .dheading { display: block; }
+[data-dtheme="rose"] .dhead { justify-content: flex-end; align-items: flex-start; text-align: right; }
+[data-dtheme="oyster"] {
+  --dbgc: #dedbd3; --dink: #4a3322; --dline: #bdb8ac; --dmar: #a07a52; --dacc: #7a5230; --dborder: #c9c5ba;
+  --dbgi: linear-gradient(160deg, #e6e3dc, #d4d1c8);
+}
+[data-dtheme="terracotta"] {
+  --dbgc: #f3e9d9; --dink: #3b2118; --dline: #e2d0b6; --dacc: #a1472f; --dborder: #e2d0b6; --dpl: 22px;
+  --dheadbg: #a1472f; --dheadtx: #fbf1e4; --dheadnum: #fbf1e4;
+}
+[data-dtheme="slate"] {
+  --dbgc: #f7f3e9; --dink: #2d3829; --dline: #d6d8c6; --dacc: #4f5f41; --dborder: #d6d8c6; --dpl: 22px;
+  --dheadbg: #55664a; --dheadtx: #f7f3e9; --dheadnum: #f7f3e9;
+}

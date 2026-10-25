@@ -5,13 +5,18 @@ import { useEffect, useMemo, useState } from "react";
 import type { PostWithId } from "@/data/postRepo";
 import { getPostRepo } from "@/data/postRepo.wire";
 import { bn } from "@/i18n/bn";
-import { dayKey } from "@/lib/datetime";
+import { dayKey, formatDate } from "@/lib/datetime";
+import { DiaryPage } from "@/components/diary/DiaryPage";
 import { Icon } from "@/components/icons";
 import { triggerSiteRebuild } from "@/data/rebuildClient";
+import { getSiteSettingsRepo } from "@/data/siteSettingsRepo.wire";
+import type { DiaryLook } from "@/lib/diaryLook";
 import { byNewest, diaryVisOf, diaryVisPatch, monthGrid, monthOf, monthRange, shiftMonth, type DiaryVis } from "@/lib/diary";
 import { useAdd } from "../AddSheet";
 import { OnThisDay } from "../OnThisDay";
-import { useSiteTimezone } from "../SiteSettingsProvider";
+import { useSiteSettings, useSiteTimezone } from "../SiteSettingsProvider";
+import { DiaryLookSheet } from "./DiaryLookSheet";
+import { useDiaryLook } from "./useDiaryLook";
 
 const bnNum = (n: number) => n.toLocaleString("bn-BD", { useGrouping: false });
 const ymLabel = (ym: string) => `${bn.diary.months[Number(ym.slice(5, 7)) - 1]} ${bnNum(Number(ym.slice(0, 4)))}`;
@@ -22,12 +27,13 @@ type Load = { ym: string; list: PostWithId[] | null }; // list=null ⇒ ব্�
 
 type DayCellProps = { day: number; k: string; selected: boolean; isToday: boolean; dayEntries: PostWithId[] | undefined; onPick: (k: string) => void };
 
-/** পঞ্জিকার একটি দিন: আজ = পটভূমি; নির্বাচিত = ভরাট বাটন (আজও হলে + ring); ডট ভরাট = প্রকাশিত (পাবলিক), ফাঁপা = ব্যক্তিগত */
+/** পঞ্জিকার একটি দিন: আজ = --today রঙের গোল-কোণা স্কয়ার (পাবলিক পঞ্জিকার মতো); নির্বাচিত = ভরাট বাটন (আজও হলে + ring); ডট ভরাট = প্রকাশিত (পাবলিক), ফাঁপা = ব্যক্তিগত */
 function DayCell({ day, k, selected, isToday, dayEntries, onPick }: DayCellProps) {
   const has = !!dayEntries?.length;
   const published = !!dayEntries?.some((p) => diaryVisOf(p) === "public");
   const state = published ? bn.diary.visPublic : bn.diary.visPrivate;
-  const tone = selected ? "bg-btn-bg text-btn-tx" : isToday ? "bg-line font-semibold" : "hover:bg-line";
+  const tone = selected ? "bg-btn-bg text-btn-tx" : isToday ? "bg-today text-today-tx font-bold" : "hover:bg-line";
+  const shape = isToday && !selected ? "rounded-lg" : "rounded-full";
   const ring = selected && isToday ? "ring-2 ring-accent-text ring-offset-2 ring-offset-surface" : "";
   const dot = selected ? "border-btn-tx" : "border-accent-text";
   return (
@@ -37,7 +43,7 @@ function DayCell({ day, k, selected, isToday, dayEntries, onPick }: DayCellProps
       aria-current={isToday ? "date" : undefined}
       aria-label={`${dayLabel(k)}${has ? ` — ${bn.diary.hasEntry} (${state})` : ""}`}
       onClick={() => onPick(k)}
-      className={`relative mx-auto flex size-11 items-center justify-center rounded-full text-sm ${tone} ${ring}`}
+      className={`relative mx-auto flex size-11 items-center justify-center ${shape} text-sm ${tone} ${ring}`}
     >
       {bnNum(day)}
       {has && <span aria-hidden className={`absolute bottom-1 size-2 rounded-full border-[1.5px] ${dot} ${published ? (selected ? "bg-btn-tx" : "bg-accent-text") : ""}`} />}
@@ -45,23 +51,35 @@ function DayCell({ day, k, selected, isToday, dayEntries, onPick }: DayCellProps
   );
 }
 
-/** এন্ট্রি-কার্ড তালিকা: ≤৮ লাইন প্রিভিউ; excerpt কাটা ("…") হলে 'আরও পড়ুন →'; নিচে ব্যক্তিগত/প্রকাশিত বোতাম (ট্যাপে বদল) */
-function EntryList({ items, busyId, onToggle }: { items: PostWithId[]; busyId: string | null; onToggle: (p: PostWithId) => void }) {
+/** এন্ট্রি তালিকা: প্রতিটি ডায়েরির পাতার চেহারায় (≤৮ লাইন প্রিভিউ); excerpt কাটা ("…") হলে 'আরও পড়ুন →'; নিচে ব্যক্তিগত/প্রকাশিত বোতাম (ট্যাপে বদল) */
+function EntryList({ items, look, busyId, onToggle }: { items: PostWithId[]; look: DiaryLook; busyId: string | null; onToggle: (p: PostWithId) => void }) {
   return (
-    <ul className="divide-y divide-line rounded-2xl border border-line bg-surface">
+    <ul className="space-y-4">
       {items.map((p) => {
         const text = p.excerpt || p.title || bn.diary.untitled;
         const vis: DiaryVis = diaryVisOf(p);
+        const day = p.date ?? "";
+        const auto = day ? formatDate(new Date(`${day}T12:00:00Z`), "UTC") : "";
+        const custom = p.title.trim() !== "" && p.title !== auto;
         return (
           <li key={p.id}>
-            <Link href={`/dashboard/posts/${p.id}/edit`} className="block min-h-12 px-4 py-3">
-              <span className="line-clamp-8 block whitespace-pre-line font-serif text-base">{text}</span>
-              <span className="mt-1 flex flex-wrap items-center gap-x-2 text-sm text-muted">
-                <span className="whitespace-nowrap">{bn.diary.words(bnNum(p.wordCount))}</span>
-                {text.endsWith("…") && <span className="ms-auto font-semibold text-accent-text">{bn.diary.readMore}</span>}
-              </span>
-            </Link>
-            <div className="px-4 pb-3">
+            <DiaryPage
+              day={day}
+              title={custom ? p.title : undefined}
+              location={p.location}
+              look={look}
+              footer={
+                <span className="flex flex-wrap items-center gap-x-2">
+                  <span className="whitespace-nowrap">{bn.diary.words(bnNum(p.wordCount))}</span>
+                  {text.endsWith("…") && <span className="ms-auto font-semibold">{bn.diary.readMore}</span>}
+                </span>
+              }
+            >
+              <Link href={`/dashboard/posts/${p.id}/edit`} className="block min-h-12">
+                <span className="line-clamp-8 block whitespace-pre-line">{text}</span>
+              </Link>
+            </DiaryPage>
+            <div className="px-1 pt-2">
               <button
                 type="button"
                 disabled={busyId === p.id}
@@ -92,6 +110,30 @@ export function DiaryView() {
   const [attempt, setAttempt] = useState(0);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [visErr, setVisErr] = useState(false);
+  const { look, site, update: setLook } = useDiaryLook();
+  const { setSettings } = useSiteSettings();
+  const [lookOpen, setLookOpen] = useState(false);
+  const [siteBusy, setSiteBusy] = useState(false);
+  const [siteMsg, setSiteMsg] = useState<{ ok: boolean; text: string } | null>(null);
+
+  /** বর্তমান চেহারা পাবলিক সাইটের ডিফল্ট করা: সর্বশেষ সেটিংস পড়ে শুধু তিনটি ফিল্ড বদলে সেভ (অন্য সেটিং অক্ষত), তারপর rebuild */
+  async function saveSiteLook() {
+    if (siteBusy || !confirm(bn.diary.look.confirmSite)) return;
+    setSiteBusy(true);
+    setSiteMsg(null);
+    try {
+      const repo = await getSiteSettingsRepo();
+      const cur = await repo.get();
+      const next = await repo.save({ ...cur, diaryTheme: look.theme, diaryFont: look.font, diarySize: look.size });
+      setSettings(next);
+      const ok = await triggerSiteRebuild();
+      setSiteMsg({ ok, text: ok ? bn.diary.look.siteSaved : bn.diary.look.siteSavedNoRebuild });
+    } catch {
+      setSiteMsg({ ok: false, text: bn.diary.look.siteFailed });
+    } finally {
+      setSiteBusy(false);
+    }
+  }
 
   /** ব্যক্তিগত ⇄ প্রকাশিত: সংরক্ষণ সফল হলে তালিকা নতুন করে আনে ও সাইট rebuild চায়। private করার আগে থাকা অপ্রকাশিত সম্পাদনা posts-এ কপি (কিছু হারায় না) */
   async function toggleVis(p: PostWithId) {
@@ -194,11 +236,17 @@ export function DiaryView() {
       </section>
 
       <section aria-label={dayLabel(sel)}>
-        <div className="mb-2 flex items-center justify-between gap-2">
+        <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
           <h2 className="font-serif text-lg font-bold">{dayLabel(sel)}</h2>
-          <button type="button" onClick={openDiary} className="min-h-11 rounded-full bg-btn-bg px-4 text-sm text-btn-tx">
-            {bn.diary.addToday}
-          </button>
+          <div className="flex items-center gap-2">
+            <button type="button" onClick={() => setLookOpen(true)} className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-line px-3 text-sm">
+              <Icon name="palette" size={18} />
+              {bn.diary.lookButton}
+            </button>
+            <button type="button" onClick={openDiary} className="min-h-11 rounded-full bg-btn-bg px-4 text-sm text-btn-tx">
+              {bn.diary.addToday}
+            </button>
+          </div>
         </div>
         {!ready ? (
           <p role="status" className="text-sm text-muted">
@@ -219,12 +267,12 @@ export function DiaryView() {
                 <h3 className="mb-2 text-sm font-semibold text-muted">
                   {bn.diary.latest} · {dayLabel(latest[0]!.date ?? sel)}
                 </h3>
-                <EntryList items={latest} busyId={busyId} onToggle={toggleVis} />
+                <EntryList items={latest} look={look} busyId={busyId} onToggle={toggleVis} />
               </div>
             )}
           </>
         ) : (
-          <EntryList items={entries} busyId={busyId} onToggle={toggleVis} />
+          <EntryList items={entries} look={look} busyId={busyId} onToggle={toggleVis} />
         )}
         {visErr && (
           <p role="alert" className="mt-2 text-sm text-accent-text">
@@ -234,6 +282,10 @@ export function DiaryView() {
       </section>
 
       <OnThisDay always />
+
+      {lookOpen && (
+        <DiaryLookSheet look={look} site={site} busy={siteBusy} msg={siteMsg} onChange={setLook} onSaveSite={() => void saveSiteLook()} onClose={() => setLookOpen(false)} />
+      )}
     </div>
   );
 }
