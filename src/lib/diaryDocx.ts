@@ -8,14 +8,6 @@ import { DOCX_FONT } from "./exportDocx";
 
 /** থিম → Word-এর রং (hex, # ছাড়া): পটভূমি · লেখা · তারিখ/শিরোনাম · রুল-রেখা */
 export const DOCX_PALETTE: Record<DiaryTheme, { bg: string; ink: string; acc: string; line: string }> = {
-  paper: { bg: "FBF3DC", ink: "2B2118", acc: "8A3B2E", line: "DCCFA8" },
-  night: { bg: "1F2230", ink: "EBE1C9", acc: "D9B36A", line: "343A53" },
-  dot: { bg: "F5F2EA", ink: "1D3A6B", acc: "1D3A6B", line: "D5D1C2" },
-  letter: { bg: "ECDCBD", ink: "4A2C1A", acc: "7A3D1C", line: "D4BF94" },
-  rose: { bg: "F9CFC7", ink: "241210", acc: "8A2F26", line: "C79A92" },
-  oyster: { bg: "DEDBD3", ink: "4A3322", acc: "7A5230", line: "BDB8AC" },
-  terracotta: { bg: "F3E9D9", ink: "3B2118", acc: "A1472F", line: "E2D0B6" },
-  slate: { bg: "F7F3E9", ink: "2D3829", acc: "4F5F41", line: "D6D8C6" },
   charcoal: { bg: "FAFAF6", ink: "2B2B2B", acc: "3C4049", line: "C9C9C0" },
   brick: { bg: "FAFAF6", ink: "4A1A14", acc: "8B3A2F", line: "DEB7B1" },
   navy: { bg: "FAFAF6", ink: "1D2A52", acc: "25406E", line: "BCC0D8" },
@@ -31,6 +23,12 @@ export const DOCX_PALETTE: Record<DiaryTheme, { bg: string; ink: string; acc: st
   nbteal: { bg: "F9EFDC", ink: "2E241C", acc: "1F6E75", line: "DCCFA8" },
   nbbig: { bg: "F9EFDC", ink: "2E241C", acc: "8B3A2F", line: "D4C29A" },
   week: { bg: "FAFAF7", ink: "1D1D1D", acc: "1D1D1D", line: "CDCDCD" },
+  moon: { bg: "0D1030", ink: "E8E6FF", acc: "FFE9A8", line: "2A2F66" },
+  postcard: { bg: "EFE3C9", ink: "3A2A1C", acc: "7A2418", line: "CDBB94" },
+  rain: { bg: "0F2A2F", ink: "E4F4F2", acc: "7BE0D6", line: "24484E" },
+  kantha: { bg: "F6EFE0", ink: "2B2A3A", acc: "C4372F", line: "E0D2B0" },
+  skyday: { bg: "3A1646", ink: "FFF4EC", acc: "FFE6A4", line: "6B2E6E" },
+  lantern: { bg: "0B0806", ink: "F3DCB8", acc: "FFB35C", line: "3A2616" },
 };
 
 export const DIARY_DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";

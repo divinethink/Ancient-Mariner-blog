@@ -1,8 +1,9 @@
 // দিনলিপির চেহারা: থিম · ফন্ট · লেখার আকার (pure, SDK/UI-মুক্ত)। অজানা/অবৈধ মান সবসময় ডিফল্টে ফেরে —
 // পুরনো ডেটা বা ভবিষ্যতে সরানো থিম পেজ ভাঙে না। CSS `globals.css`-এর `[data-dtheme|dfont|dsize]` নিয়মের সাথে মিলিয়ে রাখতে হবে।
-export const DIARY_THEMES_CLASSIC = ["paper", "night", "dot", "letter", "rose", "oyster", "terracotta", "slate"] as const;
 export const DIARY_THEMES_NEW = ["charcoal", "brick", "navy", "forest", "sky", "plum", "ink", "gold", "ruby", "teal", "nbslate", "nbred", "nbteal", "nbbig", "week"] as const;
-export const DIARY_THEMES = [...DIARY_THEMES_CLASSIC, ...DIARY_THEMES_NEW] as const;
+/** বিশেষ থিম: রঙের বাইরে সাজসজ্জা (চাঁদ/ডাকঘর/বৃষ্টি/কাঁথা/আকাশ/লণ্ঠন) — তারিখ · স্থান · বেলা থেকে নিজে সাজে, নতুন ডেটা লাগে না */
+export const DIARY_THEMES_SPECIAL = ["moon", "postcard", "rain", "kantha", "skyday", "lantern"] as const;
+export const DIARY_THEMES = [...DIARY_THEMES_NEW, ...DIARY_THEMES_SPECIAL] as const;
 export const DIARY_FONTS = ["default", "charulipi", "rabindric", "tagore", "bensen", "kaiyum"] as const;
 export const DIARY_SIZES = ["s", "m", "l"] as const;
 
@@ -11,18 +12,10 @@ export type DiaryFont = (typeof DIARY_FONTS)[number];
 export type DiarySize = (typeof DIARY_SIZES)[number];
 export type DiaryLook = { theme: DiaryTheme; font: DiaryFont; size: DiarySize };
 
-export const DEFAULT_DIARY_LOOK: DiaryLook = { theme: "paper", font: "default", size: "m" };
+export const DEFAULT_DIARY_LOOK: DiaryLook = { theme: "nbred", font: "default", size: "m" };
 
 /** পিকারের রঙের নমুনা (CSS-এর সাথে মেলানো): পটভূমি + কালি */
 export const DIARY_SWATCH: Record<DiaryTheme, { bg: string; ink: string }> = {
-  paper: { bg: "#fbf3dc", ink: "#8a3b2e" },
-  night: { bg: "#1f2230", ink: "#d9b36a" },
-  dot: { bg: "#f5f2ea", ink: "#1d3a6b" },
-  letter: { bg: "#ecdcbd", ink: "#7a3d1c" },
-  rose: { bg: "#f9cfc7", ink: "#8a2f26" },
-  oyster: { bg: "#dedbd3", ink: "#7a5230" },
-  terracotta: { bg: "#f3e9d9", ink: "#a1472f" },
-  slate: { bg: "#f7f3e9", ink: "#4f5f41" },
   charcoal: { bg: "#3c4049", ink: "#fdf8ec" },
   brick: { bg: "#8b3a2f", ink: "#fdf8ec" },
   navy: { bg: "#25406e", ink: "#fdf8ec" },
@@ -38,17 +31,23 @@ export const DIARY_SWATCH: Record<DiaryTheme, { bg: string; ink: string }> = {
   nbteal: { bg: "#f9efdc", ink: "#1f6e75" },
   nbbig: { bg: "#f9efdc", ink: "#8b3a2f" },
   week: { bg: "#fafaf7", ink: "#1d1d1d" },
+  moon: { bg: "#0d1030", ink: "#ffe9a8" },
+  postcard: { bg: "#efe3c9", ink: "#7a2418" },
+  rain: { bg: "#0f2a2f", ink: "#7be0d6" },
+  kantha: { bg: "#f6efe0", ink: "#c4372f" },
+  skyday: { bg: "#8a2f7b", ink: "#ffe6a4" },
+  lantern: { bg: "#0b0806", ink: "#ffb35c" },
 };
 
-/** পাতার গড়ন (CSS `[data-dlayout]`)। পুরনো ৮টি থিম = "classic" (কোনো attribute বসে না) */
-export type DiaryLayout = "classic" | "band" | "frame" | "line" | "book" | "week";
+/** পাতার গড়ন (CSS `[data-dlayout]`) */
+export type DiaryLayout = "band" | "frame" | "line" | "book" | "week" | "deco";
 export const DIARY_LAYOUT: Record<DiaryTheme, DiaryLayout> = {
-  paper: "classic", night: "classic", dot: "classic", letter: "classic", rose: "classic", oyster: "classic", terracotta: "classic", slate: "classic",
   charcoal: "band", brick: "band", navy: "band", forest: "band", sky: "band",
   plum: "frame", ink: "frame", gold: "frame",
   ruby: "line", teal: "line",
   nbslate: "book", nbred: "book", nbteal: "book", nbbig: "book",
   week: "week",
+  moon: "deco", postcard: "deco", rain: "deco", kantha: "deco", skyday: "deco", lantern: "deco",
 };
 
 const pick = <T extends string>(list: readonly T[], v: unknown, fallback: T): T =>

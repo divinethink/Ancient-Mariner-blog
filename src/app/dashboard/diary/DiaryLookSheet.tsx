@@ -7,8 +7,8 @@ import {
   DIARY_FONTS,
   DIARY_SIZES,
   DIARY_SWATCH,
-  DIARY_THEMES_CLASSIC,
   DIARY_THEMES_NEW,
+  DIARY_THEMES_SPECIAL,
   sameLook,
   type DiaryFont,
   type DiaryLook,
@@ -60,7 +60,7 @@ export function DiaryLookSheet({ look, site, busy, msg, onChange, onSaveSite, on
 
         <section aria-label={L.theme} className="space-y-3">
           <h3 className="text-sm font-semibold text-muted">{L.theme}</h3>
-          {([[L.groupClassic, DIARY_THEMES_CLASSIC], [L.groupNew, DIARY_THEMES_NEW]] as const).map(([label, list]) => (
+          {([[L.groupNew, DIARY_THEMES_NEW], [L.groupSpecial, DIARY_THEMES_SPECIAL]] as const).map(([label, list]) => (
             <div key={label}>
               <p className="mb-1.5 text-xs text-muted">{label}</p>
               <div className="grid grid-cols-4 gap-2">

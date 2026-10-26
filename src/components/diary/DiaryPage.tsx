@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { bn } from "@/i18n/bn";
 import { DIARY_LAYOUT, type DiaryLook } from "@/lib/diaryLook";
+import { DiaryDeco } from "./DiaryDeco";
 
 const bnNum = (n: number) => n.toLocaleString("bn-BD", { useGrouping: false });
 const DAY_MS = 86_400_000;
@@ -13,9 +14,10 @@ function isoWeek(d: Date): number {
   return Math.ceil(((t.getTime() - y0) / DAY_MS + 1) / 7);
 }
 
-const Pin = () => (
+/** GPS (my-location) চিহ্ন: লক্ষ্যবিন্দু-বৃত্ত + চার দিকের টিক */
+const Gps = () => (
   <svg aria-hidden viewBox="0 0 24 24" width="1.1em" height="1.1em" fill="currentColor" className="dico">
-    <path d="M12 2a7 7 0 0 0-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z" />
+    <path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8zm8.94 3A8.99 8.99 0 0 0 13 3.06V1h-2v2.06A8.99 8.99 0 0 0 3.06 11H1v2h2.06A8.99 8.99 0 0 0 11 20.94V23h2v-2.06A8.99 8.99 0 0 0 20.94 13H23v-2h-2.06zM12 19a7 7 0 1 1 0-14 7 7 0 0 1 0 14z" />
   </svg>
 );
 const Sun = () => (
@@ -34,7 +36,7 @@ const Moon = () => (
  * ডায়েরির একটি পাতা (পাবলিক ও ড্যাশবোর্ড দুই জায়গায় একই): বড় তারিখ, মাস-বছর, বার; রুলড লাইনের ওপর লেখা।
  * হুক/state নেই — server ও client দুই component থেকেই চলে। চেহারা `data-dtheme|dlayout|dfont|dsize` দিয়ে (CSS: globals.css)।
  * `day` = "YYYY-MM-DD"; তারিখ UTC-তে গণিত, তাই দিন সরে না। অবৈধ day হলে শিরোনাম-অংশ বাদ, বাকি অক্ষত।
- * `period` = "বেলা" (সকাল/দুপুর…) — পুরনো ৮ থিমে দেখা যায় না; নতুন থিমে স্থানের পাশে চিপ হয়ে আসে।
+ * `period` = "বেলা" (সকাল/দুপুর…) — স্থানের পাশে চিপ হয়ে আসে; "বেলা-আকাশ" থিমে আকাশের রং ঠিক করে (`data-dperiod`)।
  */
 export function DiaryPage({
   day,
@@ -62,8 +64,9 @@ export function DiaryPage({
   const weekDays = ok && layout === "week" ? Array.from({ length: 7 }, (_, i) => new Date(d.getTime() + (i - d.getUTCDay()) * DAY_MS)) : null;
   const month = ok ? bn.diary.months[d.getUTCMonth()] : "";
   const year = ok ? bnNum(d.getUTCFullYear()) : "";
+  const periodKey = period ? Object.entries(bn.diary.periods).find(([, v]) => v === period)?.[0] : undefined;
   return (
-    <div className="dpage" data-dtheme={look.theme} data-dfont={look.font} data-dsize={look.size} {...(layout !== "classic" && { "data-dlayout": layout })}>
+    <div className="dpage" data-dtheme={look.theme} data-dfont={look.font} data-dsize={look.size} data-dlayout={layout} {...(periodKey && { "data-dperiod": periodKey })}>
       <p className="dheading" aria-hidden="true">
         {bn.diary.pageHeading}
       </p>
@@ -80,6 +83,9 @@ export function DiaryPage({
             <span className="dwd">{bn.public.weekdaysFull[d.getUTCDay()]}</span>
           </span>
         </div>
+      )}
+      {ok && layout === "deco" && (
+        <DiaryDeco theme={look.theme} day={day} dayLabel={`${bnNum(d.getUTCDate())} ${month}`} year={year} location={location} period={period} />
       )}
       {weekDays && (
         <div className="dweek" aria-hidden="true">
@@ -102,7 +108,7 @@ export function DiaryPage({
           <p className="dchips">
             {location && (
               <span className="dchip">
-                <Pin />
+                <Gps />
                 <span className="dk">{bn.diary.labelPlace}</span>
                 <span className="dv">{location}</span>
               </span>

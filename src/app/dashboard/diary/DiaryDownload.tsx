@@ -6,7 +6,7 @@ import { getPostRepo } from "@/data/postRepo.wire";
 import { bn } from "@/i18n/bn";
 import { dayKey } from "@/lib/datetime";
 import { estimatePages, fetchRange, fileName, rangeFor, rangeLabel, selectEntries, toEntries, type DownloadEntry, type RangeKind } from "@/lib/diaryExport";
-import { DIARY_THEMES_CLASSIC, DIARY_THEMES_NEW, type DiaryLook, type DiaryTheme } from "@/lib/diaryLook";
+import { DIARY_THEMES, type DiaryLook, type DiaryTheme } from "@/lib/diaryLook";
 import { DiaryPrintRoot, type PrintJob } from "./DiaryPrintRoot";
 
 const L = bn.diary.dl;
@@ -115,7 +115,7 @@ export function DiaryDownload({ look, sel, tz, author, onClose }: Props) {
         <section aria-label={L.design}>
           <h3 className="mb-2 text-sm font-semibold text-muted">{L.design}</h3>
           <div className="flex flex-wrap gap-2">
-            {[...DIARY_THEMES_CLASSIC, ...DIARY_THEMES_NEW].map((t) => (
+            {DIARY_THEMES.map((t) => (
               <button key={t} type="button" aria-pressed={theme === t} onClick={() => setTheme(t)} className={`${chip(theme === t)} text-sm`}>
                 {bn.diary.look.themes[t]}
               </button>

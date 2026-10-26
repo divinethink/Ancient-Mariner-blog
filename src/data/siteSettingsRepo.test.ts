@@ -190,10 +190,10 @@ describe("দিনলিপির চেহারা (diaryTheme/diaryFont/diar
   it("নেই হলে key-ই থাকে না; বৈধ মান রাখে; অবৈধ মান বাদ ও সেভে প্রত্যাখ্যান", () => {
     const p = parseSiteSettings({});
     expect("diaryTheme" in p || "diaryFont" in p || "diarySize" in p).toBe(false);
-    expect(parseSiteSettings({ ...valid, diaryTheme: "rose", diaryFont: "kaiyum", diarySize: "l" })).toMatchObject({ diaryTheme: "rose", diaryFont: "kaiyum", diarySize: "l" });
+    expect(parseSiteSettings({ ...valid, diaryTheme: "navy", diaryFont: "kaiyum", diarySize: "l" })).toMatchObject({ diaryTheme: "navy", diaryFont: "kaiyum", diarySize: "l" });
     expect("diaryTheme" in parseSiteSettings({ ...valid, diaryTheme: "nope" })).toBe(false);
     expect(SiteSettingsInputSchema.safeParse({ ...valid, diaryTheme: "nope" }).success).toBe(false);
-    expect(SiteSettingsInputSchema.safeParse({ ...valid, diaryTheme: "slate", diaryFont: "default", diarySize: "m" }).success).toBe(true);
+    expect(SiteSettingsInputSchema.safeParse({ ...valid, diaryTheme: "plum", diaryFont: "default", diarySize: "m" }).success).toBe(true);
     expect(SiteSettingsInputSchema.safeParse({ ...valid, diaryTheme: "week" }).success).toBe(true); // নতুন থিমও বৈধ
   });
 });
