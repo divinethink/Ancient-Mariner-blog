@@ -1629,6 +1629,13 @@ export const bn = {
         lantern: "লণ্ঠনের আলো",
         fog: "শীতের কুয়াশা",
       } as Record<string, string>,
+      season: {
+        title: "ঋতু অনুযায়ী থিম",
+        note: "চালু থাকলে ঋতু বদলালে থিম নিজে বদলাবে (এই ডিভাইসে)",
+        now: "এখন",
+        names: { grishmo: "গ্রীষ্ম", borsha: "বর্ষা", shorot: "শরৎ", hemonto: "হেমন্ত", shit: "শীত", boshonto: "বসন্ত" } as Record<string, string>,
+        months: { grishmo: "বৈশাখ–জ্যৈষ্ঠ", borsha: "আষাঢ়–শ্রাবণ", shorot: "ভাদ্র–আশ্বিন", hemonto: "কার্তিক–অগ্রহায়ণ", shit: "পৌষ–মাঘ", boshonto: "ফাল্গুন–চৈত্র" } as Record<string, string>,
+      },
       groupNew: "নতুন",
       groupSpecial: "বিশেষ",
       fonts: {

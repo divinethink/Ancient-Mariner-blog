@@ -3,8 +3,10 @@
 // "থিম ও ফন্ট" bottom-sheet: থিম · ফন্ট · আকার বাছলে সঙ্গে সঙ্গে এই ডিভাইসে প্রযোজ্য; পাবলিক সাইটে প্রযোজ্য করতে আলাদা বোতাম।
 import { useEffect, useRef } from "react";
 import { bn } from "@/i18n/bn";
+import { SEASONS, type Season, type SeasonPref } from "@/lib/diarySeason";
 import {
   DIARY_FONTS,
+  DIARY_THEMES,
   DIARY_SIZES,
   DIARY_SWATCH,
   DIARY_THEMES_NEW,
@@ -23,6 +25,7 @@ type Props = {
   busy: boolean;
   msg: { ok: boolean; text: string } | null;
   onChange: (l: DiaryLook) => void;
+  season: { pref: SeasonPref; current: Season | null; setOn: (on: boolean) => void; setTheme: (s: Season, t: DiaryTheme) => void };
   onSaveSite: () => void;
   onClose: () => void;
 };
@@ -30,7 +33,7 @@ type Props = {
 const L = bn.diary.look;
 const chip = (on: boolean) => `min-h-11 rounded-full border px-4 text-base ${on ? "border-btn-bg bg-btn-bg text-btn-tx" : "border-line bg-surface"}`;
 
-export function DiaryLookSheet({ look, site, busy, msg, onChange, onSaveSite, onClose }: Props) {
+export function DiaryLookSheet({ look, site, busy, msg, onChange, season, onSaveSite, onClose }: Props) {
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -85,6 +88,36 @@ export function DiaryLookSheet({ look, site, busy, msg, onChange, onSaveSite, on
               </div>
             </div>
           ))}
+        </section>
+
+        <section aria-label={L.season.title} className="space-y-2">
+          <label className="flex min-h-11 items-center justify-between gap-3">
+            <span>
+              <span className="block font-semibold">{L.season.title}</span>
+              <span className="block text-sm text-muted">{L.season.note}</span>
+            </span>
+            <input type="checkbox" checked={season.pref.on} onChange={(e) => season.setOn(e.target.checked)} className="h-6 w-6" />
+          </label>
+          {season.pref.on && (
+            <div className="space-y-2">
+              {SEASONS.map((s) => (
+                <label key={s} className={`flex min-h-11 items-center justify-between gap-3 rounded-xl border bg-surface px-3 ${season.current === s ? "border-2 border-btn-bg" : "border-line"}`}>
+                  <span className="text-sm">
+                    {L.season.names[s]}
+                    {season.current === s && <span className="ml-2 rounded-md border border-line px-2 py-0.5 text-xs">{L.season.now}</span>}
+                    <span className="block text-xs text-muted">{L.season.months[s]}</span>
+                  </span>
+                  <select value={season.pref.map[s]} onChange={(e) => season.setTheme(s, e.target.value as DiaryTheme)} className="min-h-11 rounded-lg border border-line bg-bg px-2 text-sm">
+                    {DIARY_THEMES.map((t) => (
+                      <option key={t} value={t}>
+                        {L.themes[t]}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ))}
+            </div>
+          )}
         </section>
 
         <section aria-label={L.font}>

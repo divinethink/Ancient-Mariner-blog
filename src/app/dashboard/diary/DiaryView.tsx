@@ -115,7 +115,7 @@ export function DiaryView() {
   const [attempt, setAttempt] = useState(0);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [visErr, setVisErr] = useState(false);
-  const { look, site, update: setLook } = useDiaryLook();
+  const { look, site, update: setLook, season } = useDiaryLook();
   const { settings, setSettings } = useSiteSettings();
   const [dlOpen, setDlOpen] = useState(false);
   const [lookOpen, setLookOpen] = useState(false);
@@ -295,7 +295,7 @@ export function DiaryView() {
 
       {dlOpen && <DiaryDownload look={look} sel={sel} tz={tz} author={settings.siteTitle} onClose={() => setDlOpen(false)} />}
       {lookOpen && (
-        <DiaryLookSheet look={look} site={site} busy={siteBusy} msg={siteMsg} onChange={setLook} onSaveSite={() => void saveSiteLook()} onClose={() => setLookOpen(false)} />
+        <DiaryLookSheet look={look} site={site} busy={siteBusy} msg={siteMsg} onChange={setLook} season={season} onSaveSite={() => void saveSiteLook()} onClose={() => setLookOpen(false)} />
       )}
     </div>
   );
