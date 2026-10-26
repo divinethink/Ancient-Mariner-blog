@@ -194,5 +194,6 @@ describe("দিনলিপির চেহারা (diaryTheme/diaryFont/diar
     expect("diaryTheme" in parseSiteSettings({ ...valid, diaryTheme: "nope" })).toBe(false);
     expect(SiteSettingsInputSchema.safeParse({ ...valid, diaryTheme: "nope" }).success).toBe(false);
     expect(SiteSettingsInputSchema.safeParse({ ...valid, diaryTheme: "slate", diaryFont: "default", diarySize: "m" }).success).toBe(true);
+    expect(SiteSettingsInputSchema.safeParse({ ...valid, diaryTheme: "week" }).success).toBe(true); // নতুন থিমও বৈধ
   });
 });

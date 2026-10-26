@@ -6,7 +6,7 @@ import { getPostRepo } from "@/data/postRepo.wire";
 import { bn } from "@/i18n/bn";
 import { dayKey } from "@/lib/datetime";
 import { estimatePages, fetchRange, fileName, rangeFor, rangeLabel, selectEntries, toEntries, type DownloadEntry, type RangeKind } from "@/lib/diaryExport";
-import { DIARY_THEMES, type DiaryLook, type DiaryTheme } from "@/lib/diaryLook";
+import { DIARY_THEMES_CLASSIC, DIARY_THEMES_NEW, type DiaryLook, type DiaryTheme } from "@/lib/diaryLook";
 import { DiaryPrintRoot, type PrintJob } from "./DiaryPrintRoot";
 
 const L = bn.diary.dl;
@@ -51,7 +51,7 @@ export function DiaryDownload({ look, sel, tz, author, onClose }: Props) {
     try {
       const repo = await getPostRepo();
       const posts = await fetchRange((x) => repo.listDiary(x), r, Number(today.slice(0, 4)));
-      const entries: DownloadEntry[] = toEntries(selectEntries(posts, onlyPublic));
+      const entries: DownloadEntry[] = toEntries(selectEntries(posts, onlyPublic), tz);
       if (entries.length === 0) return setMsg({ ok: false, text: L.empty });
       const label = rangeLabel(kind, r);
       const summary = L.summary(bnNum(entries.length), bnNum(estimatePages(entries)));
@@ -60,7 +60,7 @@ export function DiaryDownload({ look, sel, tz, author, onClose }: Props) {
         setMsg({ ok: true, text: `${summary}। ${L.printHint}` });
       } else {
         const { buildDiaryDocx, DIARY_DOCX_MIME } = await import("@/lib/diaryDocx");
-        const buf = await buildDiaryDocx(entries, { theme, title: L.coverTitle, subtitle: label, author, countLine: L.count(bnNum(entries.length)), placeLabel: bn.diary.labelPlace });
+        const buf = await buildDiaryDocx(entries, { theme, title: L.coverTitle, subtitle: label, author, countLine: L.count(bnNum(entries.length)), placeLabel: bn.diary.labelPlace, periodLabel: bn.diary.labelPeriod });
         const url = URL.createObjectURL(new Blob([buf], { type: DIARY_DOCX_MIME }));
         const a = document.createElement("a");
         a.href = url;
@@ -115,7 +115,7 @@ export function DiaryDownload({ look, sel, tz, author, onClose }: Props) {
         <section aria-label={L.design}>
           <h3 className="mb-2 text-sm font-semibold text-muted">{L.design}</h3>
           <div className="flex flex-wrap gap-2">
-            {DIARY_THEMES.map((t) => (
+            {[...DIARY_THEMES_CLASSIC, ...DIARY_THEMES_NEW].map((t) => (
               <button key={t} type="button" aria-pressed={theme === t} onClick={() => setTheme(t)} className={`${chip(theme === t)} text-sm`}>
                 {bn.diary.look.themes[t]}
               </button>

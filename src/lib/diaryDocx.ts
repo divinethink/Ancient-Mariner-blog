@@ -16,6 +16,21 @@ export const DOCX_PALETTE: Record<DiaryTheme, { bg: string; ink: string; acc: st
   oyster: { bg: "DEDBD3", ink: "4A3322", acc: "7A5230", line: "BDB8AC" },
   terracotta: { bg: "F3E9D9", ink: "3B2118", acc: "A1472F", line: "E2D0B6" },
   slate: { bg: "F7F3E9", ink: "2D3829", acc: "4F5F41", line: "D6D8C6" },
+  charcoal: { bg: "FAFAF6", ink: "2B2B2B", acc: "3C4049", line: "C9C9C0" },
+  brick: { bg: "FAFAF6", ink: "4A1A14", acc: "8B3A2F", line: "DEB7B1" },
+  navy: { bg: "FAFAF6", ink: "1D2A52", acc: "25406E", line: "BCC0D8" },
+  forest: { bg: "FAFAF6", ink: "1F3A2A", acc: "2F6345", line: "B5CBBD" },
+  sky: { bg: "FAFAF6", ink: "1D2A52", acc: "466190", line: "C3C6DC" },
+  plum: { bg: "1F1A27", ink: "F0E8D8", acc: "A98BB5", line: "363046" },
+  ink: { bg: "181B22", ink: "ECE4D0", acc: "9B9B9B", line: "2D3139" },
+  gold: { bg: "1B1F2B", ink: "F0E8D4", acc: "D9B36A", line: "323849" },
+  ruby: { bg: "FAFAF7", ink: "222222", acc: "8A3328", line: "CDCDCD" },
+  teal: { bg: "FAFAF7", ink: "222222", acc: "1F6E75", line: "CDCDCD" },
+  nbslate: { bg: "F9EFDC", ink: "2E241C", acc: "3C4049", line: "DCCFA8" },
+  nbred: { bg: "F9EFDC", ink: "2E241C", acc: "8B3A2F", line: "DCCFA8" },
+  nbteal: { bg: "F9EFDC", ink: "2E241C", acc: "1F6E75", line: "DCCFA8" },
+  nbbig: { bg: "F9EFDC", ink: "2E241C", acc: "8B3A2F", line: "D4C29A" },
+  week: { bg: "FAFAF7", ink: "1D1D1D", acc: "1D1D1D", line: "CDCDCD" },
 };
 
 export const DIARY_DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
@@ -23,7 +38,7 @@ const SIZE = 26; // ১৩pt (half-points)
 const A4 = { width: 11906, height: 16838 };
 const MARGIN = 1134; // ২ সেমি
 
-export type DiaryDocxOpts = { theme: DiaryTheme; title: string; subtitle: string; author: string; countLine: string; placeLabel: string };
+export type DiaryDocxOpts = { theme: DiaryTheme; title: string; subtitle: string; author: string; countLine: string; placeLabel: string; periodLabel: string };
 
 /** এন্ট্রিগুলো → .docx বাইট। মলাট + প্রতি এন্ট্রি নতুন পাতায় */
 export async function buildDiaryDocx(entries: readonly DownloadEntry[], o: DiaryDocxOpts): Promise<ArrayBuffer> {
@@ -62,7 +77,8 @@ export async function buildDiaryDocx(entries: readonly DownloadEntry[], o: Diary
     );
     if (parts) children.push(new d.Paragraph({ shading, spacing: { after: 60 }, children: [run(parts.weekday, { size: 24 })] }));
     if (e.title) children.push(new d.Paragraph({ shading, spacing: { after: 40 }, children: [run(e.title, { size: 30, bold: true })] }));
-    if (e.location) children.push(new d.Paragraph({ shading, spacing: { after: 80 }, children: [run(`${o.placeLabel}: ${e.location}`, { size: 22, color: pal.acc })] }));
+    const meta = [e.location ? `${o.placeLabel}: ${e.location}` : "", e.period ? `${o.periodLabel}: ${e.period}` : ""].filter(Boolean).join("   ·   ");
+    if (meta) children.push(new d.Paragraph({ shading, spacing: { after: 80 }, children: [run(meta, { size: 22, color: pal.acc })] }));
     for (const line of e.lines) {
       children.push(
         new d.Paragraph({

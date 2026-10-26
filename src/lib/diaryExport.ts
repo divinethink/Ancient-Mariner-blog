@@ -3,6 +3,7 @@
 import { bn } from "../i18n/bn";
 import { formatDate } from "./datetime";
 import { diaryVisOf, isValidDayKey, monthRange } from "./diary";
+import { periodOf } from "./diaryPeriod";
 import { docToText, parseBody } from "./editorDoc";
 
 export type RangeKind = "day" | "month" | "year" | "all" | "custom";
@@ -94,16 +95,24 @@ export function selectEntries<T extends PostLike>(posts: readonly T[], onlyPubli
     .sort((a, b) => (a.date ?? "").localeCompare(b.date ?? "") || a.createdAt.getTime() - b.createdAt.getTime());
 }
 
-export type DownloadEntry = { id: string; day: string; title: string; location?: string; lines: string[] };
+export type DownloadEntry = { id: string; day: string; title: string; location?: string; period?: string; night?: boolean; lines: string[] };
 
-/** লেখা → দিন, (নিজে-দেওয়া) শিরোনাম, স্থান, লাইন। স্বয়ংক্রিয় শিরোনাম (তারিখ) বাদ। বডি শুধু টেক্সট — ছবি/ফরম্যাট বাদ */
-export function toEntries(posts: readonly PostLike[]): DownloadEntry[] {
+/** লেখা → দিন, (নিজে-দেওয়া) শিরোনাম, স্থান, বেলা (লেখার সময় থেকে; `tz` দিলে), লাইন। স্বয়ংক্রিয় শিরোনাম (তারিখ) বাদ। বডি শুধু টেক্সট — ছবি/ফরম্যাট বাদ */
+export function toEntries(posts: readonly PostLike[], tz?: string): DownloadEntry[] {
   return posts.map((p) => {
     const day = p.date ?? "";
     const auto = day && isValidDayKey(day) ? formatDate(new Date(`${day}T12:00:00Z`), "UTC") : "";
     const t = p.title.trim();
     const text = docToText(parseBody(p.body)).replace(/\r\n?/g, "\n");
-    return { id: p.id, day, title: t !== "" && t !== auto ? t : "", ...(p.location ? { location: p.location } : {}), lines: text === "" ? [] : text.split("\n") };
+    const per = tz ? periodOf(p.createdAt, tz) : null;
+    return {
+      id: p.id,
+      day,
+      title: t !== "" && t !== auto ? t : "",
+      ...(p.location ? { location: p.location } : {}),
+      ...(per ? { period: bn.diary.periods[per], night: per === "night" } : {}),
+      lines: text === "" ? [] : text.split("\n"),
+    };
   });
 }
 

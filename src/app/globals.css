@@ -388,10 +388,12 @@ main:has(.dash-shell) {
 .dpage[data-dsize="l"] { --dfs: 26px; }
 .dpage::before { content: ""; position: absolute; top: 0; bottom: 0; left: 40px; width: 2px; background: var(--dmar); pointer-events: none; }
 .dpage .dheading { display: none; margin: 0; padding: 14px var(--dpr) 0 var(--dpl); font-size: 2.1em; line-height: 1.2; font-weight: 700; }
-.dpage .dhead { display: flex; align-items: flex-end; gap: 12px; padding: 14px var(--dpr) 8px var(--dpl); background: var(--dheadbg, transparent); color: var(--dheadtx, var(--dink)); }
-.dpage .dnum { font-size: 2.6em; line-height: 1; font-weight: 700; color: var(--dheadnum, var(--dacc)); }
+.dpage .dhead { display: flex; align-items: flex-end; gap: 12px; padding: 9px var(--dpr) 6px var(--dpl); background: var(--dheadbg, transparent); color: var(--dheadtx, var(--dink)); }
+.dpage .dnum { font-size: 2.3em; line-height: 1; font-weight: 700; color: var(--dheadnum, var(--dacc)); }
 .dpage .dmeta { display: flex; flex-direction: column; font-size: 1em; line-height: 1.35; font-weight: 700; }
-.dpage .dmeta span + span { font-weight: 400; opacity: 0.85; }
+.dpage .dmeta > span + span { font-weight: 400; opacity: 0.85; }
+.dpage .dchips, .dpage .dweek { display: none; }
+.dpage .dico { flex: none; }
 .dpage .dbody { padding: 0 var(--dpr) 4px var(--dpl); }
 .dpage .dtitle { margin: 8px 0 0; font-size: 1.15em; line-height: var(--dlh); font-weight: 700; }
 .dpage .dplace { margin: 0; font-size: 0.85em; line-height: var(--dlh); color: var(--dacc); }
@@ -437,6 +439,142 @@ main:has(.dash-shell) {
   --dheadbg: #55664a; --dheadtx: #f7f3e9; --dheadnum: #f7f3e9;
 }
 
+/* ───── নতুন গড়ন (data-dlayout): band · frame · line · book · week ───── */
+.dpage[data-dlayout] {
+  --dpl: 22px; --dpr: 22px;
+  --dchipbg: transparent; --dchipbd: var(--dborder); --dchiptx: var(--dink);
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; align-content: start;
+  grid-template-areas: "label date" "title date" "sub date" "chips date" "text text" "foot foot";
+  grid-template-rows: auto auto auto auto minmax(0, 1fr) auto;
+  padding: 0 var(--dpr) 0 var(--dpl);
+}
+.dpage[data-dlayout] .dheading { grid-area: label; padding: 0; }
+.dpage[data-dlayout] .dhead { grid-area: date; padding: 0; background: none; align-self: start; }
+.dpage[data-dlayout] .dbody { display: contents; }
+.dpage[data-dlayout] .dtitle { grid-area: title; margin: 0; font-size: 1.2em; min-width: 0; overflow-wrap: anywhere; }
+.dpage[data-dlayout] .dplace { display: none; }
+.dpage[data-dlayout] .dchips { grid-area: chips; display: flex; flex-wrap: wrap; gap: 6px 8px; margin: 8px 0 0; font-size: 0.8em; }
+.dpage[data-dlayout] .dchip { display: inline-flex; align-items: center; gap: 5px; line-height: 1.3; padding: 2px 11px; border-radius: 999px; border: 1px solid var(--dchipbd); background: var(--dchipbg); color: var(--dchiptx); }
+.dpage[data-dlayout] .dk::after { content: ":"; }
+.dpage[data-dlayout] .dtext { grid-area: text; margin: 14px 0 0; position: relative; }
+.dpage[data-dlayout] .dfoot { grid-area: foot; padding: 6px 0 12px; }
+.dpage[data-dlayout] .dmeta > span + span { opacity: 1; }
+
+/* band — রঙিন ফিতা + ডানে তারিখ-কার্ড + ড্যাশ লাইন */
+.dpage[data-dlayout="band"] { --dpl: 16px; --dpr: 16px; --dchipbg: rgba(255, 255, 255, 0.14); --dchipbd: rgba(255, 255, 255, 0.32); --dchiptx: #f3f1ea; }
+.dpage[data-dlayout="band"]::before { content: ""; position: static; grid-area: 1 / 1 / 5 / 3; margin: 0 calc(-1 * var(--dpr)) 0 calc(-1 * var(--dpl)); width: auto; background: var(--dheadbg); }
+.dpage[data-dlayout="band"] .dtitle { color: var(--dheadtx); margin-top: 10px; padding-right: 8px; }
+.dpage[data-dlayout="band"] .dchips { margin-bottom: 10px; }
+.dpage[data-dlayout="band"] .dhead { flex-direction: column; align-items: center; gap: 0; text-align: center; background: var(--dcardbg); color: var(--dcardtx); border-radius: 12px; padding: 3px 14px 5px; margin: 9px 0 9px 12px; align-self: center; }
+.dpage[data-dlayout="band"] .dnum { font-size: 1.9em; color: var(--dcardtx); }
+.dpage[data-dlayout="band"] .dmeta { align-items: center; font-size: 0.78em; }
+.dpage[data-dlayout="band"] .dtext { margin-top: 12px; background-image: none; }
+.dpage[data-dlayout="band"] .dtext::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none; background: var(--dline);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='100' viewBox='0 0 9 100' preserveAspectRatio='none'%3E%3Crect width='5' height='3' y='97'/%3E%3C/svg%3E") 0 0 / 9px var(--dlh) repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='100' viewBox='0 0 9 100' preserveAspectRatio='none'%3E%3Crect width='5' height='3' y='97'/%3E%3C/svg%3E") 0 0 / 9px var(--dlh) repeat;
+}
+.dpage[data-dtheme="sky"] .dhead { padding: 7px 18px 9px; }
+.dpage[data-dtheme="sky"] .dnum { font-size: 2.4em; }
+.dpage[data-dtheme="sky"] .dwd { background: #25365f; color: #fff; border-radius: 999px; padding: 1px 14px; margin-top: 4px; opacity: 1; font-weight: 700; }
+.dpage[data-dtheme="sky"] .dchips { flex-direction: column; align-items: flex-start; }
+
+/* frame — রাতের পাতা: ফ্রেম, ইনলাইন তারিখ, ডায়মন্ড-বিভাজক */
+.dpage[data-dlayout="frame"] { border-width: 1.5px; border-color: var(--dborder); background-color: var(--dbgc); }
+.dpage[data-dlayout="frame"] .dhead { padding-top: 14px; align-items: flex-start; gap: 10px; }
+.dpage[data-dlayout="frame"] .dnum { font-size: 2.3em; }
+.dpage[data-dlayout="frame"] .dmeta { border-left: 1.5px solid var(--dborder); padding-left: 10px; font-size: 0.85em; align-self: stretch; justify-content: center; }
+.dpage[data-dlayout="frame"] .dtitle { margin-top: 14px; }
+.dpage[data-dlayout="frame"] .dchip { background: rgba(255, 255, 255, 0.05); }
+.dpage[data-dlayout="frame"] .dtext { margin-top: 22px; }
+.dpage[data-dlayout="frame"] .dtext::before { content: ""; position: absolute; left: 0; right: 0; top: -12px; height: 1.5px; background: var(--dborder); }
+.dpage[data-dlayout="frame"] .dtext::after { content: ""; position: absolute; left: 50%; top: -17px; width: 9px; height: 9px; background: var(--dacc); transform: translateX(-50%) rotate(45deg); box-shadow: 0 0 0 9px var(--dbgc); }
+.dpage[data-dtheme="gold"] .dheading { display: block; grid-area: label; color: var(--dacc); font-size: 0.8em; font-weight: 400; padding-top: 14px; }
+.dpage[data-dtheme="gold"] .dhead { width: 104px; height: 104px; margin: 14px 0 30px; border: 1.5px solid var(--dacc); border-radius: 50%; position: relative; flex-direction: column; align-items: center; justify-content: center; gap: 0; text-align: center; box-shadow: inset 0 0 0 5px var(--dbgc), inset 0 0 0 6px rgba(217, 179, 106, 0.55); }
+.dpage[data-dtheme="gold"] .dnum { font-size: 1.9em; }
+.dpage[data-dtheme="gold"] .dmeta { display: contents; }
+.dpage[data-dtheme="gold"] .dmy { display: flex; flex-direction: column; align-items: center; font-size: 0.68em; line-height: 1.2; font-weight: 400; }
+.dpage[data-dtheme="gold"] .dwd { position: absolute; left: -12px; right: -12px; bottom: -26px; text-align: center; color: var(--dacc); font-weight: 700; opacity: 1; font-size: 0.9em; }
+.dpage[data-dtheme="gold"] .dtitle { margin-top: 6px; }
+.dpage[data-dtheme="gold"] .dchips { flex-direction: column; align-items: flex-start; }
+
+/* line — হালকা পাতা, ইনলাইন আইকন-চিপ, রঙিন রেখা */
+.dpage[data-dlayout="line"] { border-radius: 16px; background-color: var(--dbgc); }
+.dpage[data-dlayout="line"] .dhead { padding-top: 14px; align-items: flex-start; gap: 10px; }
+.dpage[data-dlayout="line"] .dnum { font-size: 2.3em; }
+.dpage[data-dlayout="line"] .dmeta { border-left: 1.5px solid var(--dline); padding-left: 10px; font-size: 0.85em; align-self: stretch; justify-content: center; }
+.dpage[data-dlayout="line"] .dtitle { margin-top: 14px; }
+.dpage[data-dlayout="line"] .dchips { gap: 0; margin-top: 8px; }
+.dpage[data-dlayout="line"] .dchip { border: 0; border-radius: 0; padding: 0 12px; border-left: 1px solid var(--dline); gap: 6px; }
+.dpage[data-dlayout="line"] .dchip:first-child { padding-left: 0; border-left: 0; }
+.dpage[data-dlayout="line"] .dchip .dico { color: var(--dacc); }
+.dpage[data-dlayout="line"] .dk { opacity: 0.6; }
+.dpage[data-dlayout="line"] .dk::after { content: none; }
+.dpage[data-dlayout="line"] .dv { font-weight: 700; }
+.dpage[data-dlayout="line"] .dtext { margin-top: 14px; border-top: 2px solid var(--dacc); }
+
+/* book — নোটবুক: মার্জিন-রেখা, ফুটো, রঙিন চিপ, দ্বৈত রেখা */
+.dpage[data-dlayout="book"] { --dpl: 56px; --dpr: 20px; --dhx: 17px; --dhr: 8px; }
+.dpage[data-dlayout="book"]::before { left: 40px; width: 4px; background: none; border-left: 1px solid var(--dmar); border-right: 1px solid var(--dmar); }
+.dpage[data-dlayout="book"]::after {
+  content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 100px; pointer-events: none;
+  background:
+    radial-gradient(circle at var(--dhx) 17%, var(--dholebg) 0 var(--dhr), var(--dholebd) var(--dhr) calc(var(--dhr) + 1.5px), transparent calc(var(--dhr) + 2px)),
+    radial-gradient(circle at var(--dhx) 50%, var(--dholebg) 0 var(--dhr), var(--dholebd) var(--dhr) calc(var(--dhr) + 1.5px), transparent calc(var(--dhr) + 2px)),
+    radial-gradient(circle at var(--dhx) 83%, var(--dholebg) 0 var(--dhr), var(--dholebd) var(--dhr) calc(var(--dhr) + 1.5px), transparent calc(var(--dhr) + 2px));
+}
+.dpage[data-dlayout="book"] .dhead { padding-top: 16px; align-items: flex-start; gap: 10px; }
+.dpage[data-dlayout="book"] .dnum { font-size: 2.3em; }
+.dpage[data-dlayout="book"] .dmeta { border-left: 1px solid var(--dline); padding-left: 10px; font-size: 0.85em; align-self: stretch; justify-content: center; }
+.dpage[data-dlayout="book"] .dtitle { margin-top: 16px; }
+.dpage[data-dlayout="book"] .dtext { margin: 20px calc(-1 * var(--dpr)) 0 calc(28px - var(--dpl)); padding: 0 var(--dpr) 0 calc(var(--dpl) - 28px); background-position: 28px 0; background-size: calc(100% - 28px) 100%; background-repeat: no-repeat; }
+.dpage[data-dlayout="book"] .dtext::before { content: ""; position: absolute; left: calc(var(--dpl) - 28px); right: var(--dpr); top: -10px; height: 2px; border-top: 2px solid var(--dacc); border-bottom: 1px solid var(--dacc); }
+.dpage[data-dtheme="nbbig"] .dhead { flex-direction: column; align-items: flex-end; text-align: right; border-left: 1px solid var(--dline); padding: 12px 0 0 14px; gap: 2px; }
+.dpage[data-dtheme="nbbig"] .dnum { font-size: 3.3em; }
+.dpage[data-dtheme="nbbig"] .dmeta { border: 0; padding: 0; align-items: flex-end; font-size: 0.9em; }
+.dpage[data-dtheme="nbbig"] .dtitle::after { content: ""; display: block; width: 46px; height: 3px; background: var(--dacc); margin-top: 8px; }
+.dpage[data-dtheme="nbbig"] .dchips { flex-direction: column; align-items: flex-start; }
+
+/* week — সাপ্তাহিক স্ট্রিপ */
+.dpage[data-dlayout="week"] { border-radius: 16px; background-color: var(--dbgc); grid-template-areas: "title date" "sub date" "week week" "chips chips" "text text" "foot foot"; }
+.dpage[data-dlayout="week"] .dheading { display: block; grid-area: sub; font-size: 0.8em; font-weight: 400; opacity: 0.6; margin-top: 2px; }
+.dpage[data-dlayout="week"] .dhead { display: grid; grid-template-columns: auto auto; justify-content: end; align-items: baseline; column-gap: 8px; text-align: right; padding-top: 16px; }
+.dpage[data-dlayout="week"] .dmeta { display: contents; }
+.dpage[data-dlayout="week"] .dnum { grid-column: 1; grid-row: 1; font-size: 1.9em; color: var(--dink); }
+.dpage[data-dlayout="week"] .dwd { grid-column: 2; grid-row: 1; font-size: 1.5em; font-weight: 700; opacity: 1; }
+.dpage[data-dlayout="week"] .dmy { grid-column: 1 / -1; grid-row: 2; font-size: 0.8em; font-weight: 400; opacity: 0.6; }
+.dpage[data-dlayout="week"] .dtitle { margin-top: 16px; font-size: 1.3em; }
+.dpage[data-dlayout="week"] .dweek { grid-area: week; display: flex; justify-content: space-between; margin-top: 14px; padding: 6px 0; border-top: 2px solid var(--dink); border-bottom: 1px solid var(--dline); }
+.dpage[data-dlayout="week"] .dwday { display: flex; flex-direction: column; align-items: center; min-width: 12%; padding: 4px 0; border-radius: 8px; font-size: 0.78em; line-height: 1.3; }
+.dpage[data-dlayout="week"] .dwday i { font-style: normal; opacity: 0.6; }
+.dpage[data-dlayout="week"] .dwday b { font-size: 1.15em; }
+.dpage[data-dlayout="week"] .dwday.on { background: var(--dink); color: var(--dbgc); }
+.dpage[data-dlayout="week"] .dwday.on i { opacity: 0.9; }
+.dpage[data-dlayout="week"] .dchips { gap: 0; margin: 0; border-bottom: 1.5px solid var(--dink); }
+.dpage[data-dlayout="week"] .dchip { flex: 1; border: 0; border-radius: 0; padding: 10px 0; gap: 6px; }
+.dpage[data-dlayout="week"] .dchip .dico { color: var(--dink); }
+.dpage[data-dlayout="week"] .dk { opacity: 0.6; }
+.dpage[data-dlayout="week"] .dk::after { content: none; }
+.dpage[data-dlayout="week"] .dv { font-weight: 700; }
+.dpage[data-dlayout="week"] .dtext { margin-top: 0; }
+
+/* নতুন থিমের রং */
+[data-dtheme="charcoal"] { --dbgc: #fafaf6; --dink: #2b2b2b; --dline: #c9c9c0; --dacc: #3c4049; --dborder: #e4e4dc; --dheadbg: #3c4049; --dheadtx: #ffffff; --dcardbg: #fdf8ec; --dcardtx: #3c4049; }
+[data-dtheme="brick"] { --dbgc: #fafaf6; --dink: #4a1a14; --dline: #deb7b1; --dacc: #8b3a2f; --dborder: #ecd9d3; --dheadbg: #8b3a2f; --dheadtx: #ffffff; --dcardbg: #fdf8ec; --dcardtx: #8b3a2f; }
+[data-dtheme="navy"] { --dbgc: #fafaf6; --dink: #1d2a52; --dline: #bcc0d8; --dacc: #25406e; --dborder: #dcdfec; --dheadbg: #25406e; --dheadtx: #ffffff; --dcardbg: #fdf8ec; --dcardtx: #25406e; }
+[data-dtheme="forest"] { --dbgc: #fafaf6; --dink: #1f3a2a; --dline: #b5cbbd; --dacc: #2f6345; --dborder: #d9e4dc; --dheadbg: #2f6345; --dheadtx: #ffffff; --dcardbg: #fdf8ec; --dcardtx: #2f6345; }
+[data-dtheme="sky"] { --dbgc: #fafaf6; --dink: #1d2a52; --dline: #c3c6dc; --dacc: #466190; --dborder: #dcdfec; --dheadbg: #466190; --dheadtx: #ffffff; --dcardbg: #fdf8ec; --dcardtx: #25365f; }
+[data-dtheme="plum"] { --dbgc: #1f1a27; --dink: #f0e8d8; --dline: #363046; --dacc: #a98bb5; --dborder: #b79ac0; }
+[data-dtheme="ink"] { --dbgc: #181b22; --dink: #ece4d0; --dline: #2d3139; --dacc: #9b9b9b; --dborder: #9e9e9e; }
+[data-dtheme="gold"] { --dbgc: #1b1f2b; --dink: #f0e8d4; --dline: #323849; --dacc: #d9b36a; --dborder: #d9b36a; }
+[data-dtheme="ruby"] { --dbgc: #fafaf7; --dink: #222222; --dline: #cdcdcd; --dacc: #8a3328; --dborder: #d0d0d0; }
+[data-dtheme="teal"] { --dbgc: #fafaf7; --dink: #222222; --dline: #cdcdcd; --dacc: #1f6e75; --dborder: #d0d0d0; }
+[data-dtheme="nbslate"] { --dbgc: #f9efdc; --dink: #2e241c; --dline: #dccfa8; --dacc: #3c4049; --dborder: #ecdfc2; --dmar: #8f8a80; --dholebg: #e3d8b9; --dholebd: #c9bd97; --dchipbg: #e2dccb; --dchipbd: #c9bd97; --dchiptx: #3c4049; }
+[data-dtheme="nbred"] { --dbgc: #f9efdc; --dink: #2e241c; --dline: #dccfa8; --dacc: #8b3a2f; --dborder: #ecdfc2; --dmar: transparent; --dholebg: #e3d8b9; --dholebd: #c9bd97; --dchipbg: #efdcca; --dchipbd: #d6b3a5; --dchiptx: #8b3a2f; }
+[data-dtheme="nbteal"] { --dbgc: #f9efdc; --dink: #2e241c; --dline: #dccfa8; --dacc: #1f6e75; --dborder: #ecdfc2; --dmar: transparent; --dholebg: #e3d8b9; --dholebd: #c9bd97; --dchipbg: #dbe0cf; --dchipbd: #b3c2b5; --dchiptx: #1f6e75; }
+[data-dtheme="nbbig"] { --dbgc: #f9efdc; --dink: #2e241c; --dline: #d4c29a; --dacc: #8b3a2f; --dborder: #ecdfc2; --dmar: #b8665c; --dholebg: #e3d8b9; --dholebd: #c9bd97; --dchipbg: #eedfc3; --dchipbd: #d4c29a; --dchiptx: #8b3a2f; }
+[data-dtheme="week"] { --dbgc: #fafaf7; --dink: #1d1d1d; --dline: #cdcdcd; --dacc: #1d1d1d; --dborder: #d4d4cd; }
+
 /* দিনলিপি ডাউনলোড (PDF = প্রিন্ট): পাতাগুলো পর্দার বাইরে; প্রিন্টের সময় শুধু এগুলোই দেখা যায় */
 .diary-print-root { position: fixed; left: -99999px; top: 0; width: 210mm; }
 .diary-print-root .dline { margin: 0; min-height: var(--dlh); overflow-wrap: anywhere; }
@@ -458,4 +596,15 @@ main:has(.dash-shell) {
   .diary-print-root .dbody { flex: 1; display: flex; flex-direction: column; padding-top: 6mm; }
   .diary-print-root .dtext { flex: 1; background-image: linear-gradient(to bottom, transparent calc(100% - 1px), var(--dline) calc(100% - 1px)); background-size: 100% var(--dlh); background-repeat: repeat-y; }
   .diary-print-root .dfoot { text-align: center; padding-bottom: 8mm; }
+  .diary-print-root .dpage[data-dlayout] { display: grid; grid-template-rows: auto auto auto auto minmax(0, 1fr) auto; align-content: start; font-size: 17px; }
+  .diary-print-root .dpage[data-dlayout] .dbody { display: contents; padding: 0; }
+  .diary-print-root .dpage[data-dlayout] .dtext { flex: none; margin-top: 16px; }
+  .diary-print-root .dpage[data-dlayout="band"], .diary-print-root .dpage[data-dlayout="book"] { --dpl: 14mm; --dpr: 14mm; }
+  .diary-print-root .dpage[data-dlayout="band"] .dtext { background-image: none; }
+  .diary-print-root .dpage[data-dlayout="band"] { padding-bottom: 8mm; }
+  .diary-print-root .dpage[data-dlayout="frame"], .diary-print-root .dpage[data-dlayout="line"], .diary-print-root .dpage[data-dlayout="week"] { --dpl: 18mm; --dpr: 18mm; padding-top: 12mm; padding-bottom: 6mm; outline: 1.5px solid var(--dborder); outline-offset: -9mm; }
+  .diary-print-root .dpage[data-dlayout="book"] { --dpl: 24mm; --dhx: 38px; --dhr: 14px; padding-top: 6mm; padding-bottom: 6mm; }
+  .diary-print-root .dpage[data-dlayout="book"]::before { left: 17mm; }
+  .diary-print-root .dpage[data-dlayout="book"] .dtext { margin: 20px calc(-1 * var(--dpr)) 0 calc(28px - var(--dpl)); background-position: 28px 0; background-size: calc(100% - 28px) var(--dlh); background-repeat: repeat-y; }
+  .diary-print-root .dpage[data-dlayout] .dfoot { display: flex; justify-content: space-between; text-align: left; padding-bottom: 4mm; }
 }

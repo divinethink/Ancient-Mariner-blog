@@ -1,6 +1,8 @@
 // দিনলিপির চেহারা: থিম · ফন্ট · লেখার আকার (pure, SDK/UI-মুক্ত)। অজানা/অবৈধ মান সবসময় ডিফল্টে ফেরে —
 // পুরনো ডেটা বা ভবিষ্যতে সরানো থিম পেজ ভাঙে না। CSS `globals.css`-এর `[data-dtheme|dfont|dsize]` নিয়মের সাথে মিলিয়ে রাখতে হবে।
-export const DIARY_THEMES = ["paper", "night", "dot", "letter", "rose", "oyster", "terracotta", "slate"] as const;
+export const DIARY_THEMES_CLASSIC = ["paper", "night", "dot", "letter", "rose", "oyster", "terracotta", "slate"] as const;
+export const DIARY_THEMES_NEW = ["charcoal", "brick", "navy", "forest", "sky", "plum", "ink", "gold", "ruby", "teal", "nbslate", "nbred", "nbteal", "nbbig", "week"] as const;
+export const DIARY_THEMES = [...DIARY_THEMES_CLASSIC, ...DIARY_THEMES_NEW] as const;
 export const DIARY_FONTS = ["default", "charulipi", "rabindric", "tagore", "bensen", "kaiyum"] as const;
 export const DIARY_SIZES = ["s", "m", "l"] as const;
 
@@ -21,6 +23,32 @@ export const DIARY_SWATCH: Record<DiaryTheme, { bg: string; ink: string }> = {
   oyster: { bg: "#dedbd3", ink: "#7a5230" },
   terracotta: { bg: "#f3e9d9", ink: "#a1472f" },
   slate: { bg: "#f7f3e9", ink: "#4f5f41" },
+  charcoal: { bg: "#3c4049", ink: "#fdf8ec" },
+  brick: { bg: "#8b3a2f", ink: "#fdf8ec" },
+  navy: { bg: "#25406e", ink: "#fdf8ec" },
+  forest: { bg: "#2f6345", ink: "#fdf8ec" },
+  sky: { bg: "#466190", ink: "#fdf8ec" },
+  plum: { bg: "#1f1a27", ink: "#b79ac0" },
+  ink: { bg: "#181b22", ink: "#b5b5b5" },
+  gold: { bg: "#1b1f2b", ink: "#d9b36a" },
+  ruby: { bg: "#fafaf7", ink: "#8a3328" },
+  teal: { bg: "#fafaf7", ink: "#1f6e75" },
+  nbslate: { bg: "#f9efdc", ink: "#3c4049" },
+  nbred: { bg: "#f9efdc", ink: "#8b3a2f" },
+  nbteal: { bg: "#f9efdc", ink: "#1f6e75" },
+  nbbig: { bg: "#f9efdc", ink: "#8b3a2f" },
+  week: { bg: "#fafaf7", ink: "#1d1d1d" },
+};
+
+/** পাতার গড়ন (CSS `[data-dlayout]`)। পুরনো ৮টি থিম = "classic" (কোনো attribute বসে না) */
+export type DiaryLayout = "classic" | "band" | "frame" | "line" | "book" | "week";
+export const DIARY_LAYOUT: Record<DiaryTheme, DiaryLayout> = {
+  paper: "classic", night: "classic", dot: "classic", letter: "classic", rose: "classic", oyster: "classic", terracotta: "classic", slate: "classic",
+  charcoal: "band", brick: "band", navy: "band", forest: "band", sky: "band",
+  plum: "frame", ink: "frame", gold: "frame",
+  ruby: "line", teal: "line",
+  nbslate: "book", nbred: "book", nbteal: "book", nbbig: "book",
+  week: "week",
 };
 
 const pick = <T extends string>(list: readonly T[], v: unknown, fallback: T): T =>

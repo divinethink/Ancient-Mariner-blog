@@ -12,6 +12,7 @@ import type { DiaryLook } from "@/lib/diaryLook";
 export type PrintJob = { entries: DownloadEntry[]; look: DiaryLook; rangeText: string; author: string; docTitle: string };
 
 const bnNum = (n: number) => n.toLocaleString("bn-BD", { useGrouping: false });
+const wordCount = (lines: readonly string[]) => lines.join(" ").split(/\s+/).filter(Boolean).length;
 
 export function DiaryPrintRoot({ job, onDone }: { job: PrintJob; onDone: () => void }) {
   useEffect(() => {
@@ -55,7 +56,23 @@ export function DiaryPrintRoot({ job, onDone }: { job: PrintJob; onDone: () => v
         <p className="dcover-author">{job.author}</p>
       </div>
       {entries.map((e, i) => (
-        <DiaryPage key={e.id} day={e.day} title={e.title || undefined} location={e.location} look={look} footer={<span>— {bnNum(i + 1)} —</span>}>
+        <DiaryPage
+          key={e.id}
+          day={e.day}
+          title={e.title || undefined}
+          location={e.location}
+          period={e.period}
+          night={e.night}
+          look={look}
+          footer={
+            <>
+              <span>{bn.diary.words(bnNum(wordCount(e.lines)))}</span>
+              <span>
+                {bn.diary.dl.pageLbl} {bnNum(i + 1)}
+              </span>
+            </>
+          }
+        >
           {e.lines.map((l, j) => (
             <p key={j} className="dline">
               {l || "​"}

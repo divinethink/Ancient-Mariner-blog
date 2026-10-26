@@ -7,6 +7,7 @@ import { getPostRepo } from "@/data/postRepo.wire";
 import { bn } from "@/i18n/bn";
 import { dayKey, formatDate } from "@/lib/datetime";
 import { DiaryPage } from "@/components/diary/DiaryPage";
+import { periodOf } from "@/lib/diaryPeriod";
 import { Icon } from "@/components/icons";
 import { triggerSiteRebuild } from "@/data/rebuildClient";
 import { getSiteSettingsRepo } from "@/data/siteSettingsRepo.wire";
@@ -53,7 +54,7 @@ function DayCell({ day, k, selected, isToday, dayEntries, onPick }: DayCellProps
 }
 
 /** এন্ট্রি তালিকা: প্রতিটি ডায়েরির পাতার চেহারায় (≤৮ লাইন প্রিভিউ); excerpt কাটা ("…") হলে 'আরও পড়ুন →'; নিচে ব্যক্তিগত/প্রকাশিত বোতাম (ট্যাপে বদল) */
-function EntryList({ items, look, busyId, onToggle }: { items: PostWithId[]; look: DiaryLook; busyId: string | null; onToggle: (p: PostWithId) => void }) {
+function EntryList({ items, look, tz, busyId, onToggle }: { items: PostWithId[]; look: DiaryLook; tz: string; busyId: string | null; onToggle: (p: PostWithId) => void }) {
   return (
     <ul className="space-y-4">
       {items.map((p) => {
@@ -62,12 +63,15 @@ function EntryList({ items, look, busyId, onToggle }: { items: PostWithId[]; loo
         const day = p.date ?? "";
         const auto = day ? formatDate(new Date(`${day}T12:00:00Z`), "UTC") : "";
         const custom = p.title.trim() !== "" && p.title !== auto;
+        const per = periodOf(p.createdAt, tz);
         return (
           <li key={p.id}>
             <DiaryPage
               day={day}
               title={custom ? p.title : undefined}
               location={p.location}
+              period={per ? bn.diary.periods[per] : undefined}
+              night={per === "night"}
               look={look}
               footer={
                 <span className="flex flex-wrap items-center gap-x-2">
@@ -273,12 +277,12 @@ export function DiaryView() {
                 <h3 className="mb-2 text-sm font-semibold text-muted">
                   {bn.diary.latest} · {dayLabel(latest[0]!.date ?? sel)}
                 </h3>
-                <EntryList items={latest} look={look} busyId={busyId} onToggle={toggleVis} />
+                <EntryList items={latest} look={look} tz={tz} busyId={busyId} onToggle={toggleVis} />
               </div>
             )}
           </>
         ) : (
-          <EntryList items={entries} look={look} busyId={busyId} onToggle={toggleVis} />
+          <EntryList items={entries} look={look} tz={tz} busyId={busyId} onToggle={toggleVis} />
         )}
         {visErr && (
           <p role="alert" className="mt-2 text-sm text-accent-text">

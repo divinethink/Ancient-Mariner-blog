@@ -7,7 +7,8 @@ import {
   DIARY_FONTS,
   DIARY_SIZES,
   DIARY_SWATCH,
-  DIARY_THEMES,
+  DIARY_THEMES_CLASSIC,
+  DIARY_THEMES_NEW,
   sameLook,
   type DiaryFont,
   type DiaryLook,
@@ -57,28 +58,33 @@ export function DiaryLookSheet({ look, site, busy, msg, onChange, onSaveSite, on
           </button>
         </div>
 
-        <section aria-label={L.theme}>
-          <h3 className="mb-2 text-sm font-semibold text-muted">{L.theme}</h3>
-          <div className="grid grid-cols-4 gap-2">
-            {DIARY_THEMES.map((t: DiaryTheme) => (
-              <button
-                key={t}
-                type="button"
-                aria-pressed={look.theme === t}
-                onClick={() => onChange({ ...look, theme: t })}
-                className={`flex min-h-11 flex-col items-center gap-1 rounded-xl border p-1.5 text-xs ${look.theme === t ? "border-2 border-btn-bg" : "border-line"}`}
-              >
-                <span
-                  aria-hidden
-                  className="flex h-10 w-full items-center justify-center rounded-lg border border-line text-lg font-bold"
-                  style={{ background: DIARY_SWATCH[t].bg, color: DIARY_SWATCH[t].ink }}
-                >
-                  অ
-                </span>
-                <span className="text-center leading-tight">{L.themes[t]}</span>
-              </button>
-            ))}
-          </div>
+        <section aria-label={L.theme} className="space-y-3">
+          <h3 className="text-sm font-semibold text-muted">{L.theme}</h3>
+          {([[L.groupClassic, DIARY_THEMES_CLASSIC], [L.groupNew, DIARY_THEMES_NEW]] as const).map(([label, list]) => (
+            <div key={label}>
+              <p className="mb-1.5 text-xs text-muted">{label}</p>
+              <div className="grid grid-cols-4 gap-2">
+                {list.map((t: DiaryTheme) => (
+                  <button
+                    key={t}
+                    type="button"
+                    aria-pressed={look.theme === t}
+                    onClick={() => onChange({ ...look, theme: t })}
+                    className={`flex min-h-11 flex-col items-center gap-1 rounded-xl border p-1.5 text-xs ${look.theme === t ? "border-2 border-btn-bg" : "border-line"}`}
+                  >
+                    <span
+                      aria-hidden
+                      className="flex h-10 w-full items-center justify-center rounded-lg border border-line text-lg font-bold"
+                      style={{ background: DIARY_SWATCH[t].bg, color: DIARY_SWATCH[t].ink }}
+                    >
+                      অ
+                    </span>
+                    <span className="text-center leading-tight">{L.themes[t]}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
         </section>
 
         <section aria-label={L.font}>

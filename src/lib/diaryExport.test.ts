@@ -83,6 +83,13 @@ describe("selectEntries / toEntries", () => {
     expect(e[0]).toMatchObject({ day: "2026-10-25", title: "নরসিংদী ভ্রমণ", location: "নারসিংদী" });
     expect(e[0]!.lines).toEqual(["হ্যালো", "বিদায়"]);
     expect(e[1]!.title).toBe("");
+    expect("period" in e[0]!).toBe(false); // tz না দিলে বেলা নেই
+  });
+  it("toEntries(tz): বেলা লেখার সময় থেকে; রাত হলে night", () => {
+    const e = toEntries([post({ id: "d", createdAt: new Date("2026-10-25T06:30:00Z") }), post({ id: "n", createdAt: new Date("2026-10-25T16:30:00Z") })], "Asia/Dhaka");
+    expect(e[0]).toMatchObject({ period: bn.diary.periods.noon });
+    expect(e[0]!.night).toBe(false);
+    expect(e[1]).toMatchObject({ period: bn.diary.periods.night, night: true });
   });
 });
 
