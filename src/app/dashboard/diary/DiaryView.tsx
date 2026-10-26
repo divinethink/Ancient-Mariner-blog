@@ -15,6 +15,7 @@ import { byNewest, diaryVisOf, diaryVisPatch, monthGrid, monthOf, monthRange, sh
 import { useAdd } from "../AddSheet";
 import { OnThisDay } from "../OnThisDay";
 import { useSiteSettings, useSiteTimezone } from "../SiteSettingsProvider";
+import { DiaryDownload } from "./DiaryDownload";
 import { DiaryLookSheet } from "./DiaryLookSheet";
 import { useDiaryLook } from "./useDiaryLook";
 
@@ -111,7 +112,8 @@ export function DiaryView() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [visErr, setVisErr] = useState(false);
   const { look, site, update: setLook } = useDiaryLook();
-  const { setSettings } = useSiteSettings();
+  const { settings, setSettings } = useSiteSettings();
+  const [dlOpen, setDlOpen] = useState(false);
   const [lookOpen, setLookOpen] = useState(false);
   const [siteBusy, setSiteBusy] = useState(false);
   const [siteMsg, setSiteMsg] = useState<{ ok: boolean; text: string } | null>(null);
@@ -243,6 +245,10 @@ export function DiaryView() {
               <Icon name="palette" size={18} />
               {bn.diary.lookButton}
             </button>
+            <button type="button" onClick={() => setDlOpen(true)} className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-line px-3 text-sm">
+              <Icon name="import" size={18} />
+              {bn.diary.dl.button}
+            </button>
             <button type="button" onClick={openDiary} className="min-h-11 rounded-full bg-btn-bg px-4 text-sm text-btn-tx">
               {bn.diary.addToday}
             </button>
@@ -283,6 +289,7 @@ export function DiaryView() {
 
       <OnThisDay always />
 
+      {dlOpen && <DiaryDownload look={look} sel={sel} tz={tz} author={settings.siteTitle} onClose={() => setDlOpen(false)} />}
       {lookOpen && (
         <DiaryLookSheet look={look} site={site} busy={siteBusy} msg={siteMsg} onChange={setLook} onSaveSite={() => void saveSiteLook()} onClose={() => setLookOpen(false)} />
       )}

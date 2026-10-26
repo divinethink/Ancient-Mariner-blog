@@ -436,3 +436,26 @@ main:has(.dash-shell) {
   --dbgc: #f7f3e9; --dink: #2d3829; --dline: #d6d8c6; --dacc: #4f5f41; --dborder: #d6d8c6; --dpl: 22px;
   --dheadbg: #55664a; --dheadtx: #f7f3e9; --dheadnum: #f7f3e9;
 }
+
+/* দিনলিপি ডাউনলোড (PDF = প্রিন্ট): পাতাগুলো পর্দার বাইরে; প্রিন্টের সময় শুধু এগুলোই দেখা যায় */
+.diary-print-root { position: fixed; left: -99999px; top: 0; width: 210mm; }
+.diary-print-root .dline { margin: 0; min-height: var(--dlh); overflow-wrap: anywhere; }
+.diary-print-root .dcover { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; text-align: center; }
+.diary-print-root .dcover-title { margin: 0; font-size: 3.2em; line-height: 1.2; color: var(--dacc); }
+.diary-print-root .dcover-sub { margin: 0; font-size: 1.3em; }
+.diary-print-root .dcover-author { margin: 40px 0 0; font-size: 1.2em; color: var(--dacc); }
+@media print {
+  @page { size: A4; margin: 0; }
+  body.diary-printing > *:not(.diary-print-root) { display: none !important; }
+  body.diary-printing { background: none !important; }
+  body.diary-printing .diary-print-root { position: static; left: auto; width: auto; }
+  .diary-print-root, .diary-print-root * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .diary-print-root .dpage { --dfs: 15pt; display: flex; flex-direction: column; min-height: 296mm; border: 0; border-radius: 0; box-shadow: none; break-after: page; break-inside: auto; }
+  .diary-print-root .dpage[data-dsize="s"] { --dfs: 13pt; }
+  .diary-print-root .dpage[data-dsize="l"] { --dfs: 18pt; }
+  .diary-print-root .dpage:last-child { break-after: auto; }
+  .diary-print-root .dpage::before { left: calc(var(--dpl) - 12px); }
+  .diary-print-root .dbody { flex: 1; display: flex; flex-direction: column; padding-top: 6mm; }
+  .diary-print-root .dtext { flex: 1; background-image: linear-gradient(to bottom, transparent calc(100% - 1px), var(--dline) calc(100% - 1px)); background-size: 100% var(--dlh); background-repeat: repeat-y; }
+  .diary-print-root .dfoot { text-align: center; padding-bottom: 8mm; }
+}
