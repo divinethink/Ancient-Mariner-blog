@@ -35,7 +35,8 @@ export function useDiaryLook() {
   const site = useMemo(() => lookFromSettings(settings), [settings]);
   const [own, setOwn] = useState<DiaryLook | null>(readOwn); // AuthGate-এর ভেতরে (client-only) তাই lazy-read নিরাপদ
   const [seasonPref, setSeasonPref] = useState<SeasonPref>(readSeason);
-  const today = useMemo(() => dayKey(Date.now(), settings.timezone), [settings.timezone]);
+  const [nowMs] = useState(() => Date.now()); // render-এ impure call নয়; পেজ-খোলার মুহূর্তের 'আজ'
+  const today = useMemo(() => dayKey(nowMs, settings.timezone), [nowMs, settings.timezone]);
   const base = own ?? site;
   const look = useMemo(() => ({ ...base, theme: themeFor(seasonPref, base.theme, today) }), [base, seasonPref, today]);
   const update = useCallback(
