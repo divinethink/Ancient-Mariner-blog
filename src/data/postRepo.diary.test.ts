@@ -21,6 +21,15 @@ describe("P8a diary schema (additive)", () => {
     expect(PostPatchSchema.parse({ date: null }).date).toBeNull();
     expect(() => PostPatchSchema.parse({ date: "10-10-2026" })).toThrow();
   });
+  it("diaryTheme: বৈধ থিম পড়ে; অজানা থিম শুধু বাদ, patch-এ null = সরানো, অবৈধ প্রত্যাখ্যাত", () => {
+    expect(parsePost("a", base).diaryTheme).toBeUndefined();
+    expect(parsePost("a", { ...base, diaryTheme: "lantern" }).diaryTheme).toBe("lantern");
+    const bad = parsePost("a", { ...base, diaryTheme: "no-such-theme" });
+    expect(bad.diaryTheme).toBeUndefined();
+    expect(bad.title).toBe("t");
+    expect(PostPatchSchema.parse({ diaryTheme: null }).diaryTheme).toBeNull();
+    expect(() => PostPatchSchema.parse({ diaryTheme: "x" })).toThrow();
+  });
   it("create diary: একই id-তে দ্বিতীয় create duplicate করে না; listDiary ছাঁকে", async () => {
     const { repo } = fakeRepo();
     const i = { id: "d1", title: "x", body: "{}", contentType: "diary" as const, date: "2026-10-10" };

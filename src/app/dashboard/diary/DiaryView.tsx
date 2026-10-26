@@ -151,7 +151,7 @@ export function DiaryView() {
     try {
       const repo = await getPostRepo();
       if (next === "private") await repo.applyDraft(p.id, p.wordCount);
-      await repo.update(p.id, diaryVisPatch(next));
+      await repo.update(p.id, next === "public" ? { ...diaryVisPatch(next), diaryTheme: look.theme } : diaryVisPatch(next)); // পাবলিক করার সময়ের থিম লেখার সাথে থাকে
       void triggerSiteRebuild();
       setAttempt((a) => a + 1);
     } catch {

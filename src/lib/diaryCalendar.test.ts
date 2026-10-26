@@ -27,6 +27,14 @@ describe("groupByDay", () => {
   });
 });
 
+describe("groupByDay: প্রতি লেখার থিম", () => {
+  it("diaryTheme থাকলে entry.theme-এ যায়, না থাকলে নেই", () => {
+    const m = groupByDay([post("a", { date: "2026-10-10", diaryTheme: "fog" }), post("b", { date: "2026-10-11" })], TZ);
+    expect(m.get("2026-10-10")?.[0]?.theme).toBe("fog");
+    expect(m.get("2026-10-11")?.[0]).not.toHaveProperty("theme");
+  });
+});
+
 describe("heatLevel", () => {
   it("স্তর", () => {
     expect(heatLevel(0, false)).toBe(0);

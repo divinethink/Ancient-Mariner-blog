@@ -6,7 +6,7 @@ import { collectMediaIds, parseBody } from "@/lib/editorDoc";
 import { resolveMediaMap } from "@/lib/gallery";
 import type { CardMedia } from "@/lib/cards";
 import { diaryDayPath, diaryPreview, type DiaryEntry } from "@/lib/diaryCalendar";
-import type { DiaryLook } from "@/lib/diaryLook";
+import { parseDiaryLook, type DiaryLook } from "@/lib/diaryLook";
 import { DiaryPage } from "@/components/diary/DiaryPage";
 
 /** "YYYY-MM-DD" → "শনিবার · ১০ অক্টোবর, ২০২৬" (দিন-key থেকে সরাসরি UTC-তে; timezone-সরণ নেই) */
@@ -33,7 +33,7 @@ export function DiaryEntries({ day, entries, preview = false, media, look }: { d
         if (look) {
           return (
             <article key={e.id} className="mt-4">
-              <DiaryPage day={day} title={custom ? e.title : undefined} location={e.location} look={look} footer={readMore}>
+              <DiaryPage day={day} title={custom ? e.title : undefined} location={e.location} look={e.theme ? parseDiaryLook({ theme: e.theme }, look) : look} footer={readMore}>
                 <div className="reading">
                   <PostBody body={p.body} media={resolveMediaMap(collectMediaIds(parseBody(p.body)), media)} />
                 </div>

@@ -3,6 +3,7 @@
 import { z } from "zod";
 import { ContentType, PostStatus, PostVisibility } from "@/lib/enums";
 import { isValidDayKey } from "@/lib/diary";
+import { DIARY_THEMES } from "@/lib/diaryLook";
 import { COVER_FOCUS, COVER_RATIOS, toCoverCrop } from "@/lib/coverCrop";
 import type { FindOpts } from "@/lib/postFind";
 
@@ -75,6 +76,7 @@ export const PostSchema = z.object({
   date: DayKey.optional(), // P8a: diary-র দিন; পুরনো doc-এ নেই
   location: Location.optional(), // P8a: owner-লেখা স্থান; প্রকাশিত লেখার meta-তে দেখায় (media-র নিজস্ব location/GPS নয়, সেটা কখনো পাবলিকে না)
   gallery: Gallery.optional(), // P8a: media-id তালিকা (P8a-২-তে পাবলিক gallery)
+  diaryTheme: z.enum(DIARY_THEMES).optional(), // দিনলিপি পাবলিক করার সময়কার থিম; পুরনো doc-এ নেই = সাইটের থিম; অজানা/সরানো থিম `parsePost` বাদ দেয়
   seo: SeoSchema.optional(), // P10a-১: per-post SEO; পুরনো doc-এ নেই; বিকৃত হলে `parsePost` বাদ দেয়
   publishedAt: z.date().optional(),
   scheduledAt: z.date().optional(), // P11c-১: status=scheduled-এ প্রকাশের সময় (UTC); publish হলে সরে যায়
@@ -115,6 +117,7 @@ export const PostPatchSchema = z
     date: DayKey.nullable().optional(),
     location: Location.nullable().optional(),
     gallery: Gallery.nullable().optional(),
+    diaryTheme: z.enum(DIARY_THEMES).nullable().optional(), // null = সাইটের থিমে ফেরা
     seo: SeoSchema.nullable().optional(), // null = SEO-সেটিং সরানো (পুরো map)
   })
   .refine((p) => (p.tagIds === undefined) === (p.tagNames === undefined), "tagIds ও tagNames একসাথে দিতে হবে")
@@ -193,6 +196,7 @@ export const parsePost = (id: string, raw: Record<string, unknown>): PostWithId 
   if (n.date !== undefined && !DayKey.safeParse(n.date).success) delete n.date;
   if (n.location !== undefined && !Location.safeParse(n.location).success) delete n.location;
   if (n.gallery !== undefined && !Gallery.safeParse(n.gallery).success) delete n.gallery;
+  if (n.diaryTheme !== undefined && !(DIARY_THEMES as readonly unknown[]).includes(n.diaryTheme)) delete n.diaryTheme; // ভবিষ্যতে সরানো থিমে লেখা ভাঙে না
   if (n.coverCrop !== undefined && !toCoverCrop(n.coverCrop)) delete n.coverCrop; // বিকৃত ক্রপ শুধু বাদ
   if (n.seo !== undefined && !SeoSchema.safeParse(n.seo).success) delete n.seo; // P10a-১: বিকৃত seo শুধু বাদ
   return { ...PostSchema.parse(n), id };
