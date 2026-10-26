@@ -6,6 +6,7 @@ import { getPostRepo } from "@/data/postRepo.wire";
 import { bn } from "@/i18n/bn";
 import { dayKey } from "@/lib/datetime";
 import { estimatePages, fetchRange, fileName, rangeFor, rangeLabel, selectEntries, toEntries, type DownloadEntry, type RangeKind } from "@/lib/diaryExport";
+import { BOOK_COVERS, DEFAULT_BOOK_COVER, type BookCover } from "@/lib/diaryBook";
 import { DIARY_THEMES, type DiaryLook, type DiaryTheme } from "@/lib/diaryLook";
 import { DiaryPrintRoot, type PrintJob } from "./DiaryPrintRoot";
 
@@ -30,6 +31,8 @@ export function DiaryDownload({ look, sel, tz, author, onClose }: Props) {
   const [to, setTo] = useState(sel);
   const [theme, setTheme] = useState<DiaryTheme>(look.theme);
   const [onlyPublic, setOnlyPublic] = useState(false);
+  const [cover, setCover] = useState<BookCover>(DEFAULT_BOOK_COVER);
+  const [toc, setToc] = useState(false);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [job, setJob] = useState<PrintJob | null>(null);
@@ -56,11 +59,16 @@ export function DiaryDownload({ look, sel, tz, author, onClose }: Props) {
       const label = rangeLabel(kind, r);
       const summary = L.summary(bnNum(entries.length), bnNum(estimatePages(entries)));
       if (fmt === "pdf") {
-        setJob({ entries, look: { ...look, theme }, rangeText: label, author, docTitle: fileName(kind, r, "pdf").replace(/\.pdf$/, "") });
+        setJob({ entries, look: { ...look, theme }, rangeText: label, author, docTitle: fileName(kind, r, "pdf").replace(/\.pdf$/, ""), cover, toc });
         setMsg({ ok: true, text: `${summary}। ${L.printHint}` });
       } else {
         const { buildDiaryDocx, DIARY_DOCX_MIME } = await import("@/lib/diaryDocx");
-        const buf = await buildDiaryDocx(entries, { theme, title: L.coverTitle, subtitle: label, author, countLine: L.count(bnNum(entries.length)), placeLabel: bn.diary.labelPlace, periodLabel: bn.diary.labelPeriod });
+        const buf = await buildDiaryDocx(entries, { theme, title: L.coverTitle, subtitle: label, author, countLine: L.count(bnNum(entries.length)), placeLabel: bn.diary.labelPlace,
+          periodLabel: bn.diary.labelPeriod,
+          cover,
+          bookTitle: cover === "red" ? L.bookTitleRed : L.bookTitleNavy,
+          ...(toc ? { toc: { title: L.tocTitle, note: L.tocNote, entriesLabel: L.book.entries } } : {}),
+        });
         const url = URL.createObjectURL(new Blob([buf], { type: DIARY_DOCX_MIME }));
         const a = document.createElement("a");
         a.href = url;
@@ -121,6 +129,21 @@ export function DiaryDownload({ look, sel, tz, author, onClose }: Props) {
               </button>
             ))}
           </div>
+        </section>
+
+        <section aria-label={L.cover}>
+          <h3 className="mb-2 text-sm font-semibold text-muted">{L.cover}</h3>
+          <div className="flex flex-wrap gap-2">
+            {BOOK_COVERS.map((c) => (
+              <button key={c} type="button" aria-pressed={cover === c} onClick={() => setCover(c)} className={`${chip(cover === c)} text-sm`}>
+                {c === "plain" ? L.coverPlain : c === "navy" ? L.coverNavy : L.coverRed}
+              </button>
+            ))}
+          </div>
+          <label className="mt-2 flex min-h-11 items-center gap-2 text-sm">
+            <input type="checkbox" checked={toc} onChange={(e) => setToc(e.target.checked)} className="h-5 w-5" />
+            {L.tocOn}
+          </label>
         </section>
 
         <section aria-label={L.which}>

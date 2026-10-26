@@ -1,8 +1,8 @@
 // দিনলিপির চেহারা: থিম · ফন্ট · লেখার আকার (pure, SDK/UI-মুক্ত)। অজানা/অবৈধ মান সবসময় ডিফল্টে ফেরে —
 // পুরনো ডেটা বা ভবিষ্যতে সরানো থিম পেজ ভাঙে না। CSS `globals.css`-এর `[data-dtheme|dfont|dsize]` নিয়মের সাথে মিলিয়ে রাখতে হবে।
 export const DIARY_THEMES_NEW = ["charcoal", "brick", "navy", "forest", "sky", "plum", "ink", "gold", "ruby", "teal", "nbslate", "nbred", "nbteal", "nbbig", "week"] as const;
-/** বিশেষ থিম: রঙের বাইরে সাজসজ্জা (চাঁদ/ডাকঘর/বৃষ্টি/কাঁথা/আকাশ/লণ্ঠন) — তারিখ · স্থান · বেলা থেকে নিজে সাজে, নতুন ডেটা লাগে না */
-export const DIARY_THEMES_SPECIAL = ["moon", "postcard", "rain", "kantha", "skyday", "lantern"] as const;
+/** বিশেষ থিম: রঙের বাইরে সাজসজ্জা (চাঁদ/ডাকঘর/বৃষ্টি/কাঁথা/আকাশ/লণ্ঠন/কুয়াশা) — তারিখ · স্থান · বেলা থেকে নিজে সাজে, নতুন ডেটা লাগে না */
+export const DIARY_THEMES_SPECIAL = ["moon", "postcard", "rain", "kantha", "skyday", "lantern", "fog"] as const;
 export const DIARY_THEMES = [...DIARY_THEMES_NEW, ...DIARY_THEMES_SPECIAL] as const;
 export const DIARY_FONTS = ["default", "charulipi", "rabindric", "tagore", "bensen", "kaiyum"] as const;
 export const DIARY_SIZES = ["s", "m", "l"] as const;
@@ -37,6 +37,7 @@ export const DIARY_SWATCH: Record<DiaryTheme, { bg: string; ink: string }> = {
   kantha: { bg: "#f6efe0", ink: "#c4372f" },
   skyday: { bg: "#8a2f7b", ink: "#ffe6a4" },
   lantern: { bg: "#0b0806", ink: "#ffb35c" },
+  fog: { bg: "#dfe7ee", ink: "#2c3e50" },
 };
 
 /** পাতার গড়ন (CSS `[data-dlayout]`) */
@@ -47,7 +48,7 @@ export const DIARY_LAYOUT: Record<DiaryTheme, DiaryLayout> = {
   ruby: "line", teal: "line",
   nbslate: "book", nbred: "book", nbteal: "book", nbbig: "book",
   week: "week",
-  moon: "deco", postcard: "deco", rain: "deco", kantha: "deco", skyday: "deco", lantern: "deco",
+  moon: "deco", postcard: "deco", rain: "deco", kantha: "deco", skyday: "deco", lantern: "deco", fog: "deco",
 };
 
 const pick = <T extends string>(list: readonly T[], v: unknown, fallback: T): T =>

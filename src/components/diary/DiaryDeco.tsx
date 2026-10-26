@@ -92,5 +92,17 @@ export function DiaryDeco({ theme, day, dayLabel, year, location, period }: { th
       </div>
     );
   }
+  if (theme === "fog") {
+    return (
+      <div className="ddeco dfogbox" aria-hidden="true">
+        <span className="dfogsun" />
+        <svg className="dfogpalm" viewBox="0 0 120 150" width="96" height="120">
+          <path d="M58 150c1-30 2-60 6-96" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" />
+          <path d="M62 58c-14-14-30-14-44-6 14-2 28 0 44 6ZM62 58c14-16 32-16 46-8-14-1-30 1-46 8ZM62 54c-4-14-2-26 4-36 0 14 0 24-4 36Z" fill="currentColor" />
+          <path d="M48 96h22l-3 20H51Z" fill="currentColor" opacity=".7" />
+        </svg>
+      </div>
+    );
+  }
   return null;
 }

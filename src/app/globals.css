@@ -634,6 +634,32 @@ main:has(.dash-shell) {
 .dpage[data-dtheme="lantern"] .dtitle { text-shadow: 0 0 14px rgba(255, 154, 60, 0.6); }
 .dpage[data-dtheme="lantern"] .dtext { text-shadow: 0 0 8px rgba(255, 154, 60, 0.25); }
 
+/* ৭) শীতের কুয়াশা: ঝাপসা সূর্য, খেজুর গাছ, ফ্রস্টেড লেখার কার্ড (backdrop-filter প্রিন্টে বাদ, তাই আধা-স্বচ্ছ রং) */
+.dpage[data-dtheme="fog"] {
+  --dbgc: #dfe7ee; --dink: #2c3e50; --dline: rgba(44, 62, 80, 0.14); --dacc: #46607a; --dborder: #c3d0dc; --dchipbg: rgba(255, 255, 255, 0.55); --dchipbd: #8fa4b8; --dchiptx: #2c3e50;
+  --dbgi: linear-gradient(#cfdbe6 0%, #e9eff4 45%, #f4f7f9 70%, #b9c8d6 100%);
+}
+.dpage[data-dtheme="fog"] .dfogbox { min-height: 130px; align-items: flex-start; justify-content: flex-end; color: #8fa2b5; }
+.dpage[data-dtheme="fog"] .dfogsun { position: absolute; right: 18px; top: 10px; width: 78px; height: 78px; border-radius: 50%; background: radial-gradient(#fffbe3, #f6ebb4 60%, rgba(246, 235, 180, 0)); box-shadow: 0 0 44px 20px rgba(255, 246, 200, 0.55); }
+.dpage[data-dtheme="fog"] .dfogpalm { position: absolute; left: 6px; bottom: -6px; opacity: 0.55; }
+.dpage[data-dtheme="fog"] .dtext { padding: 4px 14px; margin-left: -14px; margin-right: -14px; background-color: rgba(255, 255, 255, 0.55); border-radius: 14px; backdrop-filter: blur(4px); }
+
+/* বই-মলাট (ডাউনলোডের PDF): data-dbook = navy | red; সাজসজ্জা background-image-এ (প্রিন্টে border/box-shadow মুছে যায়) */
+.diary-print-root .dbook { --dpl: 0px; --dpr: 0px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; text-align: center; padding: 34mm 22mm; font-family: var(--dfont, var(--font-serif)); }
+.diary-print-root .dbook[data-dbook="navy"] { background: linear-gradient(90deg, #14264a 0 14mm, #1f3a68 14mm 100%); color: #f3dfa0; }
+.diary-print-root .dbook[data-dbook="red"] { background: linear-gradient(90deg, #4a1710 0 14mm, #7a2820 14mm 100%); color: #f6e3b4; }
+.diary-print-root .dbook-frame { width: 100%; border: 0; padding: 22mm 10mm; background-image: linear-gradient(currentColor, currentColor), linear-gradient(currentColor, currentColor), linear-gradient(currentColor, currentColor), linear-gradient(currentColor, currentColor); background-size: 100% 1.2mm, 100% 1.2mm, 1.2mm 100%, 1.2mm 100%; background-position: top, bottom, left, right; background-repeat: no-repeat; display: flex; flex-direction: column; align-items: center; gap: 12px; min-height: 200mm; justify-content: center; }
+.diary-print-root .dbook-year { margin: 0; font-size: 1.1em; letter-spacing: 0.2em; opacity: 0.9; }
+.diary-print-root .dbook-title { margin: 12px 0; font-size: 3.4em; line-height: 1.25; font-weight: 700; }
+.diary-print-root .dbook-rule { width: 55%; height: 1.2mm; background: currentColor; opacity: 0.7; }
+.diary-print-root .dbook-author { margin: 6px 0 0; font-size: 1.4em; }
+.diary-print-root .dbook-stat { margin: 0; font-size: 1em; opacity: 0.9; }
+.diary-print-root .dtoc { padding: 28mm 24mm; background: #fbf2dc; color: #5a2a1c; min-height: 296mm; }
+.diary-print-root .dtoc h2 { margin: 0 0 8mm; text-align: center; font-size: 2em; }
+.diary-print-root .dtoc-row { display: flex; align-items: baseline; gap: 6px; padding: 3mm 0; border-bottom: 1px dotted rgba(90, 42, 28, 0.45); font-size: 1.2em; }
+.diary-print-root .dtoc-row i { flex: 1; }
+.diary-print-root .dtoc-note { margin: 8mm 0 0; text-align: center; font-size: 0.85em; opacity: 0.8; }
+
 /* দিনলিপি ডাউনলোড (PDF = প্রিন্ট): পাতাগুলো পর্দার বাইরে; প্রিন্টের সময় শুধু এগুলোই দেখা যায় */
 .diary-print-root { position: fixed; left: -99999px; top: 0; width: 210mm; }
 .diary-print-root .dline { margin: 0; min-height: var(--dlh); overflow-wrap: anywhere; }
@@ -651,6 +677,8 @@ main:has(.dash-shell) {
   .diary-print-root .dpage[data-dsize="s"] { --dfs: 13pt; }
   .diary-print-root .dpage[data-dsize="l"] { --dfs: 18pt; }
   .diary-print-root .dpage:last-child { break-after: auto; }
+  .diary-print-root .dbook { min-height: 296mm; break-after: page; }
+  .diary-print-root .dtoc { break-after: page; }
   .diary-print-root .dpage::before { left: calc(var(--dpl) - 12px); }
   .diary-print-root .dbody { flex: 1; display: flex; flex-direction: column; padding-top: 6mm; }
   .diary-print-root .dtext { flex: 1; background-image: linear-gradient(to bottom, transparent calc(100% - 1px), var(--dline) calc(100% - 1px)); background-size: 100% var(--dlh); background-repeat: repeat-y; }

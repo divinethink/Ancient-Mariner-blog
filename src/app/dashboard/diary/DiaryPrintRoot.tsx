@@ -6,10 +6,11 @@ import { useEffect } from "react";
 import { createPortal } from "react-dom";
 import { DiaryPage } from "@/components/diary/DiaryPage";
 import { bn } from "@/i18n/bn";
+import { bookCoverLines, bookStats, bookToc, bookYears, type BookCover } from "@/lib/diaryBook";
 import type { DownloadEntry } from "@/lib/diaryExport";
 import type { DiaryLook } from "@/lib/diaryLook";
 
-export type PrintJob = { entries: DownloadEntry[]; look: DiaryLook; rangeText: string; author: string; docTitle: string };
+export type PrintJob = { entries: DownloadEntry[]; look: DiaryLook; rangeText: string; author: string; docTitle: string; cover?: BookCover; toc?: boolean };
 
 const bnNum = (n: number) => n.toLocaleString("bn-BD", { useGrouping: false });
 const wordCount = (lines: readonly string[]) => lines.join(" ").split(/\s+/).filter(Boolean).length;
@@ -47,14 +48,49 @@ export function DiaryPrintRoot({ job, onDone }: { job: PrintJob; onDone: () => v
   }, [job, onDone]);
 
   const { entries, look } = job;
+  const D = bn.diary.dl;
+  const book = job.cover === "navy" || job.cover === "red" ? job.cover : null;
+  const toc = job.toc ? bookToc(entries) : [];
+  const years = bookYears(entries);
+  const stats = bookCoverLines(bookStats(entries));
   return createPortal(
     <div className="diary-print-root">
-      <div className="dpage dcover" data-dtheme={look.theme} data-dfont={look.font} data-dsize={look.size}>
-        <h1 className="dcover-title">{bn.diary.dl.coverTitle}</h1>
-        <p className="dcover-sub">{job.rangeText}</p>
-        <p className="dcover-sub">{bn.diary.dl.count(bnNum(entries.length))}</p>
-        <p className="dcover-author">{job.author}</p>
-      </div>
+      {book ? (
+        <div className="dpage dbook" data-dbook={book} data-dfont={look.font} data-dsize={look.size}>
+          <div className="dbook-frame">
+            {years && <p className="dbook-year">{years}</p>}
+            <h1 className="dbook-title">{book === "navy" ? D.bookTitleNavy : D.bookTitleRed}</h1>
+            <span className="dbook-rule" />
+            <p className="dbook-author">{job.author}</p>
+            <p className="dbook-stat">{job.rangeText}</p>
+            {stats.map((s) => (
+              <p key={s} className="dbook-stat">
+                {s}
+              </p>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <div className="dpage dcover" data-dtheme={look.theme} data-dfont={look.font} data-dsize={look.size}>
+          <h1 className="dcover-title">{D.coverTitle}</h1>
+          <p className="dcover-sub">{job.rangeText}</p>
+          <p className="dcover-sub">{D.count(bnNum(entries.length))}</p>
+          <p className="dcover-author">{job.author}</p>
+        </div>
+      )}
+      {toc.length > 0 && (
+        <div className="dpage dtoc" data-dfont={look.font} data-dsize={look.size}>
+          <h2>{D.tocTitle}</h2>
+          {toc.map((r) => (
+            <div key={r.key} className="dtoc-row">
+              <span>{r.label}</span>
+              <i />
+              <span>{D.book.entries(bnNum(r.count))}</span>
+            </div>
+          ))}
+          <p className="dtoc-note">{D.tocNote}</p>
+        </div>
+      )}
       {entries.map((e, i) => (
         <DiaryPage
           key={e.id}
