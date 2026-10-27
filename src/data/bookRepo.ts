@@ -42,6 +42,8 @@ export type CreateBookInput = {
   author?: string;
   /** বর্ণনা (ঐচ্ছিক) — `note` ফিল্ডেই যায়, নতুন ফিল্ড নয় */
   note?: string;
+  /** মলাট-ছবি (ঐচ্ছিক) — `media/{id}` */
+  coverMediaId?: string;
   status: BookStatus;
   startDay?: string;
   endDay?: string;

@@ -204,6 +204,7 @@ function BookForm({ status, today, onAdded, onCancel }: { status: BookStatus; to
   const [title, setTitle] = useState("");
   const [author, setAuthor] = useState("");
   const [desc, setDesc] = useState("");
+  const [cover, setCover] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const idRef = useRef<string>("");
@@ -223,6 +224,7 @@ function BookForm({ status, today, onAdded, onCancel }: { status: BookStatus; to
         title,
         author,
         note: desc,
+        ...(cover ? { coverMediaId: cover } : {}),
         status,
         ...(status === "reading" ? { startDay: today } : {}),
         ...(status === "finished" ? { endDay: today } : {}),
@@ -231,6 +233,7 @@ function BookForm({ status, today, onAdded, onCancel }: { status: BookStatus; to
       setTitle("");
       setAuthor("");
       setDesc("");
+      setCover(null);
       onAdded();
     } catch {
       setErr(bn.shelf.saveFailed);
@@ -254,6 +257,9 @@ function BookForm({ status, today, onAdded, onCancel }: { status: BookStatus; to
         {bn.shelf.descLabel}
         <textarea value={desc} maxLength={BOOK_NOTE_MAX} rows={3} onChange={(e) => setDesc(e.target.value)} className={`${field} mt-1 font-serif`} />
       </label>
+      <div className="mb-3">
+        <CoverPicker value={cover} disabled={busy} shape="square" labels={bn.shelf.cover} onChange={setCover} />
+      </div>
       <p className="mb-3 text-sm text-muted">{bn.shelf.addsTo(LABEL[status])}</p>
       {err && <p role="alert" className="mb-3 text-accent-text">{err}</p>}
       <div className="flex gap-2">
