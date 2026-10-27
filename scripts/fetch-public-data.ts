@@ -45,8 +45,18 @@ async function main() {
   const settings = await getPublicSettingsSource().read();
   const terms = await getPublicTaxonomySource().listAll();
   const pages = await getPublicPageSource().listPublished();
+  // দিনলিপি-ঘ ধাপ ২: পাবলিক বই (`/shelf`, sidebar)। rules query না মানলে (403 — rules-deploy বাকি?) খালি + সতর্কতা; ব্লগের বাকি build থামে না; অন্য ত্রুটিতে build থামে
+  let shelf: BookWithId[] = [];
+  try {
+    shelf = await getPublicShelfSource().listPublic();
+  } catch (e) {
+    if (!(e instanceof Error && /Firestore REST 403/.test(e.message))) throw e;
+    console.warn("⚠️ পড়ার তাক পড়া যায়নি (403 — rules deploy হয়নি?) — তাক ছাড়া এগোচ্ছি");
+  }
+  await writeShelf(shelf);
+  console.log(`✅ পড়ার তাক: ${shelf.length}টি পাবলিক বই`);
   // P6-৩ক/P8a-২: শুধু published লেখার cover + gallery id (প্রতি id-তে ১ read; না-পাওয়া/private বাদ, আসল নেট-ত্রুটিতে build থামে)
-  const coverIds = [...new Set([...mediaIdsOf(posts), ...mediaIdsOf(unlisted), ...mediaIdsOf(pages), ...designMediaIds(settings.design)])]; // + P9b-২ logo/banner
+  const coverIds = [...new Set([...mediaIdsOf(posts), ...mediaIdsOf(unlisted), ...mediaIdsOf(pages), ...designMediaIds(settings.design), ...shelf.flatMap((b) => (b.coverMediaId ? [b.coverMediaId] : []))])]; // + P9b-২ logo/banner + পাবলিক বইয়ের মলাট
   const media = await getPublicMediaSource().getMany(coverIds);
   await writeSnapshot(posts, startedAt, SNAPSHOT_PATH, settings, terms, pages, media, unlisted);
   const popular = await loadPopular(new Set(posts.map((p) => p.id)), settings.timezone, startedAt);
@@ -73,16 +83,6 @@ async function main() {
   }
   await writeWorks(works.projects, works.chapters);
   console.log(`✅ /works: ${works.projects.length}টি প্রজেক্ট, ${works.chapters.length}টি অধ্যায়`);
-  // দিনলিপি-ঘ ধাপ ২: পাবলিক বই (`/shelf`, sidebar)। rules query না মানলে (403 — rules-deploy বাকি?) খালি + সতর্কতা; ব্লগের বাকি build থামে না; অন্য ত্রুটিতে build থামে
-  let shelf: BookWithId[] = [];
-  try {
-    shelf = await getPublicShelfSource().listPublic();
-  } catch (e) {
-    if (!(e instanceof Error && /Firestore REST 403/.test(e.message))) throw e;
-    console.warn("⚠️ পড়ার তাক পড়া যায়নি (403 — rules deploy হয়নি?) — তাক ছাড়া এগোচ্ছি");
-  }
-  await writeShelf(shelf);
-  console.log(`✅ পড়ার তাক: ${shelf.length}টি পাবলিক বই`);
   console.log(`✅ ${posts.length}টি published+public লেখা + সাইট-সেটিং (ইনডেক্স: ${settings.allowIndexing ? "চালু" : "বন্ধ"}) + ${terms.categories.length} ক্যাটাগরি/${terms.tags.length} ট্যাগ/${terms.series.length} সিরিজ + ${pages.length}টি পেজ + ${media.length}/${coverIds.length}টি cover/gallery-ছবি → ${SNAPSHOT_PATH}`);
 }
 

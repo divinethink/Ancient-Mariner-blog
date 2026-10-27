@@ -4,7 +4,7 @@ import { PublicShell } from "@/components/public/PublicShell";
 import { ShelfSection } from "@/components/public/ShelfBooks";
 import { safeSiteUrl } from "@/components/public/worksRoute";
 import { hasDefaultOgImage } from "@/data/publicAssets";
-import { getPublicSettings } from "@/data/publicSnapshot";
+import { getPublicMedia, getPublicSettings } from "@/data/publicSnapshot";
 import { buildYear, getPublicShelf } from "@/data/shelfSnapshot";
 import { bn } from "@/i18n/bn";
 import { finishedInYear, publicShelf, SHELF_PATH } from "@/lib/books";
@@ -28,7 +28,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function ShelfPage() {
-  const [books, { timezone }] = await Promise.all([getPublicShelf(), getPublicSettings()]);
+  const [books, { timezone }, media] = await Promise.all([getPublicShelf(), getPublicSettings(), getPublicMedia()]);
   const g = publicShelf(books);
   const year = buildYear(timezone);
   const yearCount = finishedInYear(g.finished, year);
@@ -38,16 +38,32 @@ export default async function ShelfPage() {
       <Link href="/" prefetch={false} className="mb-3 inline-flex min-h-11 items-center text-accent-text">
         ← {bn.public.home}
       </Link>
-      <h1 className="font-serif text-3xl font-bold">{bn.public.shelfTitle}</h1>
-      <p className="mt-1 text-muted">{bn.public.shelfDesc}</p>
+      <header className="rounded-3xl border border-line bg-[linear-gradient(135deg,color-mix(in_srgb,var(--accent)_16%,var(--surface)),var(--surface))] p-5">
+        <p aria-hidden="true" className="text-4xl">📚</p>
+        <h1 className="mt-1 font-serif text-3xl font-bold">{bn.public.shelfTitle}</h1>
+        <p className="mt-1 text-muted">{bn.public.shelfDesc}</p>
+        {!empty && (
+          <ul className="mt-3 flex flex-wrap gap-2 text-sm">
+            {[
+              [bn.public.shelfReading, g.reading.length],
+              [bn.public.shelfFinished, g.finished.length],
+              [bn.public.shelfWishlist, g.wishlist.length],
+            ].map(([label, n]) => (
+              <li key={label} className="rounded-full border border-line bg-surface px-3 py-1">
+                {label}: <b>{(n as number).toLocaleString("bn-BD")}</b>
+              </li>
+            ))}
+          </ul>
+        )}
+      </header>
       {empty ? (
         <p className="mt-6 text-muted">{bn.public.shelfEmpty}</p>
       ) : (
         <>
-          {yearCount > 0 && <p className="mt-3 text-sm text-muted">{bn.public.shelfYear(yearCount.toLocaleString("bn-BD"), year.toLocaleString("bn-BD", { useGrouping: false }))}</p>}
-          <ShelfSection title={bn.public.shelfReading} books={g.reading} />
-          <ShelfSection title={bn.public.shelfFinished} books={g.finished} />
-          <ShelfSection title={bn.public.shelfWishlist} books={g.wishlist} />
+          {yearCount > 0 && <p className="mt-5 text-sm font-medium text-accent-text">🏆 {bn.public.shelfYear(yearCount.toLocaleString("bn-BD"), year.toLocaleString("bn-BD", { useGrouping: false }))}</p>}
+          <ShelfSection icon="📖" title={bn.public.shelfReading} books={g.reading} media={media} />
+          <ShelfSection icon="✅" title={bn.public.shelfFinished} books={g.finished} media={media} />
+          <ShelfSection icon="🔖" title={bn.public.shelfWishlist} books={g.wishlist} media={media} />
         </>
       )}
     </PublicShell>

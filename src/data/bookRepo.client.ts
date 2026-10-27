@@ -1,11 +1,12 @@
 // পথ ক (owner-CSR): `books` — owner write; শুধু dashboard থেকে dynamic import।
-import { collection, deleteDoc, doc, getDoc, getDocs, limit, orderBy, query, serverTimestamp, setDoc, updateDoc, type Firestore } from "firebase/firestore";
+import { collection, deleteDoc, deleteField, doc, getDoc, getDocs, limit, orderBy, query, serverTimestamp, setDoc, updateDoc, type Firestore } from "firebase/firestore";
 import {
   BOOK_SCHEMA_VERSION,
   BookAuthorSchema,
   BookNoteSchema,
   BookNotFoundError,
   BookTitleSchema,
+  CoverIdSchema,
   parseBook,
   type BookPatch,
   type BookRepo,
@@ -76,6 +77,7 @@ export function createBookRepoClient(db: Firestore, ownerUid: string): BookRepo 
       ...(patch.status !== undefined ? { status: BookStatus.parse(patch.status) } : {}),
       ...(patch.visibility !== undefined ? { visibility: BookVisibility.parse(patch.visibility) } : {}),
       ...(patch.note !== undefined ? { note: BookNoteSchema.parse(patch.note) } : {}),
+      ...(patch.coverMediaId !== undefined ? { coverMediaId: patch.coverMediaId === null ? deleteField() : CoverIdSchema.parse(patch.coverMediaId) } : {}),
       ...(startDay ? { startDay } : {}),
       ...(endDay ? { endDay } : {}),
       updatedAt: serverTimestamp(),

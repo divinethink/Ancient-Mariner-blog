@@ -9,6 +9,7 @@ export const BOOK_SCHEMA_VERSION = 1;
 
 export const BookTitleSchema = z.string().trim().min(1).max(BOOK_TITLE_MAX);
 export const BookAuthorSchema = z.string().trim().max(BOOK_AUTHOR_MAX);
+export const CoverIdSchema = z.string().regex(/^[A-Za-z0-9]{1,40}$/);
 export const BookNoteSchema = z.string().trim().max(BOOK_NOTE_MAX);
 const DaySchema = z.string().refine(isDayKey);
 
@@ -18,6 +19,7 @@ export const BookSchema = z.object({
   status: BookStatus.catch("wishlist"),
   visibility: BookVisibility.catch("private"),
   note: z.string().default(""),
+  coverMediaId: z.string().regex(/^[A-Za-z0-9]{1,40}$/).optional().catch(undefined), // মলাট-ছবি = `media/{id}` (পাবলিক ছবি); পুরনো doc-এ নেই = মলাট নেই
   startDay: DaySchema.optional().catch(undefined),
   endDay: DaySchema.optional().catch(undefined),
   ownerUid: z.string().min(1),
@@ -50,6 +52,8 @@ export type BookPatch = {
   status?: BookStatus;
   visibility?: BookVisibility;
   note?: string;
+  /** null = মলাট সরানো */
+  coverMediaId?: string | null;
   startDay?: string;
   endDay?: string;
 };

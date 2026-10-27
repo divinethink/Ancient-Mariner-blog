@@ -14,6 +14,7 @@ import { AddToggle } from "@/components/ui/AddToggle";
 import { ClampText } from "@/components/ui/ClampText";
 import { StatusCards, type StatusCardOption } from "@/components/ui/StatusCards";
 import { ConfirmButton } from "../ConfirmButton";
+import { CoverPicker } from "../posts/[postId]/edit/CoverPicker";
 import { useSiteTimezone } from "../SiteSettingsProvider";
 
 const bnNum = (n: number) => n.toLocaleString("bn-BD", { useGrouping: false });
@@ -31,6 +32,7 @@ export function ShelfView() {
   const [actionErr, setActionErr] = useState(false);
   const [siteMsg, setSiteMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [noteFor, setNoteFor] = useState<string | null>(null);
+  const [coverFor, setCoverFor] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
   const [today] = useState(() => dayKey(Date.now(), tz));
 
@@ -118,12 +120,24 @@ export function ShelfView() {
               </div>
             </div>
             {b.note && noteFor !== b.id && <ClampText text={b.note} more={bn.ideas.more} less={bn.ideas.less} className="mt-3 font-serif text-base" />}
+            {coverFor === b.id && (
+              <div className="mt-3">
+                <CoverPicker
+                  value={b.coverMediaId ?? null}
+                  disabled={false}
+                  shape="square"
+                  labels={bn.shelf.cover}
+                  onChange={(id) => void act(async () => (await getBookRepo()).update(b.id, { coverMediaId: id }), isPub(b))}
+                />
+              </div>
+            )}
             {noteFor === b.id && <NoteEditor book={b} onDone={() => { setNoteFor(null); reload(); if (isPub(b)) void act(async () => undefined, true); }} />}
             <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-line pt-3">
               {b.status === "wishlist" && <Act label={bn.shelf.startReading} onClick={() => void setStatus(b, "reading")} primary />}
               {b.status === "reading" && <Act label={bn.shelf.markFinished} onClick={() => void setStatus(b, "finished")} primary />}
               {b.status === "finished" && <Act label={bn.shelf.backToReading} onClick={() => void setStatus(b, "reading")} />}
               <Act label={bn.shelf.noteBtn} onClick={() => setNoteFor(noteFor === b.id ? null : b.id)} />
+              <Act label={bn.shelf.coverBtn} onClick={() => setCoverFor(coverFor === b.id ? null : b.id)} />
               {isPub(b) ? (
                 <Act label={bn.shelf.makePrivate} onClick={() => void setVisibility(b, "private")} />
               ) : (
