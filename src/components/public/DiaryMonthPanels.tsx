@@ -19,6 +19,7 @@ export function DiaryMonthPanels({
   latestLabel,
   media,
   look,
+  siteUrl,
 }: {
   ym: string;
   byDay: ReadonlyMap<string, readonly DiaryEntry[]>;
@@ -27,6 +28,7 @@ export function DiaryMonthPanels({
   latestLabel?: string;
   media?: ReadonlyMap<string, CardMedia>;
   look?: DiaryLook;
+  siteUrl?: string;
 }) {
   const days = [...byDay.keys()].filter((d) => d.startsWith(ym)).sort();
   return (
@@ -38,7 +40,7 @@ export function DiaryMonthPanels({
         return (
           <div key={day} data-diary-panel={day} hidden={day !== selected}>
             {preview && latestLabel && <p className="mt-6 text-sm font-semibold text-muted">{latestLabel}</p>}
-            <DiaryEntries day={day} entries={byDay.get(day) ?? []} preview={preview} media={media} look={look} />
+            <DiaryEntries day={day} entries={byDay.get(day) ?? []} preview={preview} media={media} look={look} siteUrl={siteUrl} />
             {!preview && (
               <nav aria-label={bn.public.diaryNavLabel} className="mt-6 flex items-center justify-between gap-4 border-t border-line pt-3">
                 {adj.prev ? (

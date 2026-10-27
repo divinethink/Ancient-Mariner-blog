@@ -26,6 +26,10 @@ import { triggerSiteRebuild } from "@/data/rebuildClient";
 import { Segmented } from "@/components/ui/Segmented";
 import { promptFor } from "@/lib/diaryPrompts";
 import { WriteTimer } from "./WriteTimer";
+import type { MediaWithId } from "@/data/mediaRepo";
+import { cldUrl, cloudFromUrl } from "@/lib/cloudinary";
+import { MAX_DIARY_PHOTOS, withPhotos } from "@/lib/diaryPhotos";
+import { ImagePickerSheet } from "./posts/[postId]/edit/ImagePickerSheet";
 import { MAX_LOCATION } from "@/data/postRepo";
 import { countWords, docToText, makeExcerpt, serializeDoc } from "@/lib/editorDoc";
 import { newId } from "@/lib/id";
@@ -71,6 +75,8 @@ export function AddProvider({ children }: { children: ReactNode }) {
   const [diaryPlace, setDiaryPlace] = useState("");
   const [diaryDay, setDiaryDay] = useState(""); // খালি = আজ
   const [diaryVis, setDiaryVis] = useState<DiaryVis>("private"); // প্রতিটি নতুন এন্ট্রি ব্যক্তিগত থেকে শুরু
+  const [diaryPhotos, setDiaryPhotos] = useState<MediaWithId[]>([]);
+  const [picking, setPicking] = useState(false);
   const [promptShift, setPromptShift] = useState(0); // 'অন্য প্রশ্ন'; sheet খুললে ০
   const [todayKey, setTodayKey] = useState(""); // sheet খোলার সময় বসে (render-এ Date.now() নয়)
   const [diaryVersion, setDiaryVersion] = useState(0);
@@ -182,7 +188,7 @@ export function AddProvider({ children }: { children: ReactNode }) {
     setStatus("saving");
     const sent = diaryText;
     try {
-      const doc = textToDoc(trimmed);
+      const doc = withPhotos(textToDoc(trimmed), diaryPhotos.map((m) => ({ id: m.id, alt: m.altText })));
       const plain = docToText(doc);
       const repo = await getPostRepo();
       const place = diaryPlace.trim();
@@ -217,6 +223,7 @@ export function AddProvider({ children }: { children: ReactNode }) {
         setDiaryPlace("");
         setDiaryDay("");
         setDiaryVis("private");
+        setDiaryPhotos([]);
       }
       setDiaryVersion((v) => v + 1);
       setStatus("idle");
@@ -231,7 +238,7 @@ export function AddProvider({ children }: { children: ReactNode }) {
 
   // Esc ও Tab-trap document-স্তরে: ফোকাস body-তে চলে গেলেও (যেমন বোতাম disabled হলে) কাজ করে
   useEffect(() => {
-    if (mode === "closed") return;
+    if (mode === "closed" || picking) return; // ছবি-বাছাই খোলা থাকলে সেটার নিজের Esc/Tab চলে
     const onKey = (e: globalThis.KeyboardEvent) => {
       if (e.key === "Escape") {
         e.preventDefault();
@@ -255,7 +262,7 @@ export function AddProvider({ children }: { children: ReactNode }) {
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [mode, close]);
+  }, [mode, close, picking]);
 
   const value = useMemo(
     () => ({ openMenu, openNotebook, openIdea, openDiary, ideasVersion: version, diaryVersion }),
@@ -482,6 +489,46 @@ export function AddProvider({ children }: { children: ReactNode }) {
                   )}
                 </div>
                 {isDiary && (
+                  <div className="mt-2 rounded-xl border border-dashed border-line bg-surface p-3">
+                    <p className="text-sm font-semibold">
+                      {d.photos.label} <span className="font-normal text-muted">{d.photos.max(MAX_DIARY_PHOTOS)}</span>
+                    </p>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {diaryPhotos.map((m) => {
+                        const cloud = cloudFromUrl(m.cloudinaryUrl);
+                        const src = cloud ? cldUrl(cloud, m.cloudinaryPublicId, { w: 160 }) : null;
+                        return (
+                          <span key={m.id} className="relative size-16 overflow-hidden rounded-xl border-2 border-surface bg-line shadow-sm">
+                            {src && (
+                              // eslint-disable-next-line @next/next/no-img-element -- Cloudinary-ই optimizer; next/image বন্ধ
+                              <img src={src} alt={m.altText ?? ""} className="size-full object-cover" />
+                            )}
+                            <button
+                              type="button"
+                              aria-label={d.photos.remove}
+                              onClick={() => setDiaryPhotos((l) => l.filter((x) => x.id !== m.id))}
+                              className="absolute right-0 top-0 flex size-6 items-center justify-center rounded-bl-lg bg-black/70 text-xs text-white"
+                            >
+                              ✕
+                            </button>
+                          </span>
+                        );
+                      })}
+                      {diaryPhotos.length < MAX_DIARY_PHOTOS && (
+                        <button
+                          type="button"
+                          onClick={() => setPicking(true)}
+                          className="flex size-16 flex-col items-center justify-center rounded-xl border border-dashed border-btn-bg text-xl text-btn-bg"
+                        >
+                          📷
+                          <span className="-mt-1 text-[10px]">{d.photos.add}</span>
+                        </button>
+                      )}
+                    </div>
+                    <p className="mt-2 text-xs text-muted">{d.photos.hint}</p>
+                  </div>
+                )}
+                {isDiary && (
                   <div className="mt-2">
                     <Segmented<DiaryVis>
                       label={d.visLabel}
@@ -507,6 +554,25 @@ export function AddProvider({ children }: { children: ReactNode }) {
             )}
           </div>
         </div>
+      )}
+      {picking && (
+        <ImagePickerSheet
+          onClose={() => setPicking(false)}
+          max={MAX_DIARY_PHOTOS - diaryPhotos.length}
+          hint={d.photos.hint}
+          onPick={(m) => {
+            setDiaryPhotos((l) => (l.some((x) => x.id === m.id) || l.length >= MAX_DIARY_PHOTOS ? l : [...l, m]));
+            setPicking(false);
+          }}
+          onPickMany={(ms) => {
+            setDiaryPhotos((l) => {
+              const out = [...l];
+              for (const m of ms) if (out.length < MAX_DIARY_PHOTOS && !out.some((x) => x.id === m.id)) out.push(m);
+              return out;
+            });
+            setPicking(false);
+          }}
+        />
       )}
     </Ctx.Provider>
   );

@@ -17,6 +17,14 @@ import { buildSeo } from "@/lib/seo";
 export const dynamic = "force-static";
 export const dynamicParams = false; // শুধু লেখা-আছে এমন দিন; বাকি 404
 
+function safeSiteUrl(): string | undefined {
+  try {
+    return getSiteUrl();
+  } catch {
+    return undefined; // SITE_URL ছাড়া (লোকাল dev) শেয়ার-আইকন বাদ
+  }
+}
+
 type Props = { params: Promise<{ day: string }> };
 
 export async function generateStaticParams() {
@@ -50,7 +58,7 @@ export default async function DiaryDay({ params }: Props) {
       <div className="mt-4 rounded-2xl border border-line bg-surface p-4">
         <DiaryCalendar view={buildDiaryMonth(words, day.slice(0, 7))} selected={day} timeZone={tz} />
       </div>
-      <DiaryMonthPanels ym={day.slice(0, 7)} byDay={byDay} selected={day} media={await getPublicMedia()} look={lookFromSettings(settings)} />
+      <DiaryMonthPanels ym={day.slice(0, 7)} byDay={byDay} selected={day} media={await getPublicMedia()} look={lookFromSettings(settings)} siteUrl={safeSiteUrl()} />
     </PublicShell>
   );
 }

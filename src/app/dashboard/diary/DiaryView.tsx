@@ -16,7 +16,10 @@ import { byNewest, diaryVisOf, diaryVisPatch, monthGrid, monthOf, monthRange, sh
 import { useAdd } from "../AddSheet";
 import { OnThisDay } from "../OnThisDay";
 import { useSiteSettings, useSiteTimezone } from "../SiteSettingsProvider";
+import { DiaryTiles } from "@/components/diary/DiaryTiles";
+import { photoIdsOf } from "@/lib/diaryPhotos";
 import { DiaryDownload } from "./DiaryDownload";
+import { DiaryThumbs } from "./DiaryThumbs";
 import { DiaryLookSheet } from "./DiaryLookSheet";
 import { useDiaryLook } from "./useDiaryLook";
 
@@ -83,8 +86,9 @@ function EntryList({ items, look, tz, busyId, onToggle }: { items: PostWithId[];
               <Link href={`/dashboard/posts/${p.id}/edit`} className="block min-h-12">
                 <span className="line-clamp-8 block whitespace-pre-line">{text}</span>
               </Link>
+              <DiaryThumbs ids={photoIdsOf(p.body)} />
             </DiaryPage>
-            <div className="px-1 pt-2">
+            <div className="flex flex-wrap items-center gap-2 px-1 pt-2">
               <button
                 type="button"
                 disabled={busyId === p.id}
@@ -95,6 +99,9 @@ function EntryList({ items, look, tz, busyId, onToggle }: { items: PostWithId[];
                 <Icon name={vis === "public" ? "globe" : "lock"} size={16} />
                 {vis === "public" ? bn.diary.visPublic : bn.diary.visPrivate}
               </button>
+              <Link href={`/dashboard/posts/${p.id}/edit`} className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-line px-3 text-sm">
+                {bn.diary.editEntry}
+              </Link>
             </div>
           </li>
         );
@@ -201,6 +208,17 @@ export function DiaryView() {
 
   return (
     <div className="space-y-4">
+      {ready?.list && (
+        <DiaryTiles
+          tone="soft"
+          items={[
+            { n: ready.list.length, label: bn.diary.tiles.month },
+            { n: ready.list.reduce((n, p) => n + photoIdsOf(p.body).length, 0), label: bn.diary.tiles.photos },
+            { n: ready.list.filter((p) => diaryVisOf(p) === "public").length, label: bn.diary.tiles.published },
+          ]}
+        />
+      )}
+
       <section aria-label={ymLabel(ym)} className="rounded-2xl border border-line bg-surface p-3">
         <div className="mb-2 flex items-center justify-between">
           <button type="button" aria-label={bn.diary.prevMonth} onClick={() => move(-1)} className={nav}>

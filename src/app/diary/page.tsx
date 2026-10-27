@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { DiaryCalendar } from "@/components/public/DiaryCalendar";
+import { DiaryTiles } from "@/components/diary/DiaryTiles";
 import { DiaryMonthPanels } from "@/components/public/DiaryMonthPanels";
 import { DiaryStats, DiaryYear } from "@/components/public/DiaryYear";
 import { OnThisDay } from "@/components/public/OnThisDay";
@@ -13,11 +14,21 @@ import { bn } from "@/i18n/bn";
 import { PLACES_PATH, placeStats } from "@/lib/diarySummary";
 import { buildDiaryMonth, buildYearView, DIARY_FEED_PATH, DIARY_PATH, diaryYears, latestDay, streakStats } from "@/lib/diaryCalendar";
 import { lookFromSettings } from "@/lib/diaryLook";
+import { photoIdsOf } from "@/lib/diaryPhotos";
 import { widgetTitle } from "@/lib/layout";
 import { buildSeo } from "@/lib/seo";
 
 // build-সময়ে prerender; পাঠক-রিকোয়েস্টে Worker চলে না
 export const dynamic = "force-static";
+
+function safeSiteUrl(): string | undefined {
+  try {
+    return getSiteUrl();
+  } catch {
+    return undefined; // SITE_URL ছাড়া (লোকাল dev) শেয়ার-আইকন বাদ
+  }
+}
+
 
 export async function generateMetadata(): Promise<Metadata> {
   const { siteTitle, allowIndexing, layout } = await getPublicSettings();
@@ -36,18 +47,21 @@ export default async function DiaryHome() {
   const settings = await getPublicSettings();
   const calTitle = widgetTitle(settings.layout.sidebar, "calendar", bn.public.calendarTitle);
   const last = latestDay(byDay.keys());
+  const all = [...byDay.values()].flat();
+  const photoCount = all.reduce((n, e) => n + photoIdsOf(e.body).length, 0);
   return (
     <PublicShell>
       <h1 className="font-serif text-3xl font-bold">{calTitle}</h1>
       {last ? (
         <>
           <p className="mt-1 text-muted">{bn.public.diaryDesc}</p>
+          <DiaryTiles items={[{ n: all.length, label: bn.diary.tiles.entries }, { n: photoCount, label: bn.diary.tiles.photos }, { n: placeStats(byDay).length, label: bn.diary.tiles.places }]} />
           <div className="mt-4 rounded-2xl border border-line bg-surface p-4">
             <DiaryCalendar view={buildDiaryMonth(words, last.slice(0, 7))} selected={last} timeZone={tz} />
           </div>
           <DiaryStats s={streakStats(byDay.keys())} showStreak={settings.showDiaryStreak === true} />
           <OnThisDay days={[...byDay.keys()]} timeZone={tz} />
-          <DiaryMonthPanels ym={last.slice(0, 7)} byDay={byDay} selected={last} previewDay={last} latestLabel={bn.public.diaryLatest} media={await getPublicMedia()} look={lookFromSettings(settings)} />
+          <DiaryMonthPanels ym={last.slice(0, 7)} byDay={byDay} selected={last} previewDay={last} latestLabel={bn.public.diaryLatest} media={await getPublicMedia()} look={lookFromSettings(settings)} siteUrl={safeSiteUrl()} />
           <div className="mt-8 rounded-2xl border border-line bg-surface p-4">
             <DiaryYear view={buildYearView(words, Number(last.slice(0, 4)))} years={diaryYears(byDay.keys())} timeZone={tz} />
           </div>
