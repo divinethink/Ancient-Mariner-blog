@@ -9,7 +9,10 @@ import { BOOK_AUTHOR_MAX, BOOK_NOTE_MAX, BOOK_TITLE_MAX, countByStatus, finished
 import { dayKey } from "@/lib/datetime";
 import type { BookStatus, BookVisibility } from "@/lib/enums";
 import { newId } from "@/lib/id";
-import { Segmented, type SegmentedOption } from "@/components/ui/Segmented";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { AddToggle } from "@/components/ui/AddToggle";
+import { ClampText } from "@/components/ui/ClampText";
+import { StatusCards, type StatusCardOption } from "@/components/ui/StatusCards";
 import { ConfirmButton } from "../ConfirmButton";
 import { useSiteTimezone } from "../SiteSettingsProvider";
 
@@ -28,6 +31,7 @@ export function ShelfView() {
   const [actionErr, setActionErr] = useState(false);
   const [siteMsg, setSiteMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [noteFor, setNoteFor] = useState<string | null>(null);
+  const [adding, setAdding] = useState(false);
   const [today] = useState(() => dayKey(Date.now(), tz));
 
   useEffect(() => {
@@ -52,7 +56,7 @@ export function ShelfView() {
   const reload = () => setVersion((v) => v + 1);
   const all = items ?? [];
   const counts = countByStatus(all);
-  const options: SegmentedOption<BookStatus>[] = (["reading", "wishlist", "finished"] as const).map((s) => ({ value: s, label: `${LABEL[s]} ${bnNum(counts[s])}` }));
+  const options: StatusCardOption<BookStatus>[] = (["reading", "wishlist", "finished"] as const).map((s) => ({ value: s, label: LABEL[s], count: bnNum(counts[s]) }));
   const shown = all.filter((b) => b.status === filter);
   const list = filter === "finished" ? sortFinished(shown) : shown;
   const year = Number(today.slice(0, 4));
@@ -83,31 +87,39 @@ export function ShelfView() {
 
   return (
     <>
-      <p className="mb-3 text-sm text-muted">{bn.shelf.yearCount(bnNum(finishedInYear(all, year)), bnNum(year))}</p>
-      <BookForm today={today} onAdded={(s) => { setFilter(s); reload(); }} />
-      <div className="mt-5">
-        <Segmented label={bn.shelf.filterLabel} value={filter} options={options} onChange={setFilter} />
+      <p className="mb-4 rounded-xl border border-line bg-surface px-3 py-2 text-sm text-muted">🏆 {bn.shelf.yearCount(bnNum(finishedInYear(all, year)), bnNum(year))}</p>
+      <StatusCards label={bn.shelf.filterLabel} value={filter} options={options} onChange={setFilter} />
+      <div className="mt-4">
+        {adding ? (
+          <BookForm status={filter} today={today} onAdded={() => { setAdding(false); reload(); }} onCancel={() => setAdding(false)} />
+        ) : (
+          <AddToggle label={bn.shelf.addTitle} onClick={() => setAdding(true)} />
+        )}
       </div>
       {failed && <p role="alert" className="mt-4 text-accent-text">{bn.shelf.loadFailed}</p>}
       {actionErr && <p role="alert" className="mt-4 text-accent-text">{bn.shelf.actionFailed}</p>}
       {siteMsg && <p role={siteMsg.ok ? "status" : "alert"} className={`mt-4 ${siteMsg.ok ? "text-muted" : "text-accent-text"}`}>{siteMsg.text}</p>}
-      {items !== undefined && list.length === 0 && !failed && <p className="mt-4 text-muted">{bn.shelf.empty}</p>}
-      <ul className="mt-4 space-y-3">
+      {items !== undefined && list.length === 0 && !failed && <EmptyState icon="library" text={bn.shelf.empty} />}
+      <ul className="mt-4 space-y-4">
         {list.map((b) => (
-          <li key={b.id} className="rounded-2xl border border-line bg-surface p-4">
-            <p className="font-serif text-lg font-bold">{b.title}</p>
-            <p className="text-xs text-muted">{isPub(b) ? bn.shelf.visibilityPublic : bn.shelf.visibilityPrivate}</p>
-            {b.author && <p className="text-sm text-muted">{bn.shelf.byAuthor(b.author)}</p>}
-            {(b.startDay || (b.status === "finished" && b.endDay)) && (
-              <p className="text-sm text-muted">
-                {b.startDay && bn.shelf.started(dayText(b.startDay))}
-                {b.startDay && b.status === "finished" && b.endDay && " · "}
-                {b.status === "finished" && b.endDay && bn.shelf.ended(dayText(b.endDay))}
-              </p>
-            )}
-            {b.note && noteFor !== b.id && <p className="mt-2 whitespace-pre-line font-serif text-base">{b.note}</p>}
+          <li key={b.id} className="rounded-2xl border border-line border-l-4 border-l-btn-bg bg-surface p-4 shadow-sm">
+            <div className="flex items-start gap-3">
+              <span aria-hidden className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-btn-bg font-serif text-xl font-bold text-btn-tx">
+                {Array.from(b.title)[0]}
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="break-words font-serif text-xl font-bold leading-snug">{b.title}</p>
+                {b.author && <p className="text-sm text-muted">{bn.shelf.byAuthor(b.author)}</p>}
+                <p className="mt-1 text-xs text-muted">
+                  {isPub(b) ? bn.shelf.visibilityPublic : bn.shelf.visibilityPrivate}
+                  {b.startDay && ` · ${bn.shelf.started(dayText(b.startDay))}`}
+                  {b.status === "finished" && b.endDay && ` · ${bn.shelf.ended(dayText(b.endDay))}`}
+                </p>
+              </div>
+            </div>
+            {b.note && noteFor !== b.id && <ClampText text={b.note} more={bn.ideas.more} less={bn.ideas.less} className="mt-3 font-serif text-base" />}
             {noteFor === b.id && <NoteEditor book={b} onDone={() => { setNoteFor(null); reload(); if (isPub(b)) void act(async () => undefined, true); }} />}
-            <div className="mt-2 flex flex-wrap items-center gap-2">
+            <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-line pt-3">
               {b.status === "wishlist" && <Act label={bn.shelf.startReading} onClick={() => void setStatus(b, "reading")} primary />}
               {b.status === "reading" && <Act label={bn.shelf.markFinished} onClick={() => void setStatus(b, "finished")} primary />}
               {b.status === "finished" && <Act label={bn.shelf.backToReading} onClick={() => void setStatus(b, "reading")} />}
@@ -174,10 +186,10 @@ function NoteEditor({ book, onDone }: { book: BookWithId; onDone: () => void }) 
   );
 }
 
-function BookForm({ today, onAdded }: { today: string; onAdded: (s: BookStatus) => void }) {
+function BookForm({ status, today, onAdded, onCancel }: { status: BookStatus; today: string; onAdded: () => void; onCancel: () => void }) {
   const [title, setTitle] = useState("");
   const [author, setAuthor] = useState("");
-  const [status, setStatus] = useState<BookStatus>("reading");
+  const [desc, setDesc] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const idRef = useRef<string>("");
@@ -196,6 +208,7 @@ function BookForm({ today, onAdded }: { today: string; onAdded: (s: BookStatus) 
         id: idRef.current,
         title,
         author,
+        note: desc,
         status,
         ...(status === "reading" ? { startDay: today } : {}),
         ...(status === "finished" ? { endDay: today } : {}),
@@ -203,7 +216,8 @@ function BookForm({ today, onAdded }: { today: string; onAdded: (s: BookStatus) 
       idRef.current = "";
       setTitle("");
       setAuthor("");
-      onAdded(status);
+      setDesc("");
+      onAdded();
     } catch {
       setErr(bn.shelf.saveFailed);
     } finally {
@@ -211,9 +225,8 @@ function BookForm({ today, onAdded }: { today: string; onAdded: (s: BookStatus) 
     }
   }
 
-  const opts: SegmentedOption<BookStatus>[] = (["reading", "wishlist", "finished"] as const).map((s) => ({ value: s, label: LABEL[s] }));
   return (
-    <section aria-label={bn.shelf.addTitle} className="rounded-2xl border border-line bg-surface p-4">
+    <section aria-label={bn.shelf.addTitle} className="rounded-2xl border border-line bg-surface p-4 shadow-sm">
       <h2 className="mb-3 text-sm text-muted">📚 {bn.shelf.addTitle}</h2>
       <label className="mb-3 block text-sm">
         {bn.shelf.titleLabel}
@@ -223,14 +236,20 @@ function BookForm({ today, onAdded }: { today: string; onAdded: (s: BookStatus) 
         {bn.shelf.authorLabel}
         <input value={author} maxLength={BOOK_AUTHOR_MAX} onChange={(e) => setAuthor(e.target.value)} className={`${field} mt-1`} />
       </label>
-      <div className="mb-3">
-        <p className="mb-1 text-sm">{bn.shelf.statusLabel}</p>
-        <Segmented label={bn.shelf.statusLabel} value={status} options={opts} onChange={setStatus} />
-      </div>
+      <label className="mb-3 block text-sm">
+        {bn.shelf.descLabel}
+        <textarea value={desc} maxLength={BOOK_NOTE_MAX} rows={3} onChange={(e) => setDesc(e.target.value)} className={`${field} mt-1 font-serif`} />
+      </label>
+      <p className="mb-3 text-sm text-muted">{bn.shelf.addsTo(LABEL[status])}</p>
       {err && <p role="alert" className="mb-3 text-accent-text">{err}</p>}
-      <button type="button" onClick={() => void submit()} aria-disabled={busy} className="min-h-11 rounded-full bg-btn-bg px-5 text-btn-tx aria-disabled:opacity-60">
-        {busy ? bn.shelf.adding : bn.shelf.add}
-      </button>
+      <div className="flex gap-2">
+        <button type="button" onClick={() => void submit()} aria-disabled={busy} className="min-h-11 rounded-full bg-btn-bg px-5 text-btn-tx aria-disabled:opacity-60">
+          {busy ? bn.shelf.adding : bn.shelf.add}
+        </button>
+        <button type="button" onClick={onCancel} className="min-h-11 rounded-full border border-line px-5">
+          {bn.ideas.cancel}
+        </button>
+      </div>
     </section>
   );
 }

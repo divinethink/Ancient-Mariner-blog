@@ -2,7 +2,10 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { Segmented, type SegmentedOption } from "@/components/ui/Segmented";
+import { AddToggle } from "@/components/ui/AddToggle";
+import { ClampText } from "@/components/ui/ClampText";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { StatusCards, type StatusCardOption } from "@/components/ui/StatusCards";
 import type { TripWithId } from "@/data/tripRepo";
 import { getTripRepo } from "@/data/tripRepo.wire";
 import { getPostRepo } from "@/data/postRepo.wire";
@@ -30,6 +33,7 @@ export function TripView() {
   const [filter, setFilter] = useState<TripStatus>("wish");
   const [actionErr, setActionErr] = useState(false);
   const [editFor, setEditFor] = useState<string | null>(null);
+  const [adding, setAdding] = useState(false);
   const startingRef = useRef(false);
   const [today] = useState(() => dayKey(Date.now(), tz));
 
@@ -57,9 +61,9 @@ export function TripView() {
   const wish = all.filter((t) => t.status === "wish");
   const been = sortBeen(all.filter((t) => t.status === "been"));
   const list = filter === "wish" ? wish : been;
-  const options: SegmentedOption<TripStatus>[] = [
-    { value: "wish", label: `${LABEL.wish} ${bnNum(wish.length)}` },
-    { value: "been", label: `${LABEL.been} ${bnNum(been.length)}` },
+  const options: StatusCardOption<TripStatus>[] = [
+    { value: "wish", label: LABEL.wish, count: bnNum(wish.length) },
+    { value: "been", label: LABEL.been, count: bnNum(been.length) },
   ];
   const total = totalCost(all);
 
@@ -89,28 +93,39 @@ export function TripView() {
 
   return (
     <>
-      <TripForm today={today} onAdded={(s) => { setFilter(s); reload(); }} />
-      {total > 0 && <p className="mt-4 text-sm text-muted">{bn.trips.total(formatTaka(total))}</p>}
+      {total > 0 && <p className="mb-4 rounded-xl border border-line bg-surface px-3 py-2 text-sm text-muted">💰 {bn.trips.total(formatTaka(total))}</p>}
+      <StatusCards label={bn.trips.filterLabel} value={filter} options={options} onChange={setFilter} />
       <div className="mt-4">
-        <Segmented label={bn.trips.filterLabel} value={filter} options={options} onChange={setFilter} />
+        {adding ? (
+          <TripForm status={filter} today={today} onAdded={() => { setAdding(false); reload(); }} onCancel={() => setAdding(false)} />
+        ) : (
+          <AddToggle label={bn.trips.addTitle} onClick={() => setAdding(true)} />
+        )}
       </div>
       {failed && <p role="alert" className="mt-4 text-accent-text">{bn.trips.loadFailed}</p>}
       {actionErr && <p role="alert" className="mt-4 text-accent-text">{bn.trips.actionFailed}</p>}
-      {items !== undefined && list.length === 0 && !failed && <p className="mt-4 text-muted">{bn.trips.empty}</p>}
-      <ul className="mt-4 space-y-3">
+      {items !== undefined && list.length === 0 && !failed && <EmptyState icon="globe" text={bn.trips.empty} />}
+      <ul className="mt-4 space-y-4">
         {list.map((t) => (
-          <li key={t.id} className="rounded-2xl border border-line bg-surface p-4">
-            <p className="font-serif text-lg font-bold">{t.place}</p>
-            {(t.status === "been" && t.day) || t.costTaka !== undefined ? (
-              <p className="text-sm text-muted">
-                {t.status === "been" && t.day && dayText(t.day)}
-                {t.status === "been" && t.day && t.costTaka !== undefined && " · "}
-                {t.costTaka !== undefined && formatTaka(t.costTaka)}
-              </p>
-            ) : null}
-            {t.note && editFor !== t.id && <p className="mt-2 whitespace-pre-line font-serif text-base">{t.note}</p>}
+          <li key={t.id} className="rounded-2xl border border-line border-l-4 border-l-btn-bg bg-surface p-4 shadow-sm">
+            <div className="flex items-start gap-3">
+              <span aria-hidden className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-line text-2xl">
+                📍
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="break-words font-serif text-xl font-bold leading-snug">{t.place}</p>
+                {(t.status === "been" && t.day) || t.costTaka !== undefined ? (
+                  <p className="text-sm text-muted">
+                    {t.status === "been" && t.day && dayText(t.day)}
+                    {t.status === "been" && t.day && t.costTaka !== undefined && " · "}
+                    {t.costTaka !== undefined && formatTaka(t.costTaka)}
+                  </p>
+                ) : null}
+              </div>
+            </div>
+            {t.note && editFor !== t.id && <ClampText text={t.note} more={bn.ideas.more} less={bn.ideas.less} className="mt-3 font-serif text-base" />}
             {editFor === t.id && <TripEditor trip={t} onDone={() => { setEditFor(null); reload(); }} />}
-            <div className="mt-2 flex flex-wrap items-center gap-2">
+            <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-line pt-3">
               {t.status === "wish" ? (
                 <Btn primary label={bn.trips.markBeen} onClick={() => void act(async () => (await getTripRepo()).update(t.id, { status: "been", day: today }))} />
               ) : (
@@ -189,9 +204,9 @@ function TripEditor({ trip, onDone }: { trip: TripWithId; onDone: () => void }) 
   );
 }
 
-function TripForm({ today, onAdded }: { today: string; onAdded: (s: TripStatus) => void }) {
+function TripForm({ status, today, onAdded, onCancel }: { status: TripStatus; today: string; onAdded: () => void; onCancel: () => void }) {
   const [place, setPlace] = useState("");
-  const [status, setStatus] = useState<TripStatus>("wish");
+  const [detail, setDetail] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const idRef = useRef<string>("");
@@ -206,10 +221,11 @@ function TripForm({ today, onAdded }: { today: string; onAdded: (s: TripStatus) 
     setBusy(true);
     setErr(null);
     try {
-      await (await getTripRepo()).create({ id: idRef.current, place, status, ...(status === "been" ? { day: today } : {}) });
+      await (await getTripRepo()).create({ id: idRef.current, place, note: detail, status, ...(status === "been" ? { day: today } : {}) });
       idRef.current = "";
       setPlace("");
-      onAdded(status);
+      setDetail("");
+      onAdded();
     } catch {
       setErr(bn.trips.saveFailed);
     } finally {
@@ -217,25 +233,27 @@ function TripForm({ today, onAdded }: { today: string; onAdded: (s: TripStatus) 
     }
   }
 
-  const opts: SegmentedOption<TripStatus>[] = [
-    { value: "wish", label: LABEL.wish },
-    { value: "been", label: LABEL.been },
-  ];
   return (
-    <section aria-label={bn.trips.addTitle} className="rounded-2xl border border-line bg-surface p-4">
+    <section aria-label={bn.trips.addTitle} className="rounded-2xl border border-line bg-surface p-4 shadow-sm">
       <h2 className="mb-3 text-sm text-muted">🧭 {bn.trips.addTitle}</h2>
       <label className="mb-3 block text-sm">
         {bn.trips.placeLabel}
         <input value={place} maxLength={TRIP_PLACE_MAX} onChange={(e) => setPlace(e.target.value)} className={`${field} mt-1`} />
       </label>
-      <div className="mb-3">
-        <p className="mb-1 text-sm">{bn.trips.statusLabel}</p>
-        <Segmented label={bn.trips.statusLabel} value={status} options={opts} onChange={setStatus} />
-      </div>
+      <label className="mb-3 block text-sm">
+        {bn.trips.detailLabel}
+        <textarea value={detail} maxLength={TRIP_NOTE_MAX} rows={3} onChange={(e) => setDetail(e.target.value)} className={`${field} mt-1 font-serif`} />
+      </label>
+      <p className="mb-3 text-sm text-muted">{bn.trips.addsTo(LABEL[status])}</p>
       {err && <p role="alert" className="mb-3 text-accent-text">{err}</p>}
-      <button type="button" onClick={() => void submit()} aria-disabled={busy} className="min-h-11 rounded-full bg-btn-bg px-5 text-btn-tx aria-disabled:opacity-60">
-        {busy ? bn.trips.adding : bn.trips.add}
-      </button>
+      <div className="flex gap-2">
+        <button type="button" onClick={() => void submit()} aria-disabled={busy} className="min-h-11 rounded-full bg-btn-bg px-5 text-btn-tx aria-disabled:opacity-60">
+          {busy ? bn.trips.adding : bn.trips.add}
+        </button>
+        <button type="button" onClick={onCancel} className="min-h-11 rounded-full border border-line px-5">
+          {bn.ideas.cancel}
+        </button>
+      </div>
     </section>
   );
 }

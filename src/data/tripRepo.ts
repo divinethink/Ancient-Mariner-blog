@@ -37,6 +37,8 @@ export type CreateTripInput = {
   /** retry/double-submit-নিরাপত্তা (একই id-তে দ্বিতীয় create = বিদ্যমান ফেরত) */
   id?: string;
   place: string;
+  /** বিস্তারিত (ঐচ্ছিক) — `note` ফিল্ডেই যায়, নতুন ফিল্ড নয় */
+  note?: string;
   status: TripStatus;
   day?: string;
 };

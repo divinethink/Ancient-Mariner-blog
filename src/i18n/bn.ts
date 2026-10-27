@@ -1343,7 +1343,9 @@ export const bn = {
     filterLabel: "অবস্থা অনুযায়ী ট্রিপ",
     total: (t: string) => `গিয়েছি-ট্রিপে মোট খরচ: ${t}`,
     addTitle: "নতুন জায়গা",
-    placeLabel: "জায়গার নাম",
+    placeLabel: "স্থান",
+    detailLabel: "বিস্তারিত (ঐচ্ছিক)",
+    addsTo: (s: string) => `“${s}” তালিকায় যোগ হবে`,
     statusLabel: "অবস্থা",
     add: "তালিকায় রাখুন",
     adding: "রাখা হচ্ছে…",
@@ -1422,6 +1424,8 @@ export const bn = {
     addTitle: "নতুন বই",
     titleLabel: "বইয়ের নাম",
     authorLabel: "লেখক (ঐচ্ছিক)",
+    descLabel: "বর্ণনা (ঐচ্ছিক)",
+    addsTo: (s: string) => `“${s}” তালিকায় যোগ হবে`,
     statusLabel: "এখন কী অবস্থায়",
     add: "তাকে রাখুন",
     adding: "রাখা হচ্ছে…",
@@ -1842,6 +1846,7 @@ export const bn = {
     empty: "এখনো কোনো আইডিয়া নেই — উপরের বাটন চেপে প্রথমটি লিখুন।",
     newIdea: "＋ নতুন আইডিয়া",
     more: "আরও দেখান",
+    less: "কম দেখান",
     types: { quick: "দ্রুত", dialogue: "সংলাপ", character: "চরিত্র", concept: "ধারণা" } as Record<
       string,
       string

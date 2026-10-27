@@ -52,7 +52,7 @@ export function createTripRepoClient(db: Firestore, ownerUid: string): TripRepo 
     await setDoc(ref(id), {
       place: TripPlaceSchema.parse(input.place),
       status: TripStatus.parse(input.status),
-      note: "",
+      note: input.note === undefined ? "" : TripNoteSchema.parse(input.note),
       ...(d ? { day: d } : {}),
       ownerUid,
       createdAt: serverTimestamp(),

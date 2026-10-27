@@ -7,12 +7,15 @@ import { bn } from "@/i18n/bn";
 import { dayKey } from "@/lib/datetime";
 import { SPECIAL_DAY_KIND, type SpecialDayKind } from "@/lib/enums";
 import { newId } from "@/lib/id";
+import { AddToggle } from "@/components/ui/AddToggle";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { SPECIAL_NAME_MAX, SPECIAL_YEAR_MAX, SPECIAL_YEAR_MIN, sortUpcoming, validMonthDay, yearsAt } from "@/lib/specialDays";
 import { ConfirmButton } from "../ConfirmButton";
 import { useSiteTimezone } from "../SiteSettingsProvider";
 
 const bnNum = (n: number) => n.toLocaleString("bn-BD", { useGrouping: false });
 const field = "w-full rounded-xl border border-line bg-surface p-3 text-base";
+const KIND_EMOJI: Record<string, string> = { birthday: "🎂", anniversary: "💍", other: "⭐" };
 
 /** বিশেষ দিন (দিনলিপি-চ): জন্মদিন/বার্ষিকী — প্রতি বছর একই মাস-দিনে ফেরে; আসন্ন ক্রমে। শুধু owner */
 export function DaysView() {
@@ -21,6 +24,7 @@ export function DaysView() {
   const [failed, setFailed] = useState(false);
   const [version, setVersion] = useState(0);
   const [actionErr, setActionErr] = useState(false);
+  const [adding, setAdding] = useState(false);
   const [today] = useState(() => dayKey(Date.now(), tz));
 
   useEffect(() => {
@@ -55,29 +59,39 @@ export function DaysView() {
   const sorted = sortUpcoming(items ?? [], today);
   return (
     <>
-      <DayForm onAdded={() => setVersion((v) => v + 1)} />
+      {adding ? (
+        <DayForm onAdded={() => { setAdding(false); setVersion((v) => v + 1); }} onCancel={() => setAdding(false)} />
+      ) : (
+        <AddToggle label={bn.days.addTitle} onClick={() => setAdding(true)} />
+      )}
       {failed && <p role="alert" className="mt-4 text-accent-text">{bn.days.loadFailed}</p>}
       {actionErr && <p role="alert" className="mt-4 text-accent-text">{bn.days.actionFailed}</p>}
-      {items !== undefined && sorted.length === 0 && !failed && <p className="mt-6 text-muted">{bn.days.empty}</p>}
-      <ul className="mt-6 space-y-3">
+      {items !== undefined && sorted.length === 0 && !failed && <div className="mt-6"><EmptyState icon="calendar" text={bn.days.empty} /></div>}
+      <ul className="mt-6 space-y-4">
         {sorted.map((d) => {
           const n = yearsAt(d.next, d.year);
           return (
-            <li key={d.id} className="rounded-2xl border border-line bg-surface p-4">
-              <p className="font-serif text-lg font-bold">
-                {d.name}
-                <span className="ms-2 text-sm font-normal text-muted">{bn.days.kinds[d.kind]}</span>
-              </p>
-              <p className="text-sm text-muted">
-                {bnNum(d.day)} {bn.diary.months[d.month - 1]}
-                {n !== undefined && ` · ${bn.days.years(bnNum(n))}`}
-              </p>
-              <p className="font-semibold">{d.inDays === 0 ? bn.days.today : bn.days.inDays(bnNum(d.inDays))}</p>
+            <li key={d.id} className="rounded-2xl border border-line border-l-4 border-l-btn-bg bg-surface p-4 shadow-sm">
+              <div className="flex items-start gap-3">
+                <span aria-hidden className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-line text-2xl">
+                  {KIND_EMOJI[d.kind] ?? "⭐"}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="break-words font-serif text-xl font-bold leading-snug">{d.name}</p>
+                  <p className="text-sm text-muted">
+                    {bn.days.kinds[d.kind]} · {bnNum(d.day)} {bn.diary.months[d.month - 1]}
+                    {n !== undefined && ` · ${bn.days.years(bnNum(n))}`}
+                  </p>
+                </div>
+                <span className={`shrink-0 rounded-full px-3 py-1 text-sm font-semibold ${d.inDays === 0 ? "bg-btn-bg text-btn-tx" : "border border-line text-accent-text"}`}>
+                  {d.inDays === 0 ? bn.days.today : bn.days.inDays(bnNum(d.inDays))}
+                </span>
+              </div>
               <ConfirmButton
                 label={bn.days.remove}
                 question={bn.days.removeQ}
                 onConfirm={() => void remove(d.id)}
-                className="mt-2 min-h-11 rounded-full border border-line px-4 text-sm"
+                className="mt-3 min-h-11 rounded-full border border-line px-4 text-sm"
               />
             </li>
           );
@@ -87,7 +101,7 @@ export function DaysView() {
   );
 }
 
-function DayForm({ onAdded }: { onAdded: () => void }) {
+function DayForm({ onAdded, onCancel }: { onAdded: () => void; onCancel: () => void }) {
   const [name, setName] = useState("");
   const [kind, setKind] = useState<SpecialDayKind>("birthday");
   const [month, setMonth] = useState(1);
@@ -125,7 +139,7 @@ function DayForm({ onAdded }: { onAdded: () => void }) {
   }
 
   return (
-    <section aria-label={bn.days.addTitle} className="rounded-2xl border border-line bg-surface p-4">
+    <section aria-label={bn.days.addTitle} className="rounded-2xl border border-line bg-surface p-4 shadow-sm">
       <h2 className="mb-3 text-sm text-muted">🎂 {bn.days.addTitle}</h2>
       <label className="mb-3 block text-sm">
         {bn.days.nameLabel}
@@ -162,9 +176,14 @@ function DayForm({ onAdded }: { onAdded: () => void }) {
         <input inputMode="numeric" value={year} onChange={(e) => setYear(e.target.value)} className={`${field} mt-1`} />
       </label>
       {err && <p role="alert" className="mb-3 text-accent-text">{err}</p>}
-      <button type="button" onClick={() => void submit()} aria-disabled={busy} className="min-h-11 rounded-full bg-btn-bg px-5 text-btn-tx aria-disabled:opacity-60">
-        {busy ? bn.days.adding : bn.days.add}
-      </button>
+      <div className="flex gap-2">
+        <button type="button" onClick={() => void submit()} aria-disabled={busy} className="min-h-11 rounded-full bg-btn-bg px-5 text-btn-tx aria-disabled:opacity-60">
+          {busy ? bn.days.adding : bn.days.add}
+        </button>
+        <button type="button" onClick={onCancel} className="min-h-11 rounded-full border border-line px-5">
+          {bn.ideas.cancel}
+        </button>
+      </div>
     </section>
   );
 }

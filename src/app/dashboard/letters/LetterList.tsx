@@ -6,6 +6,8 @@ import { getLetterRepo } from "@/data/letterRepo.wire";
 import { bn } from "@/i18n/bn";
 import { formatDate } from "@/lib/datetime";
 import { newId } from "@/lib/id";
+import { AddToggle } from "@/components/ui/AddToggle";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { LETTER_BODY_MAX, LETTER_TITLE_MAX, isLetterOpen, letterDaysLeft, minLetterDay, openAtFor } from "@/lib/letters";
 import { ConfirmButton } from "../ConfirmButton";
 import { useSiteTimezone } from "../SiteSettingsProvider";
@@ -22,6 +24,7 @@ export function LetterList() {
   const [now, setNow] = useState(() => Date.now());
   const [shown, setShown] = useState<string | null>(null);
   const [actionErr, setActionErr] = useState(false);
+  const [adding, setAdding] = useState(false);
 
   useEffect(() => {
     let dead = false;
@@ -69,24 +72,35 @@ export function LetterList() {
 
   return (
     <>
-      <LetterForm tz={tz} onCreated={reload} />
+      {adding ? (
+        <LetterForm tz={tz} onCreated={() => { setAdding(false); reload(); }} onCancel={() => setAdding(false)} />
+      ) : (
+        <AddToggle label={bn.letters.formTitle} onClick={() => setAdding(true)} />
+      )}
       {failed && <p role="alert" className="mt-4 text-accent-text">{bn.letters.loadFailed}</p>}
       {actionErr && <p role="alert" className="mt-4 text-accent-text">{bn.letters.actionFailed}</p>}
-      {items !== undefined && items.length === 0 && !failed && <p className="mt-6 text-muted">{bn.letters.empty}</p>}
-      <ul className="mt-6 space-y-3">
+      {items !== undefined && items.length === 0 && !failed && <div className="mt-6"><EmptyState icon="mail" text={bn.letters.empty} /></div>}
+      <ul className="mt-6 space-y-4">
         {(items ?? []).map((l) => {
           const openNow = isLetterOpen(l.openAt, now);
           const isShown = shown === l.id && openNow;
           return (
-            <li key={l.id} className="rounded-2xl border border-line bg-surface p-4">
-              <p className="font-serif text-lg font-bold">{l.title || bn.letters.untitled}</p>
-              <p className="mt-1 text-sm text-muted">
-                {openNow ? (l.openedAt ? bn.letters.readBadge : bn.letters.readyBadge) : bn.letters.lockedIn(bnNum(letterDaysLeft(l.openAt, now, tz)))}
-                {" · "}
-                {openNow ? bn.letters.wasOpen(formatDate(l.openAt, tz)) : bn.letters.opensOn(formatDate(l.openAt, tz))}
-              </p>
-              {isShown && <p className="mt-3 whitespace-pre-line font-serif text-base">{l.body}</p>}
-              <div className="mt-2 flex flex-wrap items-center gap-2">
+            <li key={l.id} className="rounded-2xl border border-line border-l-4 border-l-btn-bg bg-surface p-4 shadow-sm">
+              <div className="flex items-start gap-3">
+                <span aria-hidden className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-line text-2xl">
+                  {openNow ? (l.openedAt ? "✉️" : "📬") : "🔒"}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="break-words font-serif text-xl font-bold leading-snug">{l.title || bn.letters.untitled}</p>
+                  <p className="mt-1 text-sm text-muted">
+                    {openNow ? (l.openedAt ? bn.letters.readBadge : bn.letters.readyBadge) : bn.letters.lockedIn(bnNum(letterDaysLeft(l.openAt, now, tz)))}
+                    {" · "}
+                    {openNow ? bn.letters.wasOpen(formatDate(l.openAt, tz)) : bn.letters.opensOn(formatDate(l.openAt, tz))}
+                  </p>
+                </div>
+              </div>
+              {isShown && <p className="mt-3 whitespace-pre-line font-serif text-base leading-relaxed">{l.body}</p>}
+              <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-line pt-3">
                 {openNow && (
                   <button
                     type="button"
@@ -111,7 +125,7 @@ export function LetterList() {
   );
 }
 
-function LetterForm({ tz, onCreated }: { tz: string; onCreated: () => void }) {
+function LetterForm({ tz, onCreated, onCancel }: { tz: string; onCreated: () => void; onCancel: () => void }) {
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [day, setDay] = useState("");
@@ -144,7 +158,7 @@ function LetterForm({ tz, onCreated }: { tz: string; onCreated: () => void }) {
   }
 
   return (
-    <section aria-label={bn.letters.formTitle} className="rounded-2xl border border-line bg-surface p-4">
+    <section aria-label={bn.letters.formTitle} className="rounded-2xl border border-line bg-surface p-4 shadow-sm">
       <h2 className="mb-3 text-sm text-muted">✉️ {bn.letters.formTitle}</h2>
       <label className="mb-3 block text-sm">
         {bn.letters.titleLabel}
@@ -159,14 +173,19 @@ function LetterForm({ tz, onCreated }: { tz: string; onCreated: () => void }) {
         <input type="date" value={day} min={minDay} onChange={(e) => setDay(e.target.value)} className={`${field} mt-1`} />
       </label>
       {err && <p role="alert" className="mb-3 text-accent-text">{err}</p>}
-      <button
-        type="button"
-        onClick={() => void submit()}
-        aria-disabled={busy}
-        className="min-h-11 rounded-full bg-btn-bg px-5 text-btn-tx aria-disabled:opacity-60"
-      >
-        {busy ? bn.letters.saving : bn.letters.save}
-      </button>
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={() => void submit()}
+          aria-disabled={busy}
+          className="min-h-11 rounded-full bg-btn-bg px-5 text-btn-tx aria-disabled:opacity-60"
+        >
+          {busy ? bn.letters.saving : bn.letters.save}
+        </button>
+        <button type="button" onClick={onCancel} className="min-h-11 rounded-full border border-line px-5">
+          {bn.ideas.cancel}
+        </button>
+      </div>
     </section>
   );
 }

@@ -55,7 +55,7 @@ export function createBookRepoClient(db: Firestore, ownerUid: string): BookRepo 
       author: input.author === undefined ? "" : BookAuthorSchema.parse(input.author),
       status: BookStatus.parse(input.status),
       visibility: "private",
-      note: "",
+      note: input.note === undefined ? "" : BookNoteSchema.parse(input.note),
       ...(startDay ? { startDay } : {}),
       ...(endDay ? { endDay } : {}),
       ownerUid,
