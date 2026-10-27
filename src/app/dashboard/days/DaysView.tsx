@@ -8,13 +8,16 @@ import { dayKey } from "@/lib/datetime";
 import { SPECIAL_DAY_KIND, type SpecialDayKind } from "@/lib/enums";
 import { newId } from "@/lib/id";
 import { AddToggle } from "@/components/ui/AddToggle";
+import { ClampText } from "@/components/ui/ClampText";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { SPECIAL_NAME_MAX, SPECIAL_YEAR_MAX, SPECIAL_YEAR_MIN, sortUpcoming, validMonthDay, yearsAt } from "@/lib/specialDays";
+import { SPECIAL_KIND_LABEL_MAX, SPECIAL_NAME_MAX, SPECIAL_NOTE_MAX, SPECIAL_YEAR_MAX, SPECIAL_YEAR_MIN, sortUpcoming, validMonthDay, yearsAt } from "@/lib/specialDays";
 import { ConfirmButton } from "../ConfirmButton";
 import { useSiteTimezone } from "../SiteSettingsProvider";
 
 const bnNum = (n: number) => n.toLocaleString("bn-BD", { useGrouping: false });
 const field = "w-full rounded-xl border border-line bg-surface p-3 text-base";
+const cell = "block rounded-xl border border-line bg-surface px-3 py-2";
+const cellIn = "w-full bg-transparent text-lg outline-none";
 const KIND_EMOJI: Record<string, string> = { birthday: "🎂", anniversary: "💍", other: "⭐" };
 
 /** বিশেষ দিন (দিনলিপি-চ): জন্মদিন/বার্ষিকী — প্রতি বছর একই মাস-দিনে ফেরে; আসন্ন ক্রমে। শুধু owner */
@@ -25,6 +28,7 @@ export function DaysView() {
   const [version, setVersion] = useState(0);
   const [actionErr, setActionErr] = useState(false);
   const [adding, setAdding] = useState(false);
+  const [noteFor, setNoteFor] = useState<string | null>(null);
   const [today] = useState(() => dayKey(Date.now(), tz));
 
   useEffect(() => {
@@ -79,7 +83,7 @@ export function DaysView() {
                 <div className="min-w-0 flex-1">
                   <p className="break-words font-serif text-xl font-bold leading-snug">{d.name}</p>
                   <p className="text-sm text-muted">
-                    {bn.days.kinds[d.kind]} · {bnNum(d.day)} {bn.diary.months[d.month - 1]}
+                    {d.kind === "other" && d.kindLabel ? d.kindLabel : bn.days.kinds[d.kind]} · {bnNum(d.day)} {bn.diary.months[d.month - 1]}
                     {n !== undefined && ` · ${bn.days.years(bnNum(n))}`}
                   </p>
                 </div>
@@ -87,12 +91,24 @@ export function DaysView() {
                   {d.inDays === 0 ? bn.days.today : bn.days.inDays(bnNum(d.inDays))}
                 </span>
               </div>
-              <ConfirmButton
-                label={bn.days.remove}
-                question={bn.days.removeQ}
-                onConfirm={() => void remove(d.id)}
-                className="mt-3 min-h-11 rounded-full border border-line px-4 text-sm"
-              />
+              {d.note && noteFor !== d.id && (
+                <div className="mt-3 rounded-xl bg-line px-3 py-2">
+                  <p className="text-xs font-semibold text-muted">📖 {bn.days.memoryTitle}</p>
+                  <ClampText text={d.note} more={bn.ideas.more} less={bn.ideas.less} className="font-serif text-base" />
+                </div>
+              )}
+              {noteFor === d.id && <NoteEditor day={d} onDone={() => { setNoteFor(null); setVersion((v) => v + 1); }} />}
+              <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-line pt-3">
+                <button type="button" onClick={() => setNoteFor(noteFor === d.id ? null : d.id)} className="min-h-11 rounded-full border border-line px-4 text-sm">
+                  {d.note ? bn.days.memoryEdit : bn.days.memoryWrite}
+                </button>
+                <ConfirmButton
+                  label={bn.days.remove}
+                  question={bn.days.removeQ}
+                  onConfirm={() => void remove(d.id)}
+                  className="min-h-11 rounded-full border border-line px-4 text-sm"
+                />
+              </div>
             </li>
           );
         })}
@@ -101,9 +117,41 @@ export function DaysView() {
   );
 }
 
+function NoteEditor({ day, onDone }: { day: SpecialDayWithId; onDone: () => void }) {
+  const [text, setText] = useState(day.note);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState(false);
+  async function save() {
+    if (busy) return;
+    setBusy(true);
+    setErr(false);
+    try {
+      await (await getSpecialDayRepo()).setNote(day.id, text);
+      onDone();
+    } catch {
+      setErr(true);
+      setBusy(false);
+    }
+  }
+  return (
+    <div className="mt-3">
+      <label className="block text-sm">
+        {bn.days.memoryTitle}
+        <textarea value={text} maxLength={SPECIAL_NOTE_MAX} rows={4} placeholder={bn.days.memoryPlaceholder} onChange={(e) => setText(e.target.value)} className={`${field} mt-1 font-serif`} />
+      </label>
+      {err && <p role="alert" className="mt-1 text-accent-text">{bn.days.saveFailed}</p>}
+      <button type="button" onClick={() => void save()} aria-disabled={busy} className="mt-2 min-h-11 rounded-full bg-btn-bg px-4 text-sm text-btn-tx aria-disabled:opacity-60">
+        {bn.days.memorySave}
+      </button>
+    </div>
+  );
+}
+
 function DayForm({ onAdded, onCancel }: { onAdded: () => void; onCancel: () => void }) {
   const [name, setName] = useState("");
   const [kind, setKind] = useState<SpecialDayKind>("birthday");
+  const [kindLabel, setKindLabel] = useState("");
+  const [memory, setMemory] = useState("");
   const [month, setMonth] = useState(1);
   const [day, setDay] = useState("");
   const [year, setYear] = useState("");
@@ -125,9 +173,11 @@ function DayForm({ onAdded, onCancel }: { onAdded: () => void; onCancel: () => v
     setBusy(true);
     setErr(null);
     try {
-      await (await getSpecialDayRepo()).create({ id: idRef.current, name, kind, month, day: d, ...(y !== undefined ? { year: y } : {}) });
+      await (await getSpecialDayRepo()).create({ id: idRef.current, name, kind, month, day: d, ...(y !== undefined ? { year: y } : {}), ...(kind === "other" ? { kindLabel } : {}), note: memory });
       idRef.current = "";
       setName("");
+      setKindLabel("");
+      setMemory("");
       setDay("");
       setYear("");
       onAdded();
@@ -155,10 +205,20 @@ function DayForm({ onAdded, onCancel }: { onAdded: () => void; onCancel: () => v
           ))}
         </select>
       </label>
-      <div className="mb-3 grid grid-cols-2 gap-3">
-        <label className="block text-sm">
-          {bn.days.monthLabel}
-          <select value={month} onChange={(e) => setMonth(Number(e.target.value))} className={`${field} mt-1`}>
+      {kind === "other" && (
+        <label className="mb-3 block text-sm">
+          {bn.days.otherLabel}
+          <input value={kindLabel} maxLength={SPECIAL_KIND_LABEL_MAX} placeholder={bn.days.otherPlaceholder} onChange={(e) => setKindLabel(e.target.value)} className={`${field} mt-1`} />
+        </label>
+      )}
+      <div className="mb-3 grid grid-cols-[1fr_1.5fr_1.2fr] gap-2">
+        <label className={cell}>
+          <span className="block text-xs text-muted">{bn.days.dayLabel}</span>
+          <input inputMode="numeric" value={day} onChange={(e) => setDay(e.target.value)} className={cellIn} />
+        </label>
+        <label className={cell}>
+          <span className="block text-xs text-muted">{bn.days.monthLabel}</span>
+          <select value={month} onChange={(e) => setMonth(Number(e.target.value))} className={cellIn}>
             {bn.diary.months.map((m, i) => (
               <option key={m} value={i + 1}>
                 {m}
@@ -166,14 +226,14 @@ function DayForm({ onAdded, onCancel }: { onAdded: () => void; onCancel: () => v
             ))}
           </select>
         </label>
-        <label className="block text-sm">
-          {bn.days.dayLabel}
-          <input inputMode="numeric" value={day} onChange={(e) => setDay(e.target.value)} className={`${field} mt-1`} />
+        <label className={cell} title={bn.days.yearLabel}>
+          <span className="block text-xs text-muted">{bn.days.yearShort}</span>
+          <input inputMode="numeric" value={year} placeholder={bn.days.optional} aria-label={bn.days.yearLabel} onChange={(e) => setYear(e.target.value)} className={cellIn} />
         </label>
       </div>
       <label className="mb-3 block text-sm">
-        {bn.days.yearLabel}
-        <input inputMode="numeric" value={year} onChange={(e) => setYear(e.target.value)} className={`${field} mt-1`} />
+        {bn.days.memoryLabel}
+        <textarea value={memory} maxLength={SPECIAL_NOTE_MAX} rows={4} placeholder={bn.days.memoryPlaceholder} onChange={(e) => setMemory(e.target.value)} className={`${field} mt-1 font-serif`} />
       </label>
       {err && <p role="alert" className="mb-3 text-accent-text">{err}</p>}
       <div className="flex gap-2">

@@ -1,6 +1,8 @@
 // বিশেষ দিন (জন্মদিন/বার্ষিকী; দিনলিপি-চ): pure (SDK/UI-মুক্ত)। প্রতি বছর একই মাস-দিনে ফেরে; সব তারিখ দিন-key ("YYYY-MM-DD", সাইট-timezone-এর 'আজ' বাইরে থেকে আসে)।
 export const SPECIAL_NAME_MAX = 80;
 export const SPECIAL_LIST_MAX = 200;
+export const SPECIAL_KIND_LABEL_MAX = 40;
+export const SPECIAL_NOTE_MAX = 2000;
 export const SPECIAL_YEAR_MIN = 1900;
 export const SPECIAL_YEAR_MAX = 2100;
 const DAY_MS = 86_400_000;

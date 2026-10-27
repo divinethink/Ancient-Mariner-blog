@@ -1,8 +1,10 @@
 // পথ ক (owner-CSR): `specialDays` — owner write; শুধু dashboard থেকে dynamic import।
-import { collection, deleteDoc, doc, getDoc, getDocs, limit, orderBy, query, serverTimestamp, setDoc, type Firestore } from "firebase/firestore";
+import { collection, deleteDoc, doc, getDoc, getDocs, limit, orderBy, query, serverTimestamp, setDoc, updateDoc, type Firestore } from "firebase/firestore";
 import {
   SPECIAL_DAY_SCHEMA_VERSION,
+  SpecialKindLabelSchema,
   SpecialNameSchema,
+  SpecialNoteSchema,
   SpecialYearSchema,
   parseSpecialDay,
   type CreateSpecialDayInput,
@@ -45,6 +47,8 @@ export function createSpecialDayRepoClient(db: Firestore, ownerUid: string): Spe
       month: input.month,
       day: input.day,
       ...(input.year !== undefined ? { year: SpecialYearSchema.parse(input.year) } : {}),
+      ...(input.kind === "other" && input.kindLabel?.trim() ? { kindLabel: SpecialKindLabelSchema.parse(input.kindLabel) } : {}),
+      note: input.note === undefined ? "" : SpecialNoteSchema.parse(input.note),
       ownerUid,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
@@ -55,9 +59,17 @@ export function createSpecialDayRepoClient(db: Firestore, ownerUid: string): Spe
     return v;
   }
 
+  async function setNote(id: string, note: string): Promise<SpecialDayWithId> {
+    if (!(await get(id))) throw new Error("বিশেষ দিন পাওয়া যায়নি");
+    await updateDoc(ref(id), { note: SpecialNoteSchema.parse(note), updatedAt: serverTimestamp() });
+    const v = await get(id);
+    if (!v) throw new Error("সংরক্ষিত বিশেষ দিন পাওয়া যায়নি");
+    return v;
+  }
+
   async function del(id: string): Promise<void> {
     await deleteDoc(ref(id));
   }
 
-  return { list, create, delete: del };
+  return { list, create, setNote, delete: del };
 }
