@@ -9,6 +9,7 @@ import { convertIdeaToPost } from "@/data/ideaConvert";
 import { IdeaTextSchema, IdeaTitleSchema, type IdeaWithId } from "@/data/ideaRepo";
 import { getIdeaRepo } from "@/data/ideaRepo.wire";
 import { getPostRepo } from "@/data/postRepo.wire";
+import { Icon } from "@/components/icons";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { bn } from "@/i18n/bn";
 import { formatDate } from "@/lib/datetime";
@@ -23,9 +24,9 @@ type Load =
 type Note = { id: string; text: string } | null;
 
 const field = "w-full rounded-lg border border-line bg-surface px-3 text-base";
-const ghost = "min-h-11 rounded-full border border-line px-4 disabled:opacity-50";
+const ghost = "min-h-11 rounded-full border border-line px-4 text-sm disabled:opacity-50";
 const primary =
-  "min-h-11 rounded-full bg-btn-bg px-5 font-semibold text-btn-tx disabled:opacity-50";
+  "min-h-11 rounded-full bg-btn-bg px-5 text-sm font-semibold text-btn-tx disabled:opacity-50";
 
 export function IdeaList() {
   const t = bn.ideas;
@@ -135,14 +136,27 @@ export function IdeaList() {
 
   return (
     <>
+      <button
+        type="button"
+        onClick={openIdea}
+        aria-haspopup="dialog"
+        className="mb-5 flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-line text-base font-semibold text-accent-text hover:bg-line"
+      >
+        <Icon name="plus" size={20} strokeWidth={2.2} />
+        {t.newIdea.replace("＋ ", "")}
+      </button>
       {load.items.length === 0 ? (
         <EmptyState icon="idea" text={t.empty} />
       ) : (
-        <ul className="space-y-3">
+        <ul className="space-y-4">
           {load.items.map((it) => (
-            <li key={it.id} className="rounded-2xl border border-line bg-surface p-4">
-              <div className="mb-1 flex flex-wrap items-center gap-2 text-sm text-muted">
-                <span className="rounded-full border border-line px-2">
+            <li
+              key={it.id}
+              className="rounded-2xl border border-line border-l-4 border-l-btn-bg bg-surface p-4 shadow-sm"
+            >
+              <div className="mb-2 flex flex-wrap items-center gap-2 text-sm text-muted">
+                <span className="inline-flex items-center gap-1 rounded-full border border-line px-2.5 py-0.5">
+                  <Icon name="idea" size={14} />
                   {t.types[it.type] ?? it.type}
                 </span>
                 <span>{formatDate(it.createdAt, tz)}</span>
@@ -160,9 +174,9 @@ export function IdeaList() {
                 />
               ) : (
                 <>
-                  {it.title && <h2 className="font-serif text-lg font-bold">{it.title}</h2>}
-                  <p className="whitespace-pre-wrap break-words">{it.text}</p>
-                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                  {it.title && <h2 className="mb-1 font-serif text-xl font-bold">{it.title}</h2>}
+                  <p className="whitespace-pre-wrap break-words leading-relaxed">{it.text}</p>
+                  <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-line pt-3">
                     {it.convertedToPostId ? (
                       <Link
                         href={`/dashboard/posts/${it.convertedToPostId}/edit`}

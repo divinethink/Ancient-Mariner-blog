@@ -5,6 +5,7 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { NoteContentSchema, type NoteWithId } from "@/data/noteRepo";
 import { getNoteRepo } from "@/data/noteRepo.wire";
+import { Icon } from "@/components/icons";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { bn } from "@/i18n/bn";
 import { formatDate } from "@/lib/datetime";
@@ -16,9 +17,9 @@ import { useSiteTimezone } from "./SiteSettingsProvider";
 type Load =
   { kind: "loading" } | { kind: "error" } | { kind: "ready"; items: NoteWithId[]; more: boolean };
 
-const ghost = "min-h-11 rounded-full border border-line px-4 disabled:opacity-50";
+const ghost = "min-h-11 rounded-full border border-line px-4 text-sm disabled:opacity-50";
 const primary =
-  "min-h-11 rounded-full bg-btn-bg px-5 font-semibold text-btn-tx disabled:opacity-50";
+  "min-h-11 rounded-full bg-btn-bg px-5 text-sm font-semibold text-btn-tx disabled:opacity-50";
 
 export function InboxList() {
   const t = bn.ideas;
@@ -100,7 +101,7 @@ export function InboxList() {
   return (
     <>
       {!organized && (
-        <form onSubmit={onAdd} className="mb-5">
+        <form onSubmit={onAdd} className="mb-5 rounded-2xl border border-line bg-surface p-3 shadow-sm">
           <label htmlFor="inbox-add" className="sr-only">
             {t.inboxLabel}
           </label>
@@ -114,9 +115,10 @@ export function InboxList() {
               setText(e.target.value);
               setErr(null);
             }}
-            className="w-full rounded-lg border border-line bg-surface p-3 text-base"
+            className="w-full resize-none rounded-lg bg-transparent p-2 text-base outline-none"
           />
-          <div className="mt-2 flex justify-end">
+          <div className="mt-2 flex items-center justify-between gap-2 border-t border-line pt-2">
+            <span className="text-sm text-muted">{t.counter(text.length, NOTE_CONTENT_MAX)}</span>
             <button type="submit" disabled={adding} className={primary}>
               {adding ? t.saving : t.inboxAdd}
             </button>
@@ -142,18 +144,24 @@ export function InboxList() {
         (load.items.length === 0 ? (
           <EmptyState icon="inbox" text={organized ? t.organizedEmpty : t.inboxEmpty} />
         ) : (
-          <ul className="space-y-3">
+          <ul className="space-y-4">
             {load.items.map((n) => (
-              <li key={n.id} className="rounded-2xl border border-line bg-surface p-4">
-                <div className="mb-1 flex flex-wrap items-center gap-2 text-sm text-muted">
+              <li
+                key={n.id}
+                className="rounded-2xl border border-line border-l-4 border-l-btn-bg bg-surface p-4 shadow-sm"
+              >
+                <div className="mb-2 flex flex-wrap items-center gap-2 text-sm text-muted">
                   <span>{formatDate(n.createdAt, tz)}</span>
                   {n.kind === "shared" && (
-                    <span className="rounded-full border border-line px-2">{t.shared}</span>
+                    <span className="inline-flex items-center gap-1 rounded-full border border-line px-2.5 py-0.5">
+                      <Icon name="link" size={14} />
+                      {t.shared}
+                    </span>
                   )}
                 </div>
-                {n.title && <h2 className="font-serif text-lg font-bold">{n.title}</h2>}
-                <p className="whitespace-pre-wrap break-words">{n.content}</p>
-                <div className="mt-3 flex flex-wrap items-center gap-2">
+                {n.title && <h2 className="mb-1 font-serif text-xl font-bold">{n.title}</h2>}
+                <p className="whitespace-pre-wrap break-words leading-relaxed">{n.content}</p>
+                <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-line pt-3">
                   <button
                     type="button"
                     disabled={busy !== null}

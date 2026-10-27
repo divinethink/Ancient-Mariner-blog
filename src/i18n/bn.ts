@@ -1805,6 +1805,7 @@ export const bn = {
   },
   ideas: {
     tabsLabel: "আইডিয়া ও ইনবক্স",
+    pageHint: "ভাবনা ধরে রাখুন, পরে লেখায় রূপ দিন।",
     tabIdeas: "আইডিয়া",
     tabInbox: "ইনবক্স",
     sheetTitle: "যোগ করুন",
@@ -1826,7 +1827,7 @@ export const bn = {
     templateDeleteConfirm: (n: string) => `'${n}' টেমপ্লেটটি মুছবেন? লেখাগুলো অক্ষত থাকবে।`,
     templateDeleteFailed: "টেমপ্লেট মোছা যায়নি।",
     close: "বন্ধ করুন",
-    quickTitle: "দ্রুত ভাবনা",
+    quickTitle: "নতুন আইডিয়া",
     quickLabel: "আইডিয়া",
     quickPlaceholder: "মাথায় যা এল লিখে ফেলুন…",
     save: "সংরক্ষণ করুন",
@@ -1838,7 +1839,7 @@ export const bn = {
     loading: "আইডিয়া খোঁজা হচ্ছে…",
     loadFailed: "আইডিয়ার তালিকা আনা যায়নি। নেট দেখে আবার চেষ্টা করুন।",
     retry: "আবার চেষ্টা করুন",
-    empty: "এখনো কোনো আইডিয়া নেই — ＋ চেপে দ্রুত ভাবনা লিখুন।",
+    empty: "এখনো কোনো আইডিয়া নেই — উপরের বাটন চেপে প্রথমটি লিখুন।",
     newIdea: "＋ নতুন আইডিয়া",
     more: "আরও দেখান",
     types: { quick: "দ্রুত", dialogue: "সংলাপ", character: "চরিত্র", concept: "ধারণা" } as Record<

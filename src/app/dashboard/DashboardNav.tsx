@@ -97,7 +97,6 @@ export function SidePanel({
   onSearch: () => void;
 }) {
   const path = usePathname();
-  const { openIdea } = useAdd();
   const side = (p: string) =>
     `flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm ${collapsed ? "justify-center" : ""} ${
       path === p ? "bg-line font-semibold text-accent-text" : "text-muted hover:bg-line"
@@ -135,17 +134,17 @@ export function SidePanel({
         {!collapsed && <span>{bn.nav.searchLabel}</span>}
       </button>
       {linksTop.map(renderLink)}
-      <button
-        type="button"
-        onClick={openIdea}
-        aria-haspopup="dialog"
-        aria-label={bn.nav.quickIdea}
-        title={bn.nav.quickIdea}
-        className={`flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm text-muted hover:bg-line ${collapsed ? "justify-center" : ""}`}
+      <Link
+        href="/dashboard/ideas"
+        aria-label={bn.dashboard.ideasInbox}
+        title={bn.dashboard.ideasInbox}
+        className={`flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm ${collapsed ? "justify-center" : ""} ${
+          path === "/dashboard/ideas" || path === "/dashboard/inbox" ? "bg-line font-semibold text-accent-text" : "text-muted hover:bg-line"
+        }`}
       >
         <Icon name="idea" size={20} />
-        {!collapsed && <span>{bn.nav.quickIdea}</span>}
-      </button>
+        {!collapsed && <span>{bn.dashboard.ideasInbox}</span>}
+      </Link>
       {linksBottom.map(renderLink)}
       <button
         type="button"

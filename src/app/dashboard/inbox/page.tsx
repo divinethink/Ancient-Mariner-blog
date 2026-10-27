@@ -7,7 +7,8 @@ export default function InboxPage() {
   return (
     <>
       <MenuBack to="library" />
-      <h1 className="mb-4 font-serif text-3xl font-bold">{bn.dashboard.ideasInbox}</h1>
+      <h1 className="mb-1 font-serif text-3xl font-bold">{bn.dashboard.ideasInbox}</h1>
+      <p className="mb-5 text-muted">{bn.ideas.pageHint}</p>
       <IdeaInboxTabs active="inbox" />
       <InboxList />
     </>

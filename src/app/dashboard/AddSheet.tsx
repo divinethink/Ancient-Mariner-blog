@@ -351,10 +351,6 @@ export function AddProvider({ children }: { children: ReactNode }) {
                   <span aria-hidden>💌</span>
                   {bn.letters.menu}
                 </Link>
-                <button type="button" onClick={() => setMode("idea")} className={row}>
-                  <span aria-hidden>💡</span>
-                  {t.quickTitle}
-                </button>
                 <Link href="/dashboard/ideas" onClick={() => setMode("closed")} className={row}>
                   <span aria-hidden>📥</span>
                   <span className="flex-1">{bn.dashboard.ideasInbox}</span>
