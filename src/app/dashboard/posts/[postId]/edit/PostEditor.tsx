@@ -5,6 +5,7 @@ import { draftStore, type LocalDraft } from "@/data/draftStore";
 import { getPostRepo } from "@/data/postRepo.wire";
 import { getTemplateRepo } from "@/data/templateRepo.wire";
 import { loadRemote } from "@/data/postSync";
+import { pmark } from "@/debug/perf";
 import { bn } from "@/i18n/bn";
 import { EMPTY_DOC, docToText, makeExcerpt, parseBody, type DocNode } from "@/lib/editorDoc";
 import { formatDate } from "@/lib/datetime";
@@ -53,17 +54,24 @@ async function resolveTemplate(raw: string | null, today: string): Promise<{ tit
 }
 
 export async function load(postId: string, isNew: boolean, tpl: string | null = null, today = ""): Promise<State> {
+  // Firebase/repo লোড IndexedDB-র সাথে সমান্তরালে শুরু (আগে একটার পর একটা চলত); ব্যর্থ হলে নিচের try/catch আগের মতোই ধরে
+  const repoP = getPostRepo();
+  void repoP.catch(() => undefined);
+  pmark("load: start");
+  void repoP.then(() => pmark("load: Firebase repo ready"), () => pmark("load: Firebase repo FAILED"));
   const local = await draftStore.loadDraft(postId).catch(() => undefined);
+  pmark(`load: IndexedDB read done (local=${local ? (local.dirty ? "dirty" : "clean") : "none"})`);
   if (local?.dirty) {
-    const pub = await getPostRepo()
+    const pub = await repoP
       .then((r) => loadRemote(r, postId))
       .then((rv) => (rv ? { status: rv.post.status === "published" ? ("published" as const) : ("draft" as const), hasUnpublished: true } : undefined))
       .catch(() => undefined);
     return fromLocal(postId, local, pub);
   }
   try {
-    const repo = await getPostRepo();
+    const repo = await repoP;
     const rv = await loadRemote(repo, postId);
+    pmark(`load: Firestore read done (found=${!!rv})`);
     if (rv) {
       const meta = await draftStore.getSync(postId).catch(() => undefined);
       const pub = {
@@ -113,8 +121,11 @@ export function PostEditor({ postId, isNew, tpl = null, backToSite = null }: { p
   const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
+    pmark("PostEditor: mounted");
+    void import("./TiptapEditor").catch(() => undefined); // ভারী editor-কোড আগেই নামানো শুরু (EditorSurface-এর dynamic একই chunk পায়)
     let dead = false;
     load(postId, isNew, tpl, formatDate(new Date(), tz)).then((s) => {
+      pmark(`load: finished → ${s.kind}`);
       if (!dead) setState(s);
     });
     return () => {
