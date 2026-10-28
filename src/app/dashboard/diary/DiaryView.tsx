@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import type { PostWithId } from "@/data/postRepo";
 import { getPostRepo } from "@/data/postRepo.wire";
+import { localStore } from "@/data/localStore";
 import { bn } from "@/i18n/bn";
 import { dayKey, formatDate } from "@/lib/datetime";
 import { DiaryPage } from "@/components/diary/DiaryPage";
@@ -237,16 +238,31 @@ export function DiaryView() {
     return () => window.clearTimeout(t);
   }, []);
 
+  // আগে লোকাল কপি (IndexedDB) সঙ্গে সঙ্গে দেখায় — Firestore আসতে ১-৩ সেকেন্ড লাগলেও পাতা ফাঁকা থাকে না; নেটওয়ার্কের ফল এলে বদলে যায়
   useEffect(() => {
     let dead = false;
+    let fresh = false;
+    let shown = false;
     const [from, to] = monthRange(ym);
+    const key = `diarycache:${ym}`;
+    localStore
+      .get<PostWithId[]>(key)
+      .then((c) => {
+        if (!dead && !fresh && Array.isArray(c)) {
+          shown = true;
+          setLoad({ ym, list: c });
+        }
+      })
+      .catch(() => undefined);
     getPostRepo()
       .then((r) => r.listDiary({ from, to }))
       .then((list) => {
+        fresh = true;
         if (!dead) setLoad({ ym, list });
+        void localStore.set(key, list).catch(() => undefined);
       })
       .catch(() => {
-        if (!dead) setLoad({ ym, list: null });
+        if (!dead && !shown) setLoad({ ym, list: null });
       });
     return () => {
       dead = true;
