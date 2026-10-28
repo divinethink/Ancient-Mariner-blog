@@ -129,7 +129,7 @@ function EntryList({
                 {/* after:inset-0 = পুরো কার্ড ট্যাপযোগ্য (আগে শুধু লেখার লাইন — তাই বারবার ট্যাপ লাগত) */}
                 <Link
                   href={`/dashboard/posts/${p.id}/edit`}
-                  className="block min-h-12 after:absolute after:inset-0 after:content-['']"
+                  className="block min-h-12 after:absolute after:inset-0 after:z-10 after:content-['']"
                 >
                   <span className="line-clamp-8 block whitespace-pre-line">{text}</span>
                 </Link>
