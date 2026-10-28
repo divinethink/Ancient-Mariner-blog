@@ -126,15 +126,18 @@ function EntryList({
                   </span>
                 }
               >
-                {/* after:inset-0 = পুরো কার্ড ট্যাপযোগ্য (আগে শুধু লেখার লাইন — তাই বারবার ট্যাপ লাগত) */}
-                <Link
-                  href={`/dashboard/posts/${p.id}/edit`}
-                  className="block min-h-12 after:absolute after:inset-0 after:z-10 after:content-['']"
-                >
+                <Link href={`/dashboard/posts/${p.id}/edit`} className="block min-h-12">
                   <span className="line-clamp-8 block whitespace-pre-line">{text}</span>
                 </Link>
                 <DiaryThumbs ids={photoIdsOf(p.body)} />
               </DiaryPage>
+              {/* পুরো কার্ড ট্যাপযোগ্য: .dtext নিজেই position:relative, তাই ওভারলে DiaryPage-এর বাইরে (wrapper-এ) — নইলে 'আরও পড়ুন'/তারিখ ঢাকে না */}
+              <Link
+                href={`/dashboard/posts/${p.id}/edit`}
+                aria-hidden
+                tabIndex={-1}
+                className="absolute inset-0 z-10 rounded-3xl"
+              />
             </div>
             <div className="flex flex-wrap items-center gap-2 px-1 pt-2">
               <button
