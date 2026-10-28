@@ -10,6 +10,7 @@ import { CONTENT_TYPE } from "@/lib/enums";
 import {
   facets,
   highlight,
+  listByFilter,
   prepare,
   search,
   SEARCH_LIMIT,
@@ -57,9 +58,10 @@ export function SearchView({ initialQuery }: { initialQuery: string }) {
   const [sync, setSync] = useState<Sync>("idle");
   const [q, setQ] = useState(initialQuery);
   const [dq, setDq] = useState(initialQuery);
-  const [type, setType] = useState("");
   const [categoryId, setCategoryId] = useState("");
   const [status, setStatus] = useState("");
+  // "খুঁজুন" চাপলে যে ফিল্টার প্রযোজ্য হয়েছে; বাছাই বদলালে মুছে যায় (ভুল বাছাইয়ে অটো তালিকা আসে না)
+  const [applied, setApplied] = useState<{ categoryId: string; status: string } | null>(null);
   const [open, setOpen] = useState<string | null>(null); // প্রসারিত আইডিয়া/নোটের key
   const [gone, setGone] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
@@ -120,10 +122,17 @@ export function SearchView({ initialQuery }: { initialQuery: string }) {
 
   const prepared = useMemo(() => prepare(entries ?? []), [entries]);
   const fct = useMemo(() => facets(entries ?? [], CONTENT_TYPE), [entries]);
+  const hasQuery = dq.trim() !== "";
   const result = useMemo(
-    () => search(prepared, dq, { type, categoryId, status }, SEARCH_LIMIT),
-    [prepared, dq, type, categoryId, status],
+    () =>
+      hasQuery
+        ? search(prepared, dq, { categoryId, status }, SEARCH_LIMIT)
+        : applied
+          ? listByFilter(prepared, applied, SEARCH_LIMIT)
+          : { hits: [], total: 0 },
+    [prepared, dq, hasQuery, categoryId, status, applied],
   );
+  const shownList = hasQuery || applied !== null;
   const lit = useMemo(
     () => result.hits.map((h) => ({ h, hl: highlight(h.entry, dq) })),
     [result, dq],
@@ -149,12 +158,12 @@ export function SearchView({ initialQuery }: { initialQuery: string }) {
       return;
     }
     if (e.kind === "post") router.push(`/dashboard/posts/${e.id}/edit`);
-    else if (e.kind === "chapter" && e.projectId) router.push(`/dashboard/projects/${e.projectId}/chapters/${e.id}`);
+    else if (e.kind === "chapter" && e.projectId)
+      router.push(`/dashboard/projects/${e.projectId}/chapters/${e.id}`);
     else setOpen((k) => (k === e.key ? null : e.key));
   }
 
   const building = entries !== null && entries.length === 0 && syncedAt === 0 && sync === "syncing";
-  const hasQuery = dq.trim() !== "";
 
   return (
     <div>
@@ -174,30 +183,15 @@ export function SearchView({ initialQuery }: { initialQuery: string }) {
         />
       </label>
 
-      <div
-        role="group"
-        aria-label={bn.search.filters}
-        className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3"
-      >
-        <label className="text-sm text-muted">
-          {bn.search.filterType}
-          <select value={type} onChange={(e) => setType(e.target.value)} className={sel}>
-            <option value="">{bn.search.all}</option>
-            {fct.types.map((t) => (
-              <option key={t} value={t}>
-                {bn.org.types[t] ?? t}
-              </option>
-            ))}
-            <option value="idea">{bn.search.typeIdea}</option>
-            <option value="note">{bn.search.typeNote}</option>
-            <option value="chapter">{bn.search.typeChapter}</option>
-          </select>
-        </label>
-        <label className="text-sm text-muted">
+      <div role="group" aria-label={bn.search.filters} className="mt-4 grid grid-cols-2 gap-3">
+        <label className="rounded-2xl border border-line bg-surface p-3 text-xs font-semibold text-muted">
           {bn.search.filterCategory}
           <select
             value={categoryId}
-            onChange={(e) => setCategoryId(e.target.value)}
+            onChange={(e) => {
+              setCategoryId(e.target.value);
+              setApplied(null);
+            }}
             className={sel}
           >
             <option value="">{bn.search.all}</option>
@@ -208,9 +202,16 @@ export function SearchView({ initialQuery }: { initialQuery: string }) {
             ))}
           </select>
         </label>
-        <label className="text-sm text-muted">
+        <label className="rounded-2xl border border-line bg-surface p-3 text-xs font-semibold text-muted">
           {bn.search.filterStatus}
-          <select value={status} onChange={(e) => setStatus(e.target.value)} className={sel}>
+          <select
+            value={status}
+            onChange={(e) => {
+              setStatus(e.target.value);
+              setApplied(null);
+            }}
+            className={sel}
+          >
             <option value="">{bn.search.all}</option>
             {STATUSES.map((s) => (
               <option key={s} value={s}>
@@ -220,13 +221,21 @@ export function SearchView({ initialQuery }: { initialQuery: string }) {
           </select>
         </label>
       </div>
+      <button
+        type="button"
+        disabled={!categoryId && !status}
+        onClick={() => setApplied({ categoryId, status })}
+        className="mt-3 min-h-12 w-full rounded-full bg-btn-bg px-5 font-semibold text-btn-tx disabled:opacity-50"
+      >
+        {bn.search.go}
+      </button>
 
       <p role="status" aria-live="polite" className="mt-4 text-sm text-muted">
         {building
           ? bn.search.building
           : sync === "syncing"
             ? bn.search.updating
-            : hasQuery && entries
+            : shownList && entries
               ? result.total === 0
                 ? bn.search.none
                 : bn.search.count(result.hits.length, result.total)
@@ -251,7 +260,7 @@ export function SearchView({ initialQuery }: { initialQuery: string }) {
           {bn.search.gone}
         </p>
       )}
-      {!hasQuery && <p className="mt-2 text-sm text-muted">{bn.search.hint}</p>}
+      {!shownList && <p className="mt-2 text-sm text-muted">{bn.search.hint}</p>}
 
       <ul className="mt-3 space-y-3">
         {lit.map(({ h, hl }) => {

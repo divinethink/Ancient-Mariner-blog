@@ -5,6 +5,7 @@ import {
   highlight,
   ideaEntry,
   isIndexablePost,
+  listByFilter,
   matchRanges,
   maxUpdated,
   noteEntry,
@@ -100,6 +101,18 @@ describe("search", () => {
   });
   it("খালি query ⇒ খালি", () => {
     expect(search(prep, "   ")).toEqual({ hits: [], total: 0 });
+  });
+  it("listByFilter: শব্দ ছাড়া ফিল্টারে নতুন আগে; ফিল্টার না থাকলে খালি", () => {
+    const e = [
+      post("a", "এক", ["x"], { status: "published", updatedAt: 1 }),
+      post("b", "দুই", ["y"], { status: "published", updatedAt: 2 }),
+    ];
+    const p = prepare(e);
+    expect(listByFilter(p, {}).total).toBe(0);
+    expect(listByFilter(p, { status: "published" }).hits.map((h) => h.entry.id)).toEqual([
+      "b",
+      "a",
+    ]);
   });
   it("ZWJ ছাড়া/সহ টাইপ — দুইভাবেই মেলে", () => {
     const e = [post("z", "র‍্যাব", ["র‍্যাব দল"])];

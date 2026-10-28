@@ -1722,7 +1722,7 @@ export const bn = {
     label: "পূর্ণ-লেখায় খুঁজুন",
     placeholder: "শিরোনাম বা লেখার ভেতরের শব্দ…",
     filters: "খোঁজের ফিল্টার",
-    filterType: "ধরন",
+    go: "খুঁজুন",
     filterCategory: "ক্যাটাগরি",
     filterStatus: "অবস্থা",
     all: "সব",

@@ -216,6 +216,22 @@ export function search(
   return { hits: hits.slice(0, Math.max(0, limit)), total: hits.length };
 }
 
+/** শব্দ ছাড়া শুধু ফিল্টার (ক্যাটাগরি/অবস্থা) মিলিয়ে তালিকা — নতুন আগে। ফিল্টার একটাও না থাকলে খালি */
+export function listByFilter(
+  prepared: readonly Prepared[],
+  filter: SearchFilter,
+  limit = SEARCH_LIMIT,
+): { hits: SearchHit[]; total: number } {
+  if (!filter.type && !filter.categoryId && !filter.status) return { hits: [], total: 0 };
+  const hits: SearchHit[] = prepared
+    .filter((p) => passesFilter(p.entry, filter))
+    .map((p) => ({ entry: p.entry, score: 0 }));
+  hits.sort(
+    (x, y) => y.entry.updatedAt - x.entry.updatedAt || (x.entry.key < y.entry.key ? -1 : 1),
+  );
+  return { hits: hits.slice(0, Math.max(0, limit)), total: hits.length };
+}
+
 // ── হাইলাইট ───────────────────────────────────────────────────────────────
 
 export type Seg = { text: string; hit: boolean };
