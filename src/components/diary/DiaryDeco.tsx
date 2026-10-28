@@ -71,13 +71,6 @@ export function DiaryDeco({ theme, day, dayLabel, year, location, period }: { th
       </div>
     );
   }
-  if (theme === "skyday") {
-    return (
-      <div className="ddeco dskybox" aria-hidden="true">
-        <span className="dsun" />
-      </div>
-    );
-  }
   if (theme === "lantern") {
     return (
       <div className="ddeco dlamp" aria-hidden="true">

@@ -350,17 +350,13 @@ main:has(.dash-shell) {
 }
 
 /* ===== দিনলিপির পাতা (ZIP-২): থিম · ফন্ট · আকার — মান `src/lib/diaryLook.ts`-এর সাথে মেলানো ===== */
-@font-face { font-family: "DCharulipi"; src: url("/fonts/diary/charulipi.woff") format("woff"); font-display: swap; }
 @font-face { font-family: "DRabindric"; src: url("/fonts/diary/rabindric.woff") format("woff"); font-display: swap; }
 @font-face { font-family: "DTagore"; src: url("/fonts/diary/tagore.woff") format("woff"); font-display: swap; }
 @font-face { font-family: "DBenSen"; src: url("/fonts/diary/bensen.woff") format("woff"); font-display: swap; }
-@font-face { font-family: "DKaiyum"; src: url("/fonts/diary/kaiyum.woff") format("woff"); font-display: swap; }
 
-[data-dfont="charulipi"] { --dfont: "DCharulipi", var(--font-serif); }
 [data-dfont="rabindric"] { --dfont: "DRabindric", var(--font-serif); }
 [data-dfont="tagore"] { --dfont: "DTagore", var(--font-serif); }
 [data-dfont="bensen"] { --dfont: "DBenSen", var(--font-serif); }
-[data-dfont="kaiyum"] { --dfont: "DKaiyum", var(--font-serif); }
 .dfontpv { font-family: var(--dfont, var(--font-serif)); }
 
 .dpage {
@@ -460,29 +456,7 @@ main:has(.dash-shell) {
 .dpage[data-dlayout="frame"] .dtext { margin-top: 22px; }
 .dpage[data-dlayout="frame"] .dtext::before { content: ""; position: absolute; left: 0; right: 0; top: -12px; height: 1.5px; background: var(--dborder); }
 .dpage[data-dlayout="frame"] .dtext::after { content: ""; position: absolute; left: 50%; top: -17px; width: 9px; height: 9px; background: var(--dacc); transform: translateX(-50%) rotate(45deg); box-shadow: 0 0 0 9px var(--dbgc); }
-.dpage[data-dtheme="gold"] .dheading { display: block; grid-area: label; color: var(--dacc); font-size: 0.8em; font-weight: 400; padding-top: 14px; }
-.dpage[data-dtheme="gold"] .dhead { width: 104px; height: 104px; margin: 14px 0 30px; border: 1.5px solid var(--dacc); border-radius: 50%; position: relative; flex-direction: column; align-items: center; justify-content: center; gap: 0; text-align: center; box-shadow: inset 0 0 0 5px var(--dbgc), inset 0 0 0 6px rgba(217, 179, 106, 0.55); }
-.dpage[data-dtheme="gold"] .dnum { font-size: 1.9em; }
-.dpage[data-dtheme="gold"] .dmeta { display: contents; }
-.dpage[data-dtheme="gold"] .dmy { display: flex; flex-direction: column; align-items: center; font-size: 0.68em; line-height: 1.2; font-weight: 400; }
-.dpage[data-dtheme="gold"] .dwd { position: absolute; left: -12px; right: -12px; bottom: -26px; text-align: center; color: var(--dacc); font-weight: 700; opacity: 1; font-size: 0.9em; }
-.dpage[data-dtheme="gold"] .dtitle { margin-top: 6px; }
-.dpage[data-dtheme="gold"] .dchips { flex-direction: column; align-items: flex-start; }
 
-/* line — হালকা পাতা, ইনলাইন আইকন-চিপ, রঙিন রেখা */
-.dpage[data-dlayout="line"] { border-radius: 16px; background-color: var(--dbgc); }
-.dpage[data-dlayout="line"] .dhead { padding-top: 14px; align-items: flex-start; gap: 10px; }
-.dpage[data-dlayout="line"] .dnum { font-size: 2.3em; }
-.dpage[data-dlayout="line"] .dmeta { border-left: 1.5px solid var(--dline); padding-left: 10px; font-size: 0.85em; align-self: stretch; justify-content: center; }
-.dpage[data-dlayout="line"] .dtitle { margin-top: 14px; }
-.dpage[data-dlayout="line"] .dchips { gap: 0; margin-top: 8px; }
-.dpage[data-dlayout="line"] .dchip { border: 0; border-radius: 0; padding: 0 12px; border-left: 1px solid var(--dline); gap: 6px; }
-.dpage[data-dlayout="line"] .dchip:first-child { padding-left: 0; border-left: 0; }
-.dpage[data-dlayout="line"] .dchip .dico { color: var(--dacc); }
-.dpage[data-dlayout="line"] .dk { opacity: 0.6; }
-.dpage[data-dlayout="line"] .dk::after { content: none; }
-.dpage[data-dlayout="line"] .dv { font-weight: 700; }
-.dpage[data-dlayout="line"] .dtext { margin-top: 14px; border-top: 2px solid var(--dacc); }
 
 /* book — নোটবুক: মার্জিন-রেখা, ফুটো, রঙিন চিপ, দ্বৈত রেখা */
 .dpage[data-dlayout="book"] { --dpl: 56px; --dpr: 20px; --dhx: 17px; --dhr: 8px; }
@@ -532,17 +506,10 @@ main:has(.dash-shell) {
 /* নতুন থিমের রং */
 [data-dtheme="charcoal"] { --dbgc: #fafaf6; --dink: #2b2b2b; --dline: #c9c9c0; --dacc: #3c4049; --dborder: #e4e4dc; --dheadbg: #3c4049; --dheadtx: #ffffff; --dcardbg: #fdf8ec; --dcardtx: #3c4049; }
 [data-dtheme="brick"] { --dbgc: #fafaf6; --dink: #4a1a14; --dline: #deb7b1; --dacc: #8b3a2f; --dborder: #ecd9d3; --dheadbg: #8b3a2f; --dheadtx: #ffffff; --dcardbg: #fdf8ec; --dcardtx: #8b3a2f; }
-[data-dtheme="navy"] { --dbgc: #fafaf6; --dink: #1d2a52; --dline: #bcc0d8; --dacc: #25406e; --dborder: #dcdfec; --dheadbg: #25406e; --dheadtx: #ffffff; --dcardbg: #fdf8ec; --dcardtx: #25406e; }
 [data-dtheme="forest"] { --dbgc: #fafaf6; --dink: #1f3a2a; --dline: #b5cbbd; --dacc: #2f6345; --dborder: #d9e4dc; --dheadbg: #2f6345; --dheadtx: #ffffff; --dcardbg: #fdf8ec; --dcardtx: #2f6345; }
 [data-dtheme="sky"] { --dbgc: #fafaf6; --dink: #1d2a52; --dline: #c3c6dc; --dacc: #466190; --dborder: #dcdfec; --dheadbg: #466190; --dheadtx: #ffffff; --dcardbg: #fdf8ec; --dcardtx: #25365f; }
-[data-dtheme="plum"] { --dbgc: #1f1a27; --dink: #f0e8d8; --dline: #363046; --dacc: #a98bb5; --dborder: #b79ac0; }
 [data-dtheme="ink"] { --dbgc: #181b22; --dink: #ece4d0; --dline: #2d3139; --dacc: #9b9b9b; --dborder: #9e9e9e; }
-[data-dtheme="gold"] { --dbgc: #1b1f2b; --dink: #f0e8d4; --dline: #323849; --dacc: #d9b36a; --dborder: #d9b36a; }
-[data-dtheme="ruby"] { --dbgc: #fafaf7; --dink: #222222; --dline: #cdcdcd; --dacc: #8a3328; --dborder: #d0d0d0; }
-[data-dtheme="teal"] { --dbgc: #fafaf7; --dink: #222222; --dline: #cdcdcd; --dacc: #1f6e75; --dborder: #d0d0d0; }
-[data-dtheme="nbslate"] { --dbgc: #f9efdc; --dink: #2e241c; --dline: #dccfa8; --dacc: #3c4049; --dborder: #ecdfc2; --dmar: #8f8a80; --dholebg: #e3d8b9; --dholebd: #c9bd97; --dchipbg: #e2dccb; --dchipbd: #c9bd97; --dchiptx: #3c4049; }
 [data-dtheme="nbred"] { --dbgc: #f9efdc; --dink: #2e241c; --dline: #dccfa8; --dacc: #8b3a2f; --dborder: #ecdfc2; --dmar: transparent; --dholebg: #e3d8b9; --dholebd: #c9bd97; --dchipbg: #efdcca; --dchipbd: #d6b3a5; --dchiptx: #8b3a2f; }
-[data-dtheme="nbteal"] { --dbgc: #f9efdc; --dink: #2e241c; --dline: #dccfa8; --dacc: #1f6e75; --dborder: #ecdfc2; --dmar: transparent; --dholebg: #e3d8b9; --dholebd: #c9bd97; --dchipbg: #dbe0cf; --dchipbd: #b3c2b5; --dchiptx: #1f6e75; }
 [data-dtheme="nbbig"] { --dbgc: #f9efdc; --dink: #2e241c; --dline: #d4c29a; --dacc: #8b3a2f; --dborder: #ecdfc2; --dmar: #b8665c; --dholebg: #e3d8b9; --dholebd: #c9bd97; --dchipbg: #eedfc3; --dchipbd: #d4c29a; --dchiptx: #8b3a2f; }
 [data-dtheme="week"] { --dbgc: #fafaf7; --dink: #1d1d1d; --dline: #cdcdcd; --dacc: #1d1d1d; --dborder: #d4d4cd; }
 
@@ -586,44 +553,6 @@ main:has(.dash-shell) {
 .dpage[data-dtheme="postcard"] .dstamp i { display: block; height: 100%; border-radius: 2px; background: linear-gradient(#ffcf70, #f58b4c 55%, #2a6f77 56%); }
 .dpage[data-dtheme="postcard"] .dstamp b { position: absolute; bottom: 9px; left: 0; right: 0; text-align: center; color: #fff; font-size: 0.7em; }
 .dpage[data-dtheme="postcard"] .dwave { position: absolute; right: 0; bottom: 2px; opacity: 0.6; }
-
-/* ৩) বর্ষার জানালা */
-.dpage[data-dtheme="rain"] {
-  --dbgc: #0f2a2f; --dink: #e4f4f2; --dline: rgba(255, 255, 255, 0.12); --dacc: #7be0d6; --dborder: #24484e; --dchipbg: rgba(255, 255, 255, 0.1);
-  --dbgi: radial-gradient(circle at 12% 9%, rgba(255, 255, 255, 0.55) 0 2px, rgba(255, 255, 255, 0.12) 3px 5px, transparent 6px), radial-gradient(circle at 86% 21%, rgba(255, 255, 255, 0.5) 0 2px, rgba(255, 255, 255, 0.1) 3px 5px, transparent 6px),
-    radial-gradient(circle at 64% 5%, rgba(255, 255, 255, 0.5) 0 1.5px, rgba(255, 255, 255, 0.1) 2.5px 4px, transparent 5px), repeating-linear-gradient(100deg, rgba(255, 255, 255, 0.05) 0 1px, transparent 1px 9px),
-    radial-gradient(90px 90px at 18% 8%, rgba(255, 184, 108, 0.45), transparent 70%), radial-gradient(70px 70px at 76% 4%, rgba(123, 224, 214, 0.5), transparent 70%),
-    radial-gradient(110px 110px at 90% 45%, rgba(255, 111, 145, 0.3), transparent 70%), radial-gradient(100px 100px at 8% 80%, rgba(111, 168, 255, 0.35), transparent 70%), linear-gradient(#10353b, #0a1c20);
-}
-.dpage[data-dtheme="rain"] .dtext { padding: 0 12px; margin-left: -12px; margin-right: -12px; background-color: rgba(255, 255, 255, 0.06); border-radius: 12px; }
-
-/* ৪) নকশিকাঁথা */
-.dpage[data-dtheme="kantha"] {
-  --dbgc: #f6efe0; --dink: #2b2a3a; --dline: #e0d2b0; --dacc: #c4372f; --dborder: #25417a; --dpl: 30px; --dpr: 30px; --dchipbg: transparent; --dchiptx: #25417a; --dchipbd: #25417a;
-  --dband: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='26' height='26'><path d='M13 2 24 13 13 24 2 13Z' fill='none' stroke='%23c4372f' stroke-width='2' stroke-dasharray='3 2'/><path d='M13 8 18 13 13 18 8 13Z' fill='%2325417a'/><path d='M0 13h2M24 13h2' stroke='%23b8892b' stroke-width='2'/></svg>");
-  --dbgi: var(--dband), var(--dband);
-  background-size: auto 26px, auto 26px; background-position: 0 22px, 0 calc(100% - 22px); background-repeat: repeat-x;
-  padding-top: 56px; padding-bottom: 40px;
-  outline: 2px dashed #c4372f; outline-offset: -10px;
-  border: 2px dashed #25417a;
-}
-.dpage[data-dtheme="kantha"] .dtitle { color: #c4372f; }
-.dpage[data-dtheme="kantha"] .dnum, .dpage[data-dtheme="kantha"] .dmeta { color: #25417a; }
-.dpage[data-dtheme="kantha"] .dmeta { border-left-color: #b8892b; }
-
-/* ৫) বেলা-আকাশ: বেলা (data-dperiod) অনুযায়ী আকাশ; বেলা না থাকলে (পাবলিক) গোধূলি */
-.dpage[data-dtheme="skyday"] {
-  --dbgc: #8a2f7b; --dink: #fff4ec; --dline: rgba(255, 255, 255, 0.16); --dacc: #ffe6a4; --dborder: #ffd6a8; --dchipbg: rgba(42, 16, 56, 0.45);
-  --dbgi: linear-gradient(#2b1b5a 0%, #8a2f7b 28%, #f0624f 60%, #ffb15e 82%, #ffe6a4 100%);
-  --dsunbg: radial-gradient(#fff6c8, #ffcf5a 60%, #ff9a3c); --dsunglow: rgba(255, 177, 94, 0.55); --dsunx: 0px; --dsuny: 40px; --dtextbg: rgba(30, 10, 45, 0.4);
-}
-.dpage[data-dtheme="skyday"][data-dperiod="morning"] { --dbgc: #ffd98a; --dink: #3a2410; --dline: rgba(58, 36, 16, 0.16); --dacc: #a1472f; --dborder: #ffc371; --dchipbg: rgba(255, 255, 255, 0.5); --dbgi: linear-gradient(#a9d6ff 0%, #ffe9b8 45%, #ffc371 100%); --dsunx: -90px; --dsuny: 64px;  --dtextbg: transparent; }
-.dpage[data-dtheme="skyday"][data-dperiod="noon"] { --dbgc: #6cc3ff; --dink: #0e2a44; --dline: rgba(14, 42, 68, 0.16); --dacc: #0b4f8a; --dborder: #2f86d8; --dchipbg: rgba(255, 255, 255, 0.55); --dbgi: linear-gradient(#2f86d8 0%, #6cc3ff 55%, #cdeeff 100%); --dsunbg: radial-gradient(#fffbe0, #ffe27a 65%, #ffd23c); --dsunglow: rgba(255, 244, 176, 0.7); --dsuny: 14px;  --dtextbg: transparent; }
-.dpage[data-dtheme="skyday"][data-dperiod="afternoon"] { --dbgc: #ffb15e; --dink: #3a1a08; --dline: rgba(58, 26, 8, 0.16); --dacc: #8a2a0c; --dborder: #e8602c; --dchipbg: rgba(255, 255, 255, 0.45); --dbgi: linear-gradient(#ffd9a0 0%, #ffb15e 55%, #e8602c 100%); --dsunx: 90px; --dsuny: 40px;  --dtextbg: transparent; }
-.dpage[data-dtheme="skyday"][data-dperiod="night"] { --dbgc: #05061a; --dink: #e8e6ff; --dline: rgba(255, 255, 255, 0.12); --dacc: #ffe9a8; --dborder: #3a3f86; --dchipbg: rgba(255, 233, 168, 0.1); --dbgi: radial-gradient(1.5px 1.5px at 14% 6%, #fff, transparent), radial-gradient(1px 1px at 36% 12%, #fff, transparent), radial-gradient(1.5px 1.5px at 84% 8%, #fff, transparent), linear-gradient(#05061a, #1b1650); --dsunbg: radial-gradient(#fffbe6, #e8dca0 70%, #cbbf86); --dsunglow: rgba(255, 233, 168, 0.35); --dsuny: 40px;  --dtextbg: transparent; }
-.dpage[data-dtheme="skyday"] .dskybox { min-height: 150px; align-items: flex-start; }
-.dpage[data-dtheme="skyday"] .dsun { width: 84px; height: 84px; border-radius: 50%; background: var(--dsunbg); box-shadow: 0 0 56px 24px var(--dsunglow); transform: translate(var(--dsunx), var(--dsuny)); }
-.dpage[data-dtheme="skyday"] .dtext { padding: 0 12px; margin-left: -12px; margin-right: -12px; background-color: var(--dtextbg); border-radius: 12px; }
 
 /* ৬) লণ্ঠনের আলো */
 .dpage[data-dtheme="lantern"] {
@@ -690,7 +619,7 @@ main:has(.dash-shell) {
   .diary-print-root .dpage[data-dlayout="band"], .diary-print-root .dpage[data-dlayout="book"] { --dpl: 14mm; --dpr: 14mm; }
   .diary-print-root .dpage[data-dlayout="band"] .dtext { background-image: none; }
   .diary-print-root .dpage[data-dlayout="band"] { padding-bottom: 8mm; }
-  .diary-print-root .dpage[data-dlayout="frame"], .diary-print-root .dpage[data-dlayout="line"], .diary-print-root .dpage[data-dlayout="week"] { --dpl: 18mm; --dpr: 18mm; padding-top: 12mm; padding-bottom: 6mm; outline: 1.5px solid var(--dborder); outline-offset: -9mm; }
+  .diary-print-root .dpage[data-dlayout="frame"], .diary-print-root .dpage[data-dlayout="week"] { --dpl: 18mm; --dpr: 18mm; padding-top: 12mm; padding-bottom: 6mm; outline: 1.5px solid var(--dborder); outline-offset: -9mm; }
   .diary-print-root .dpage[data-dlayout="book"] { --dpl: 24mm; --dhx: 38px; --dhr: 14px; padding-top: 6mm; padding-bottom: 6mm; }
   .diary-print-root .dpage[data-dlayout="book"]::before { left: 17mm; }
   .diary-print-root .dpage[data-dlayout="book"] .dtext { margin: 20px calc(-1 * var(--dpr)) 0 calc(28px - var(--dpl)); background-position: 28px 0; background-size: calc(100% - 28px) var(--dlh); background-repeat: repeat-y; }

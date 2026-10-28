@@ -122,7 +122,7 @@ export function DiaryView() {
   const [attempt, setAttempt] = useState(0);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [visErr, setVisErr] = useState(false);
-  const { look, site, update: setLook, season } = useDiaryLook();
+  const { look, site, update: setLook } = useDiaryLook();
   const { settings, setSettings } = useSiteSettings();
   const [dlOpen, setDlOpen] = useState(false);
   const [lookOpen, setLookOpen] = useState(false);
@@ -167,6 +167,12 @@ export function DiaryView() {
       setBusyId(null);
     }
   }
+
+  // সম্পাদনা-পাতার ভারী Tiptap-কোড দিনলিপি খোলার একটু পরে ব্যাকগ্রাউন্ডে নামানো — 'সম্পাদনা' চাপলে আর অপেক্ষা নয় (ব্যর্থ হলে চুপচাপ; পরে স্বাভাবিক লোড)
+  useEffect(() => {
+    const t = window.setTimeout(() => void import("../posts/[postId]/edit/TiptapEditor").catch(() => undefined), 1500);
+    return () => window.clearTimeout(t);
+  }, []);
 
   useEffect(() => {
     let dead = false;
@@ -313,7 +319,7 @@ export function DiaryView() {
 
       {dlOpen && <DiaryDownload look={look} sel={sel} tz={tz} author={settings.siteTitle} onClose={() => setDlOpen(false)} />}
       {lookOpen && (
-        <DiaryLookSheet look={look} site={site} busy={siteBusy} msg={siteMsg} onChange={setLook} season={season} onSaveSite={() => void saveSiteLook()} onClose={() => setLookOpen(false)} />
+        <DiaryLookSheet look={look} site={site} busy={siteBusy} msg={siteMsg} onChange={setLook} onSaveSite={() => void saveSiteLook()} onClose={() => setLookOpen(false)} />
       )}
     </div>
   );

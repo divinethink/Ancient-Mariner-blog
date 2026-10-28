@@ -9,7 +9,7 @@ describe("diaryLook", () => {
     expect(parseDiaryLook({ theme: "nope", font: 3, size: "xl" })).toEqual(DEFAULT_DIARY_LOOK);
   });
   it("প্রতিটি ফিল্ড আলাদাভাবে যাচাই", () => {
-    expect(parseDiaryLook({ theme: "navy", font: "nope", size: "l" })).toEqual({ theme: "navy", font: "default", size: "l" });
+    expect(parseDiaryLook({ theme: "forest", font: "nope", size: "l" })).toEqual({ theme: "forest", font: "default", size: "l" });
   });
   it("সব বৈধ মান গ্রহণযোগ্য; প্রতিটি থিমের নমুনা-রঙ আছে", () => {
     for (const t of DIARY_THEMES) expect(parseDiaryLook({ theme: t }).theme).toBe(t);
@@ -19,7 +19,11 @@ describe("diaryLook", () => {
   });
   it("lookFromSettings: ফিল্ড না থাকলে ডিফল্ট; থাকলে সেটাই", () => {
     expect(lookFromSettings({})).toEqual(DEFAULT_DIARY_LOOK);
-    expect(lookFromSettings({ diaryTheme: "plum", diaryFont: "kaiyum", diarySize: "s" })).toEqual({ theme: "plum", font: "kaiyum", size: "s" });
+    expect(lookFromSettings({ diaryTheme: "ink", diaryFont: "bensen", diarySize: "s" })).toEqual({ theme: "ink", font: "bensen", size: "s" });
+  });
+  it("সরানো থিম/ফন্টের সংরক্ষিত মান পেজ ভাঙে না — ডিফল্টে ফেরে", () => {
+    expect(parseDiaryLook({ theme: "skyday", font: "kaiyum", size: "m" })).toEqual(DEFAULT_DIARY_LOOK);
+    expect(lookFromSettings({ diaryTheme: "plum", diaryFont: "charulipi" })).toEqual(DEFAULT_DIARY_LOOK);
   });
   it("sameLook", () => {
     expect(sameLook(DEFAULT_DIARY_LOOK, { ...DEFAULT_DIARY_LOOK })).toBe(true);
