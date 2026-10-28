@@ -8,7 +8,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { MediaWithId } from "@/data/mediaRepo";
 import { getMediaRepo } from "@/data/mediaRepo.wire";
 import { importMediaFromUrl, UploadError, uploadMedia } from "@/data/mediaUpload.client";
-import { pmark } from "@/debug/perf";
 import { bn } from "@/i18n/bn";
 import type { EditorPos } from "@/data/draftStore";
 import { typewriterDelta } from "@/lib/comfort";
@@ -101,12 +100,6 @@ export default function TiptapEditor({
   });
 
   // ইচ্ছাকৃতভাবে cleanup-এ null করা হয় না: unmount-এর flush শেষ লেখাটুকু এই ref থেকেই পড়ে (parent-এর cleanup child-এর পরে চলে)
-  useEffect(() => {
-    pmark("Tiptap: chunk mounted");
-  }, []);
-  useEffect(() => {
-    if (editor) pmark("Tiptap: editor created");
-  }, [editor]);
   useEffect(() => {
     onEditor(editor);
   }, [editor, onEditor]);

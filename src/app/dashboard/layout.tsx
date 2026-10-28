@@ -1,6 +1,5 @@
 import type { ReactNode } from "react";
 import { AuthGate } from "@/auth/AuthGate";
-import { PerfOverlay } from "@/debug/PerfOverlay";
 import { DashboardShell } from "./DashboardShell";
 import { SiteSettingsProvider } from "./SiteSettingsProvider";
 
@@ -11,7 +10,6 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     <AuthGate>
       <SiteSettingsProvider>
         <DashboardShell>{children}</DashboardShell>
-        <PerfOverlay />
       </SiteSettingsProvider>
     </AuthGate>
   );
