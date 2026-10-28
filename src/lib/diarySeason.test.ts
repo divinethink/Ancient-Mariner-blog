@@ -14,7 +14,7 @@ describe("diarySeason", () => {
     const p = parseSeasonPref({ on: true, map: { shit: "moon" } });
     expect(p.on).toBe(true);
     expect(p.map.shit).toBe("moon");
-    expect(p.map.borsha).toBe("rain");
+    expect(p.map.borsha).toBe("forest");
   });
   it("themeFor: বন্ধ থাকলে base, চালু থাকলে ঋতুর থিম", () => {
     expect(themeFor(DEFAULT_SEASON_PREF, "nbred", "2026-10-26")).toBe("nbred");

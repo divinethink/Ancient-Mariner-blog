@@ -7,9 +7,9 @@ export const SEASONS = ["grishmo", "borsha", "shorot", "hemonto", "shit", "bosho
 export type Season = (typeof SEASONS)[number];
 
 export const DEFAULT_SEASON_THEMES: Record<Season, DiaryTheme> = {
-  grishmo: "skyday",
-  borsha: "rain",
-  shorot: "kantha",
+  grishmo: "sky",
+  borsha: "forest",
+  shorot: "nbred",
   hemonto: "lantern",
   shit: "fog",
   boshonto: "postcard",
