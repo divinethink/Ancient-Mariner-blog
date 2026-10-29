@@ -126,14 +126,14 @@ function EntryList({
                   </span>
                 }
               >
-                <Link href={`/dashboard/posts/${p.id}/edit`} className="block min-h-12">
+                <Link href={`/dashboard/posts/${p.id}/preview`} className="block min-h-12">
                   <span className="line-clamp-8 block whitespace-pre-line">{text}</span>
                 </Link>
                 <DiaryThumbs ids={photoIdsOf(p.body)} />
               </DiaryPage>
               {/* পুরো কার্ড ট্যাপযোগ্য: .dtext নিজেই position:relative, তাই ওভারলে DiaryPage-এর বাইরে (wrapper-এ) — নইলে 'আরও পড়ুন'/তারিখ ঢাকে না */}
               <Link
-                href={`/dashboard/posts/${p.id}/edit`}
+                href={`/dashboard/posts/${p.id}/preview`}
                 aria-hidden
                 tabIndex={-1}
                 className="absolute inset-0 z-10 rounded-3xl"

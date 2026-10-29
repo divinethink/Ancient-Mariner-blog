@@ -3,6 +3,7 @@ import Link from "next/link";
 import type { SiteSettings } from "@/data/siteSettingsRepo";
 import { bn } from "@/i18n/bn";
 import { archiveYears } from "@/lib/archive";
+import { lookFromSettings } from "@/lib/diaryLook";
 import { buildDiaryMonth, DIARY_PATH, latestDay } from "@/lib/diaryCalendar";
 import { DEFAULT_SIDEBAR, resolveLayout, type SidebarWidget } from "@/lib/layout";
 import type { PopularRow } from "@/lib/popular";
@@ -93,7 +94,7 @@ function widget(id: SidebarWidget, s: SiteSettings, scopes: readonly Scope[], po
       return (
         <Box title={ti(bn.public.calendarTitle)}>
           <DiaryCalendar view={buildDiaryMonth(diary.words, last.slice(0, 7))} timeZone={diary.tz} />
-          <DiaryEntries day={last} entries={diary.byDay.get(last) ?? []} preview />
+          <DiaryEntries day={last} entries={diary.byDay.get(last) ?? []} preview look={lookFromSettings(s)} />
           <Link href={DIARY_PATH} prefetch={false} className="mt-2 inline-flex min-h-11 items-center text-accent-text underline">
             {bn.public.diaryAll} →
           </Link>
