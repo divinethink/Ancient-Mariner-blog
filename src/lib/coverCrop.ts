@@ -1,6 +1,6 @@
 // কভার-ক্রপ (পাবলিকে দেখানোর কাটা): মূল ছবি কখনো বদলায় না — শুধু CSS (aspect-ratio + object-position)।
 // ফিল্ড না থাকা = পুরো ছবি (আগের আচরণ), তাই পুরনো লেখা অক্ষত।
-export const COVER_RATIOS = ["16:9", "2:1", "3:1", "4:3", "1:1"] as const;
+export const COVER_RATIOS = ["16:9", "2:1", "3:1", "4:1", "4:3", "1:1"] as const;
 export const COVER_FOCUS = ["start", "center", "end"] as const;
 export type CoverRatio = (typeof COVER_RATIOS)[number];
 export type CoverFocus = (typeof COVER_FOCUS)[number];

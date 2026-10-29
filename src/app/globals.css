@@ -225,6 +225,21 @@ main:has(.dash-shell) {
 .reading-figure[data-size="full"] {
   width: 100%;
 }
+/* পাশাপাশি: পরপর দুটো "পাশাপাশি" ছবি এক সারিতে (ফোনেও); তৃতীয়টি নিচের সারিতে। এডিটরে নিয়ন্ত্রণ-বোতামের জায়গার জন্য পুরো-প্রস্থ */
+.reading-figure[data-size="half"] {
+  display: inline-block;
+  vertical-align: top;
+  width: 49%;
+  margin-inline: 0 2%;
+}
+.reading-figure[data-size="half"] + .reading-figure[data-size="half"] {
+  margin-inline-end: 0;
+}
+.pm .reading-figure[data-size="half"] {
+  display: block;
+  width: 100%;
+  margin-inline: 0;
+}
 /* হালকা সাদা (থিমের surface) বর্ডার + নরম ছায়া — সব থিমে token */
 .reading-figure img {
   display: block;

@@ -32,7 +32,7 @@ export const MEDIA_ALT_MAX = 300;
 export const MEDIA_CAPTION_MAX = 300;
 
 /** mediaImage-র মাপ ও অবস্থান (শুধু এই তালিকার মান; বাইরের মান বাদ)। attr না থাকা = পুরনো আচরণ (পুরো-প্রস্থ), তাই পুরনো লেখা অক্ষত */
-export const IMAGE_SIZES = ["s", "m", "l", "full"] as const;
+export const IMAGE_SIZES = ["s", "m", "l", "half", "full"] as const;
 export const IMAGE_ALIGNS = ["left", "center", "right"] as const;
 export type ImageSize = (typeof IMAGE_SIZES)[number];
 export type ImageAlign = (typeof IMAGE_ALIGNS)[number];

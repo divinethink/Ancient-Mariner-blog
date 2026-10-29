@@ -15,7 +15,6 @@ import {
   isImageAlign,
   isImageSize,
   isSafeMediaId,
-  MEDIA_ALT_MAX,
   MEDIA_CAPTION_MAX,
   type ImageAlign,
   type ImageSize,
@@ -59,7 +58,6 @@ function MediaImageView({ node, selected, updateAttributes, deleteNode, editor }
   const src = m && cloud ? cldUrl(cloud, m.cloudinaryPublicId, { w: 800 }) : null;
   const alt = (typeof node.attrs.alt === "string" && node.attrs.alt) || m?.altText || "";
   const caption = typeof node.attrs.caption === "string" ? node.attrs.caption : "";
-  const ownAlt = typeof node.attrs.alt === "string" ? node.attrs.alt : "";
   const field = "min-h-11 w-full rounded-lg border border-line bg-transparent px-3 text-sm";
   // attr না থাকা (পুরনো ছবি) = পুরো-প্রস্থ ও মাঝে; পাবলিকের CSS-এর একই নিয়ম
   const size: ImageSize = isImageSize(node.attrs.size) ? node.attrs.size : "full";
@@ -108,15 +106,6 @@ function MediaImageView({ node, selected, updateAttributes, deleteNode, editor }
             value={align}
             options={IMAGE_ALIGNS.map((v) => ({ value: v, label: bn.editor.image.aligns[v] }))}
             onChange={(v) => updateAttributes({ align: v })}
-          />
-          <input
-            type="text"
-            aria-label={bn.editor.image.altLabel}
-            placeholder={bn.editor.image.altPlaceholder}
-            maxLength={MEDIA_ALT_MAX}
-            value={ownAlt}
-            onChange={(e) => updateAttributes({ alt: e.target.value })}
-            className={field}
           />
           <input
             type="text"
