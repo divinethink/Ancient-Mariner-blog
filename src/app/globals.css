@@ -103,7 +103,7 @@ main:has(.dash-shell) {
   opacity: 0.35;
 }
 [data-tw="1"] .pm {
-  padding-bottom: 45vh; /* শেষ লাইনও লক্ষ্য-উচ্চতায় উঠতে পারে */
+  padding-bottom: min(45vh, 200px); /* শেষ লাইনও লক্ষ্য-উচ্চতায় উঠতে পারে; ফোনে শেষে বিশাল সাদা ফাঁক এড়াতে সীমা */
 }
 @media (prefers-reduced-motion: reduce) {
   .pm > * {

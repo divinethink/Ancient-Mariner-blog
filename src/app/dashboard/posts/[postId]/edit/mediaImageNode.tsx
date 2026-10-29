@@ -83,7 +83,7 @@ function MediaImageView({ node, selected, updateAttributes, deleteNode, editor }
           {m === undefined ? bn.editor.image.loading : bn.editor.image.missing}
         </div>
       )}
-      {editor.isEditable && (
+      {editor.isEditable && selected && (
         // বাটনে চাপলে editor-এর focus/selection সরতে দেওয়া হয় না (টুলবারের মতোই) — নইলে ব্রাউজার selection বদলে পেজ নিচে স্ক্রল করে; input-এ আগের মতোই
         <div
           className="mt-2 space-y-2 font-sans"
