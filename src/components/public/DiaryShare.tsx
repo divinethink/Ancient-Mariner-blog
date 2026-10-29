@@ -3,6 +3,7 @@
 // দিনলিপি-কার্ডের শেয়ার আইকন → নিচ থেকে শেয়ার-শিট: ফেসবুক · হোয়াটসঅ্যাপ · লিংক কপি · (ডিভাইসে থাকলে) আরও।
 // শুধু বাইরের লিংক খোলে/ক্লিপবোর্ডে কপি করে; কিছু লেখে না।
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { bn } from "@/i18n/bn";
 import { shareLinks } from "@/lib/diaryShare";
 
@@ -65,7 +66,9 @@ export function DiaryShare({ url, title }: { url: string; title: string }) {
           <path d="M8.6 10.5l6.8-4M8.6 13.5l6.8 4" />
         </svg>
       </button>
-      {open && (
+      {open &&
+        // body-তে portal: কার্ডের opacity/overflow/রং শিটকে স্বচ্ছ বা কাটা করে না
+        createPortal(
         <div className="fixed inset-0 z-50 flex items-end justify-center md:items-center">
           <button type="button" aria-label={S.close} tabIndex={-1} onClick={() => setOpen(false)} className="absolute inset-0 bg-black/45" />
           <div ref={ref} role="dialog" aria-modal="true" aria-label={S.title} className="relative w-full max-w-md space-y-4 rounded-t-3xl bg-bg p-5 text-left font-sans text-base md:rounded-3xl">
@@ -112,8 +115,9 @@ export function DiaryShare({ url, title }: { url: string; title: string }) {
               {msg}
             </p>
           </div>
-        </div>
-      )}
+        </div>,
+        document.body,
+        )}
     </>
   );
 }
