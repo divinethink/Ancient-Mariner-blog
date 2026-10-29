@@ -89,6 +89,7 @@ export function AddProvider({ children }: { children: ReactNode }) {
   const idRef = useRef<string>("");
   const textRef = useRef("");
   const savingRef = useRef(false);
+  const pushedRef = useRef(false); // শিটের জন্য history entry বসানো আছে কিনা
   const triggerRef = useRef<HTMLElement | null>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
   const areaRef = useRef<HTMLTextAreaElement>(null);
@@ -101,6 +102,12 @@ export function AddProvider({ children }: { children: ReactNode }) {
     setStatus("idle");
     setTodayKey(dayKey(Date.now(), tz));
     setPromptShift(0);
+    // ফর্ম (আইডিয়া/দিনলিপি) খুললে একটা history entry: ফোনের Back তখন শুধু শিট বন্ধ করে।
+    // নইলে Back নিচের পেজকে পেছনে নিত আর শিট (layout-এ থাকায়) খোলাই থাকত — বারবার চাপতে হতো।
+    if ((m === "diary" || m === "idea") && !pushedRef.current) {
+      window.history.pushState({ addSheet: true }, "");
+      pushedRef.current = true;
+    }
     setMode(m);
   }, [tz]);
   const openMenu = useCallback(() => open("menu"), [open]);
@@ -110,6 +117,23 @@ export function AddProvider({ children }: { children: ReactNode }) {
   const close = useCallback(() => {
     setMode("closed");
     triggerRef.current?.focus();
+    // নিজের বানানো history entry ফেরত দেওয়া (popstate-এ pushedRef আগেই false, তাই দুইবার নয়)
+    if (pushedRef.current) {
+      pushedRef.current = false;
+      window.history.back();
+    }
+  }, []);
+
+  // ফোনের Back/ব্রাউজার Back = শিট বন্ধ (পেজ বদল নয়)
+  useEffect(() => {
+    const onPop = () => {
+      if (!pushedRef.current) return;
+      pushedRef.current = false;
+      setPicking(false);
+      setMode("closed");
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
   }, []);
 
   // খোলার পর ফোকাস: আইডিয়া-ফর্মে textarea, নইলে প্রথম বোতাম
@@ -313,7 +337,7 @@ export function AddProvider({ children }: { children: ReactNode }) {
             role="dialog"
             aria-modal="true"
             aria-labelledby="add-sheet-title"
-            className="relative z-10 w-full max-w-md rounded-t-3xl border border-line bg-surface p-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] shadow-xl md:rounded-3xl"
+            className="relative z-10 max-h-[calc(100dvh-1rem)] w-full max-w-md overflow-y-auto overscroll-contain rounded-t-3xl border border-line bg-surface p-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] shadow-xl md:rounded-3xl"
           >
             <div className="mb-3 flex items-center justify-between">
               <h2 id="add-sheet-title" className="font-serif text-xl font-bold">
