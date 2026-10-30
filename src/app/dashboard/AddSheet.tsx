@@ -23,9 +23,8 @@ import { bn } from "@/i18n/bn";
 import { dayKey, formatDate } from "@/lib/datetime";
 import { DIARY_TEXT_MAX, diaryVisPatch, isValidDayKey, textToDoc, type DiaryVis } from "@/lib/diary";
 import { triggerSiteRebuild } from "@/data/rebuildClient";
+import { Icon } from "@/components/icons";
 import { Segmented } from "@/components/ui/Segmented";
-import { promptFor } from "@/lib/diaryPrompts";
-import { WriteTimer } from "./WriteTimer";
 import type { MediaWithId } from "@/data/mediaRepo";
 import { cldUrl, cloudFromUrl } from "@/lib/cloudinary";
 import { MAX_DIARY_PHOTOS, withPhotos } from "@/lib/diaryPhotos";
@@ -77,7 +76,6 @@ export function AddProvider({ children }: { children: ReactNode }) {
   const [diaryVis, setDiaryVis] = useState<DiaryVis>("private"); // প্রতিটি নতুন এন্ট্রি ব্যক্তিগত থেকে শুরু
   const [diaryPhotos, setDiaryPhotos] = useState<MediaWithId[]>([]);
   const [picking, setPicking] = useState(false);
-  const [promptShift, setPromptShift] = useState(0); // 'অন্য প্রশ্ন'; sheet খুললে ০
   const [todayKey, setTodayKey] = useState(""); // sheet খোলার সময় বসে (render-এ Date.now() নয়)
   const [diaryVersion, setDiaryVersion] = useState(0);
   const diaryIdRef = useRef<string>("");
@@ -101,7 +99,6 @@ export function AddProvider({ children }: { children: ReactNode }) {
     if (diaryIdRef.current === "") diaryIdRef.current = newId();
     setStatus("idle");
     setTodayKey(dayKey(Date.now(), tz));
-    setPromptShift(0);
     // ফর্ম (আইডিয়া/দিনলিপি) খুললে একটা history entry: ফোনের Back তখন শুধু শিট বন্ধ করে।
     // নইলে Back নিচের পেজকে পেছনে নিত আর শিট (layout-এ থাকায়) খোলাই থাকত — বারবার চাপতে হতো।
     if ((m === "diary" || m === "idea") && !pushedRef.current) {
@@ -337,7 +334,7 @@ export function AddProvider({ children }: { children: ReactNode }) {
             role="dialog"
             aria-modal="true"
             aria-labelledby="add-sheet-title"
-            className="relative z-10 max-h-[calc(100dvh-1rem)] w-full max-w-md overflow-y-auto overscroll-contain rounded-t-3xl border border-line bg-surface p-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] shadow-xl md:rounded-3xl"
+            className={`relative z-10 max-h-[calc(100dvh-1rem)] w-full max-w-md overflow-y-auto overscroll-contain rounded-t-3xl border border-line bg-surface p-5 ${isDiary ? "pb-0" : "pb-[max(1.5rem,env(safe-area-inset-bottom))]"} shadow-xl md:rounded-3xl`}
           >
             <div className="mb-3 flex items-center justify-between">
               <h2 id="add-sheet-title" className="font-serif text-xl font-bold">
@@ -461,18 +458,6 @@ export function AddProvider({ children }: { children: ReactNode }) {
                     </div>
                   </div>
                 )}
-                {isDiary && (
-                  <div className="mb-2 flex flex-wrap items-center gap-x-2">
-                    <p className="min-w-0 flex-1 font-serif text-base">
-                      <span className="sr-only">{d.promptLabel}: </span>
-                      {promptFor(todayKey, promptShift)}
-                    </p>
-                    <button type="button" onClick={() => setPromptShift((n) => n + 1)} className="min-h-11 rounded-full px-3 text-sm text-accent-text underline">
-                      {d.promptOther}
-                    </button>
-                    <WriteTimer />
-                  </div>
-                )}
                 <textarea
                   id="quick-idea-text"
                   ref={areaRef}
@@ -509,11 +494,8 @@ export function AddProvider({ children }: { children: ReactNode }) {
                   )}
                 </div>
                 {isDiary && (
-                  <div className="mt-2 rounded-xl border border-dashed border-line bg-surface p-3">
-                    <p className="text-sm font-semibold">
-                      {d.photos.label} <span className="font-normal text-muted">{d.photos.max(MAX_DIARY_PHOTOS)}</span>
-                    </p>
-                    <div className="mt-2 flex flex-wrap gap-2">
+                  <div className="mt-2">
+                    <div className="flex flex-wrap gap-2">
                       {diaryPhotos.map((m) => {
                         const cloud = cloudFromUrl(m.cloudinaryUrl);
                         const src = cloud ? cldUrl(cloud, m.cloudinaryPublicId, { w: 160 }) : null;
@@ -538,38 +520,37 @@ export function AddProvider({ children }: { children: ReactNode }) {
                         <button
                           type="button"
                           onClick={() => setPicking(true)}
-                          className="flex size-16 flex-col items-center justify-center rounded-xl border border-dashed border-btn-bg text-xl text-btn-bg"
+                          className="flex size-16 flex-col items-center justify-center gap-0.5 rounded-xl border border-dashed border-btn-bg text-btn-bg"
                         >
-                          📷
-                          <span className="-mt-1 text-[10px]">{d.photos.add}</span>
+                          <Icon name="plus" size={20} />
+                          <span className="text-xs">{d.photos.label}</span>
                         </button>
                       )}
                     </div>
-                    <p className="mt-2 text-xs text-muted">{d.photos.hint}</p>
                   </div>
                 )}
                 {isDiary && (
                   <div className="mt-2">
                     <Segmented<DiaryVis>
                       label={d.visLabel}
-                      showLabel
                       value={diaryVis}
                       options={[
-                        { value: "private", label: d.visPrivate },
-                        { value: "public", label: d.visPublic },
+                        { value: "private", label: d.visPrivate, icon: "lock" },
+                        { value: "public", label: d.visPublic, icon: "globe" },
                       ]}
                       onChange={setDiaryVis}
                     />
-                    <p className="mt-1 text-sm text-muted">{diaryVis === "public" ? d.visPublicNote : d.visPrivateNote}</p>
                   </div>
                 )}
-                <button
-                  type="submit"
-                  aria-disabled={status === "saving"}
-                  className="mt-3 min-h-12 w-full rounded-full bg-btn-bg px-5 font-semibold text-btn-tx aria-disabled:opacity-50"
-                >
-                  {status === "saving" ? t.saving : t.save}
-                </button>
+                <div className={isDiary ? "sticky bottom-0 -mx-5 mt-3 border-t border-line bg-surface px-5 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3" : "mt-3"}>
+                  <button
+                    type="submit"
+                    aria-disabled={status === "saving"}
+                    className="min-h-12 w-full rounded-full bg-btn-bg px-5 font-semibold text-btn-tx aria-disabled:opacity-50"
+                  >
+                    {status === "saving" ? t.saving : t.save}
+                  </button>
+                </div>
               </form>
             )}
           </div>

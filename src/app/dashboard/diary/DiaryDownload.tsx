@@ -1,30 +1,38 @@
 "use client";
 
 // "ডাউনলোড" bottom-sheet (শুধু ড্যাশবোর্ড/ব্যক্তিগত): ধরন (PDF/Word) · পরিসর · ডিজাইন · কোন লেখা। শুধু read।
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useState } from "react";
+import { Segmented } from "@/components/ui/Segmented";
+import { Toggle } from "@/components/ui/Toggle";
 import { getPostRepo } from "@/data/postRepo.wire";
 import { bn } from "@/i18n/bn";
 import { dayKey } from "@/lib/datetime";
-import { estimatePages, fetchRange, fileName, rangeFor, rangeLabel, selectEntries, toEntries, type DownloadEntry, type RangeKind } from "@/lib/diaryExport";
+import { fetchRange, fileName, rangeFor, rangeLabel, selectEntries, toEntries, type DownloadEntry, type RangeKind } from "@/lib/diaryExport";
 import { BOOK_COVERS, DEFAULT_BOOK_COVER, type BookCover } from "@/lib/diaryBook";
-import { DIARY_THEMES, type DiaryLook, type DiaryTheme } from "@/lib/diaryLook";
+import type { DiaryLook, DiaryTheme } from "@/lib/diaryLook";
 import { DiaryPrintRoot, type PrintJob } from "./DiaryPrintRoot";
+import { DiarySheet } from "./DiarySheet";
+import { ThemePicker } from "./ThemePicker";
 
 const L = bn.diary.dl;
 const bnNum = (n: number) => n.toLocaleString("bn-BD", { useGrouping: false });
-const chip = (on: boolean) => `min-h-11 rounded-full border px-4 text-base ${on ? "border-btn-bg bg-btn-bg text-btn-tx" : "border-line bg-surface"}`;
-const KINDS: { k: RangeKind; t: string }[] = [
-  { k: "day", t: L.day },
-  { k: "month", t: L.month },
-  { k: "year", t: L.year },
-  { k: "all", t: L.allShort },
-  { k: "custom", t: L.custom },
+const KINDS: { value: RangeKind; label: string }[] = [
+  { value: "day", label: L.day },
+  { value: "month", label: L.month },
+  { value: "year", label: L.year },
+  { value: "all", label: L.allShort },
+  { value: "custom", label: L.custom },
 ];
+/** মলাটের ছোট নমুনা-রঙ (বইয়ের পিঠ + পাতা) */
+const COVER_LOOK: Record<BookCover, { bg: string; ink: string; name: string }> = {
+  plain: { bg: "#ffffff", ink: "#555555", name: L.coverPlain },
+  navy: { bg: "#1f3a68", ink: "#f3dfa0", name: L.coverNavy },
+  red: { bg: "#7a2820", ink: "#f6e3b4", name: L.coverRed },
+};
 
 type Props = { look: DiaryLook; sel: string; tz: string; author: string; onClose: () => void };
 
 export function DiaryDownload({ look, sel, tz, author, onClose }: Props) {
-  const ref = useRef<HTMLDivElement>(null);
   const [today] = useState(() => dayKey(Date.now(), tz));
   const [kind, setKind] = useState<RangeKind>("month");
   const [from, setFrom] = useState(sel);
@@ -37,13 +45,6 @@ export function DiaryDownload({ look, sel, tz, author, onClose }: Props) {
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [job, setJob] = useState<PrintJob | null>(null);
   const donePrint = useCallback(() => setJob(null), []);
-
-  useEffect(() => {
-    ref.current?.querySelector<HTMLElement>("button")?.focus();
-    const esc = (e: KeyboardEvent) => e.key === "Escape" && !busy && onClose();
-    document.addEventListener("keydown", esc);
-    return () => document.removeEventListener("keydown", esc);
-  }, [onClose, busy]);
 
   async function run(fmt: "pdf" | "docx") {
     if (busy) return;
@@ -58,7 +59,7 @@ export function DiaryDownload({ look, sel, tz, author, onClose }: Props) {
       if (entries.length === 0) return setMsg({ ok: false, text: L.empty });
       const label = rangeLabel(kind, r);
       const coverLabel = kind === "month" ? label.replace(" ", " - ") : label; // মলাটে "অক্টোবর - ২০২৬"
-      const summary = L.summary(bnNum(entries.length), bnNum(estimatePages(entries)));
+      const summary = L.count(bnNum(entries.length));
       if (fmt === "pdf") {
         setJob({ entries, look: { ...look, theme }, rangeText: coverLabel, author, docTitle: fileName(kind, r, "pdf").replace(/\.pdf$/, ""), cover, toc });
         setMsg({ ok: true, text: `${summary}। ${L.printHint}` });
@@ -87,26 +88,53 @@ export function DiaryDownload({ look, sel, tz, author, onClose }: Props) {
     }
   }
 
+  const range = rangeFor(kind, sel, today, { from, to });
+  const barText = range ? `${rangeLabel(kind, range)} · ${onlyPublic ? L.publicOnly : L.both}` : "";
+
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center md:items-center">
-      <button type="button" aria-label={L.close} onClick={onClose} disabled={busy} className="absolute inset-0 bg-black/40" tabIndex={-1} />
-      <div ref={ref} role="dialog" aria-modal="true" aria-label={L.title} className="relative max-h-[88vh] w-full max-w-lg space-y-4 overflow-y-auto rounded-t-3xl bg-bg p-5 md:rounded-3xl">
-        <div className="flex items-center justify-between">
-          <h2 className="font-serif text-xl font-bold">{L.title}</h2>
-          <button type="button" onClick={onClose} disabled={busy} className="min-h-11 rounded-full border border-line px-4">
-            {L.close}
-          </button>
-        </div>
+    <>
+      <DiarySheet
+        title={L.title}
+        closeLabel={L.close}
+        onClose={onClose}
+        busy={busy}
+        footer={
+          <>
+            {msg && (
+              <p role="status" className={`text-sm ${msg.ok ? "text-muted" : "text-accent-text"}`}>
+                {msg.text}
+              </p>
+            )}
+            {barText && <p className="text-center text-sm font-semibold">{barText}</p>}
+            <div className="grid grid-cols-2 gap-2">
+              <button type="button" disabled={busy} onClick={() => void run("pdf")} className="min-h-12 rounded-full bg-btn-bg px-4 font-semibold text-btn-tx disabled:opacity-50">
+                {L.makePdf}
+                <span className="block text-xs font-normal opacity-80">{L.pdfNote}</span>
+              </button>
+              <button type="button" disabled={busy} onClick={() => void run("docx")} className="min-h-12 rounded-full border border-btn-bg px-4 font-semibold disabled:opacity-50">
+                {L.makeWord}
+                <span className="block text-xs font-normal text-muted">{L.wordNote}</span>
+              </button>
+            </div>
+          </>
+        }
+      >
+        <section aria-label={L.which}>
+          <h3 className="mb-2 text-sm font-semibold text-muted">{L.which}</h3>
+          <Segmented<"both" | "public">
+            label={L.which}
+            value={onlyPublic ? "public" : "both"}
+            options={[
+              { value: "both", label: L.both },
+              { value: "public", label: L.publicOnly },
+            ]}
+            onChange={(v) => setOnlyPublic(v === "public")}
+          />
+        </section>
 
         <section aria-label={L.range}>
           <h3 className="mb-2 text-sm font-semibold text-muted">{L.range}</h3>
-          <div className="flex flex-wrap gap-2">
-            {KINDS.map((x) => (
-              <button key={x.k} type="button" aria-pressed={kind === x.k} onClick={() => setKind(x.k)} className={chip(kind === x.k)}>
-                {x.t}
-              </button>
-            ))}
-          </div>
+          <Segmented<RangeKind> label={L.range} compact value={kind} options={KINDS} onChange={setKind} />
           {kind === "custom" && (
             <div className="mt-2 grid grid-cols-2 gap-2">
               <label className="text-sm text-muted">
@@ -123,59 +151,35 @@ export function DiaryDownload({ look, sel, tz, author, onClose }: Props) {
 
         <section aria-label={L.design}>
           <h3 className="mb-2 text-sm font-semibold text-muted">{L.design}</h3>
-          <div className="flex flex-wrap gap-2">
-            {DIARY_THEMES.map((t) => (
-              <button key={t} type="button" aria-pressed={theme === t} onClick={() => setTheme(t)} className={`${chip(theme === t)} text-sm`}>
-                {bn.diary.look.themes[t]}
-              </button>
-            ))}
-          </div>
+          <ThemePicker label={L.design} value={theme} onChange={setTheme} />
         </section>
 
         <section aria-label={L.cover}>
           <h3 className="mb-2 text-sm font-semibold text-muted">{L.cover}</h3>
-          <div className="flex flex-wrap gap-2">
-            {BOOK_COVERS.map((c) => (
-              <button key={c} type="button" aria-pressed={cover === c} onClick={() => setCover(c)} className={`${chip(cover === c)} text-sm`}>
-                {c === "plain" ? L.coverPlain : c === "navy" ? L.coverNavy : L.coverRed}
-              </button>
-            ))}
+          <div role="group" aria-label={L.cover} className="grid grid-cols-3 gap-2">
+            {BOOK_COVERS.map((c) => {
+              const v = COVER_LOOK[c];
+              const on = cover === c;
+              return (
+                <button
+                  key={c}
+                  type="button"
+                  aria-pressed={on}
+                  onClick={() => setCover(c)}
+                  className={`flex min-h-11 flex-col items-center gap-1.5 rounded-xl border bg-surface px-1 py-2 ${on ? "border-2 border-btn-bg" : "border-line"}`}
+                >
+                  <span aria-hidden className="flex h-9 w-7 items-center justify-center rounded-sm border border-line text-xs font-bold shadow-sm" style={{ background: v.bg, color: v.ink }}>
+                    অ
+                  </span>
+                  <span className={`text-center text-[11px] leading-tight ${on ? "font-semibold" : "text-muted"}`}>{v.name}</span>
+                </button>
+              );
+            })}
           </div>
-          <label className="mt-2 flex min-h-11 items-center gap-2 text-sm">
-            <input type="checkbox" checked={toc} onChange={(e) => setToc(e.target.checked)} className="h-5 w-5" />
-            {L.tocOn}
-          </label>
+          <Toggle checked={toc} onChange={setToc} label={<span className="text-sm">{L.tocOn}</span>} />
         </section>
-
-        <section aria-label={L.which}>
-          <h3 className="mb-2 text-sm font-semibold text-muted">{L.which}</h3>
-          <div className="flex gap-2">
-            <button type="button" aria-pressed={!onlyPublic} onClick={() => setOnlyPublic(false)} className={`flex-1 ${chip(!onlyPublic)} text-sm`}>
-              {L.both}
-            </button>
-            <button type="button" aria-pressed={onlyPublic} onClick={() => setOnlyPublic(true)} className={`flex-1 ${chip(onlyPublic)} text-sm`}>
-              {L.publicOnly}
-            </button>
-          </div>
-        </section>
-
-        <div className="grid grid-cols-2 gap-2">
-          <button type="button" disabled={busy} onClick={() => void run("pdf")} className="min-h-12 rounded-full bg-btn-bg px-4 font-semibold text-btn-tx disabled:opacity-50">
-            {L.makePdf}
-            <span className="block text-xs font-normal opacity-80">{L.pdfNote}</span>
-          </button>
-          <button type="button" disabled={busy} onClick={() => void run("docx")} className="min-h-12 rounded-full border border-btn-bg px-4 font-semibold disabled:opacity-50">
-            {L.makeWord}
-            <span className="block text-xs font-normal text-muted">{L.wordNote}</span>
-          </button>
-        </div>
-        {msg && (
-          <p role="status" className={`text-sm ${msg.ok ? "text-muted" : "text-accent-text"}`}>
-            {msg.text}
-          </p>
-        )}
-      </div>
+      </DiarySheet>
       {job && <DiaryPrintRoot job={job} onDone={donePrint} />}
-    </div>
+    </>
   );
 }

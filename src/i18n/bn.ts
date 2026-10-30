@@ -1610,6 +1610,7 @@ export const bn = {
     legendPrivate: "ব্যক্তিগত",
     pageHeading: "দিনলিপি…",
     lookButton: "থিম ও ফন্ট",
+    lookShort: "থিম",
     dl: {
       button: "ডাউনলোড",
       title: "ডায়েরি ডাউনলোড",

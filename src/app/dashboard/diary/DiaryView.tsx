@@ -109,7 +109,7 @@ function EntryList({
         const per = periodOf(p.createdAt, tz);
         return (
           <li key={p.id}>
-            <div className="relative">
+            <div className="relative [&_.dfoot]:relative [&_.dfoot]:z-20">
               <DiaryPage
                 day={day}
                 title={custom ? p.title : undefined}
@@ -118,11 +118,31 @@ function EntryList({
                 night={per === "night"}
                 look={look}
                 footer={
-                  <span className="flex flex-wrap items-center gap-x-2">
-                    <span className="whitespace-nowrap">{bn.diary.words(bnNum(p.wordCount))}</span>
-                    {text.endsWith("…") && (
-                      <span className="ms-auto font-semibold">{bn.diary.readMore}</span>
-                    )}
+                  <span className="flex items-center justify-between gap-2">
+                    <span className="flex flex-wrap items-center gap-x-3">
+                      <span className="whitespace-nowrap">{bn.diary.words(bnNum(p.wordCount))}</span>
+                      {text.endsWith("…") && <span className="font-semibold">{bn.diary.readMore}</span>}
+                    </span>
+                    <span className="flex shrink-0 items-center gap-1">
+                      <button
+                        type="button"
+                        disabled={busyId === p.id}
+                        aria-label={`${vis === "public" ? bn.diary.visPublic : bn.diary.visPrivate} — ${vis === "public" ? bn.diary.toPrivate : bn.diary.toPublic}`}
+                        title={vis === "public" ? bn.diary.visPublic : bn.diary.visPrivate}
+                        onClick={() => onToggle(p)}
+                        className={`flex size-11 items-center justify-center rounded-full border disabled:opacity-50 ${vis === "public" ? "border-current bg-current/15" : "border-current/40"}`}
+                      >
+                        <Icon name={vis === "public" ? "globe" : "lock"} size={18} />
+                      </button>
+                      <Link
+                        href={`/dashboard/posts/${p.id}/edit`}
+                        aria-label={bn.diary.editEntry}
+                        title={bn.diary.editEntry}
+                        className="flex size-11 items-center justify-center rounded-full border border-current/40"
+                      >
+                        <Icon name="edit" size={18} />
+                      </Link>
+                    </span>
                   </span>
                 }
               >
@@ -138,24 +158,6 @@ function EntryList({
                 tabIndex={-1}
                 className="absolute inset-0 z-10 rounded-3xl"
               />
-            </div>
-            <div className="flex flex-wrap items-center gap-2 px-1 pt-2">
-              <button
-                type="button"
-                disabled={busyId === p.id}
-                aria-label={`${vis === "public" ? bn.diary.visPublic : bn.diary.visPrivate} — ${vis === "public" ? bn.diary.toPrivate : bn.diary.toPublic}`}
-                onClick={() => onToggle(p)}
-                className={`inline-flex min-h-11 items-center gap-1.5 rounded-full border px-3 text-sm disabled:opacity-50 ${vis === "public" ? "border-btn-bg bg-btn-bg text-btn-tx" : "border-line"}`}
-              >
-                <Icon name={vis === "public" ? "globe" : "lock"} size={16} />
-                {vis === "public" ? bn.diary.visPublic : bn.diary.visPrivate}
-              </button>
-              <Link
-                href={`/dashboard/posts/${p.id}/edit`}
-                className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-line px-3 text-sm"
-              >
-                {bn.diary.editEntry}
-              </Link>
             </div>
           </li>
         );
@@ -377,33 +379,32 @@ export function DiaryView() {
       </section>
 
       <section aria-label={dayLabel(sel)}>
-        <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-          <h2 className="font-serif text-lg font-bold">{dayLabel(sel)}</h2>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setLookOpen(true)}
-              className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-line px-3 text-sm"
-            >
-              <Icon name="palette" size={18} />
-              {bn.diary.lookButton}
-            </button>
-            <button
-              type="button"
-              onClick={() => setDlOpen(true)}
-              className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-line px-3 text-sm"
-            >
-              <Icon name="import" size={18} />
-              {bn.diary.dl.button}
-            </button>
-            <button
-              type="button"
-              onClick={openDiary}
-              className="min-h-11 rounded-full bg-btn-bg px-4 text-sm text-btn-tx"
-            >
-              {bn.diary.addToday}
-            </button>
-          </div>
+        <h2 className="mb-2 font-serif text-lg font-bold">{dayLabel(sel)}</h2>
+        <div className="mb-3 flex items-center gap-2">
+          <button
+            type="button"
+            aria-label={bn.diary.lookButton}
+            onClick={() => setLookOpen(true)}
+            className="flex min-h-11 w-14 flex-col items-center justify-center gap-0.5 rounded-2xl border border-line text-[10px] leading-none"
+          >
+            <Icon name="palette" size={18} />
+            {bn.diary.lookShort}
+          </button>
+          <button
+            type="button"
+            onClick={() => setDlOpen(true)}
+            className="flex min-h-11 w-16 flex-col items-center justify-center gap-0.5 rounded-2xl border border-line text-[10px] leading-none"
+          >
+            <Icon name="import" size={18} />
+            {bn.diary.dl.button}
+          </button>
+          <button
+            type="button"
+            onClick={openDiary}
+            className="min-h-11 flex-1 rounded-full bg-btn-bg px-4 text-sm font-semibold text-btn-tx"
+          >
+            {bn.diary.addToday}
+          </button>
         </div>
         {!ready ? (
           <p role="status" className="text-sm text-muted">
@@ -422,7 +423,7 @@ export function DiaryView() {
           </p>
         ) : entries.length === 0 ? (
           <>
-            <p className="text-sm text-muted">{bn.diary.noEntries}</p>
+            <p className="rounded-2xl border border-dashed border-line px-4 py-3 text-center text-sm text-muted">{bn.diary.noEntries}</p>
             {latest.length > 0 && (
               <div className="mt-4">
                 <h3 className="mb-2 text-sm font-semibold text-muted">

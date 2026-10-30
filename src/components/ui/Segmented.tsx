@@ -1,6 +1,8 @@
 // একই সারির chip-বাছাই (ধাপ ক): পরিসর/ফিল্টার/দৃশ্যমানতা। state বাইরে থাকে — এটা শুধু চেহারা।
 // জায়গা না হলে সারির ভেতরেই অনুভূমিক স্ক্রল (পেজ নয়); জায়গা থাকলে chip ভরে নেয়।
-export type SegmentedOption<T extends string> = { value: T; label: string };
+import { Icon, type IconName } from "@/components/icons";
+
+export type SegmentedOption<T extends string> = { value: T; label: string; icon?: IconName };
 
 type Props<T extends string> = {
   /** aria-label (দৃশ্যমান লেবেল না থাকলেও বাধ্যতামূলক) */
@@ -33,10 +35,11 @@ export function Segmented<T extends string>({ label, showLabel, compact, value, 
             type="button"
             aria-pressed={value === o.value}
             onClick={() => onChange(o.value)}
-            className={`min-h-11 shrink-0 grow whitespace-nowrap rounded-full border font-medium ${compact ? "px-3" : "px-4"} ${
+            className={`inline-flex min-h-11 shrink-0 grow items-center justify-center gap-1.5 whitespace-nowrap rounded-full border font-medium ${compact ? "px-3" : "px-4"} ${
               value === o.value ? "border-btn-bg bg-btn-bg text-btn-tx" : "border-line bg-surface"
             }`}
           >
+            {o.icon && <Icon name={o.icon} size={16} />}
             {o.label}
           </button>
         ))}
