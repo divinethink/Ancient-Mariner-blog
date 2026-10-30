@@ -50,9 +50,12 @@ export function TopNav() {
         <span className="flex h-7 w-14 items-center justify-center">
           <Icon name={icon} strokeWidth={on ? 2.4 : 1.8} />
         </span>
-        <span className="flex max-w-full items-center gap-1 px-1">
-          <span className="truncate">{label}</span>
-          <LinkPending />
+        <span className="relative max-w-full px-1">
+          <span className="block truncate">{label}</span>
+          {/* জায়গা নেয় না (absolute) — লেবেল কেন্দ্রেই থাকে */}
+          <span className="absolute -right-3 top-1/2 -translate-y-1/2">
+            <LinkPending />
+          </span>
         </span>
       </Link>
     );
