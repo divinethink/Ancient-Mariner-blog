@@ -57,16 +57,17 @@ export function DiaryDownload({ look, sel, tz, author, onClose }: Props) {
       const entries: DownloadEntry[] = toEntries(selectEntries(posts, onlyPublic), tz);
       if (entries.length === 0) return setMsg({ ok: false, text: L.empty });
       const label = rangeLabel(kind, r);
+      const coverLabel = kind === "month" ? label.replace(" ", " - ") : label; // মলাটে "অক্টোবর - ২০২৬"
       const summary = L.summary(bnNum(entries.length), bnNum(estimatePages(entries)));
       if (fmt === "pdf") {
-        setJob({ entries, look: { ...look, theme }, rangeText: label, author, docTitle: fileName(kind, r, "pdf").replace(/\.pdf$/, ""), cover, toc });
+        setJob({ entries, look: { ...look, theme }, rangeText: coverLabel, author, docTitle: fileName(kind, r, "pdf").replace(/\.pdf$/, ""), cover, toc });
         setMsg({ ok: true, text: `${summary}। ${L.printHint}` });
       } else {
         const { buildDiaryDocx, DIARY_DOCX_MIME } = await import("@/lib/diaryDocx");
-        const buf = await buildDiaryDocx(entries, { theme, title: L.coverTitle, subtitle: label, author, countLine: L.count(bnNum(entries.length)), placeLabel: bn.diary.labelPlace,
+        const buf = await buildDiaryDocx(entries, { theme, title: L.coverTitle, subtitle: coverLabel, author, countLine: L.count(bnNum(entries.length)), placeLabel: bn.diary.labelPlace,
           periodLabel: bn.diary.labelPeriod,
           cover,
-          bookTitle: cover === "red" ? L.bookTitleRed : L.bookTitleNavy,
+          bookTitle: L.coverTitle,
           ...(toc ? { toc: { title: L.tocTitle, note: L.tocNote, entriesLabel: L.book.entries } } : {}),
         });
         const url = URL.createObjectURL(new Blob([buf], { type: DIARY_DOCX_MIME }));

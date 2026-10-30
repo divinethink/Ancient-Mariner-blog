@@ -403,6 +403,7 @@ main:has(.dash-shell) {
 .dpage .dnum { font-size: 2.3em; line-height: 1; font-weight: 700; color: var(--dheadnum, var(--dacc)); }
 .dpage .dmeta { display: flex; flex-direction: column; font-size: 1em; line-height: 1.35; font-weight: 700; }
 .dpage .dmeta > span + span { font-weight: 400; opacity: 0.85; }
+.dpage .dper { font-size: 0.85em; }
 .dpage .dchips, .dpage .dweek { display: none; }
 .dpage .dico { flex: none; }
 .dpage .dbody { padding: 0 var(--dpr) 4px var(--dpl); }

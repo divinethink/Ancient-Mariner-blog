@@ -46,6 +46,7 @@ export function DiaryPage({
   night,
   look,
   footer,
+  periodInHead,
   children,
 }: {
   day: string;
@@ -56,6 +57,8 @@ export function DiaryPage({
   night?: boolean;
   look: DiaryLook;
   footer?: ReactNode;
+  /** true হলে বেলা চিপে নয়, তারিখ-বারের নিচে (ডাউনলোডের PDF) */
+  periodInHead?: boolean;
   children: ReactNode;
 }) {
   const d = new Date(`${day}T12:00:00Z`);
@@ -81,6 +84,11 @@ export function DiaryPage({
               {layout === "week" && <span className="dwk"> · {bn.diary.weekLbl} {bnNum(isoWeek(d))}</span>}
             </span>
             <span className="dwd">{bn.public.weekdaysFull[d.getUTCDay()]}</span>
+            {periodInHead && period && (
+              <span className="dper">
+                {bn.diary.labelPeriod}: {period}
+              </span>
+            )}
           </span>
         </div>
       )}
@@ -104,7 +112,7 @@ export function DiaryPage({
             {bn.diary.labelPlace}: {location}
           </p>
         )}
-        {(location || period) && (
+        {(location || (period && !periodInHead)) && (
           <p className="dchips">
             {location && (
               <span className="dchip">
@@ -113,7 +121,7 @@ export function DiaryPage({
                 <span className="dv">{location}</span>
               </span>
             )}
-            {period && (
+            {period && !periodInHead && (
               <span className="dchip">
                 {night ? <Moon /> : <Sun />}
                 <span className="dk">{bn.diary.labelPeriod}</span>

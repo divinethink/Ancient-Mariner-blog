@@ -6,7 +6,7 @@ import { useEffect } from "react";
 import { createPortal } from "react-dom";
 import { DiaryPage } from "@/components/diary/DiaryPage";
 import { bn } from "@/i18n/bn";
-import { bookCoverLines, bookStats, bookToc, bookYears, type BookCover } from "@/lib/diaryBook";
+import { bookToc, type BookCover } from "@/lib/diaryBook";
 import { dayParts, type DownloadEntry } from "@/lib/diaryExport";
 import type { DiaryLook } from "@/lib/diaryLook";
 
@@ -57,31 +57,20 @@ export function DiaryPrintRoot({ job, onDone }: { job: PrintJob; onDone: () => v
   const D = bn.diary.dl;
   const book = job.cover === "navy" || job.cover === "red" ? job.cover : null;
   const toc = job.toc ? bookToc(entries) : [];
-  const years = bookYears(entries);
-  const stats = bookCoverLines(bookStats(entries));
   return createPortal(
     <div className="diary-print-root">
       {book ? (
         <div className="dpage dbook" data-dbook={book} data-dfont={look.font} data-dsize={look.size}>
           <div className="dbook-frame">
-            {years && <p className="dbook-year">{years}</p>}
-            <h1 className="dbook-title">{book === "navy" ? D.bookTitleNavy : D.bookTitleRed}</h1>
+            <h1 className="dbook-title">{D.coverTitle}</h1>
             <span className="dbook-rule" />
-            <p className="dbook-author">{job.author}</p>
-            <p className="dbook-stat">{job.rangeText}</p>
-            {stats.map((s) => (
-              <p key={s} className="dbook-stat">
-                {s}
-              </p>
-            ))}
+            <p className="dbook-author">{job.rangeText}</p>
           </div>
         </div>
       ) : (
         <div className="dpage dcover" data-dtheme={look.theme} data-dfont={look.font} data-dsize={look.size}>
           <h1 className="dcover-title">{D.coverTitle}</h1>
           <p className="dcover-sub">{job.rangeText}</p>
-          <p className="dcover-sub">{D.count(bnNum(entries.length))}</p>
-          <p className="dcover-author">{job.author}</p>
         </div>
       )}
       {toc.length > 0 && (
@@ -117,6 +106,7 @@ export function DiaryPrintRoot({ job, onDone }: { job: PrintJob; onDone: () => v
           period={e.period}
           night={e.night}
           look={look}
+          periodInHead
           footer={
             <>
               <span>{bn.diary.words(bnNum(wordCount(e.lines)))}</span>
