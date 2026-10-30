@@ -72,7 +72,7 @@ export async function load(postId: string, isNew: boolean, tpl: string | null = 
         status: rv.post.status === "published" ? ("published" as const) : ("draft" as const),
         hasUnpublished: !!rv.draft,
       };
-      if (local && !remoteChanged(rv.stamp, meta?.baseMs, local.updatedAt)) return fromLocal(postId, local, pub);
+      if (local && !remoteChanged(rv.stamp, meta?.baseMs, local.updatedAt)) return fromLocal(postId, local, pub, rv.post.contentType === "diary");
       // রিমোটই সত্য: পুরনো ক্লিন লোকাল কপি সরিয়ে base বসানো (প্রথম সম্পাদনায় conflict-যাচাই ঠিক চলবে)
       await draftStore.deleteDraft(postId).catch(() => undefined);
       await draftStore.setSync(postId, { baseMs: rv.stamp, syncedUpdatedAt: 0 }).catch(() => undefined);
