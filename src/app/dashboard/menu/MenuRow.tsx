@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { Icon, type IconName } from "@/components/icons";
+import { LinkPending } from "@/components/ui/LinkPending";
 
 /** মেনুর একটি সারি (আইকন + লেবেল + ›); ≥৪৮px টাচ-টার্গেট */
 export function MenuRow({ href, icon, label, external = false }: { href: string; icon: IconName; label: string; external?: boolean }) {
@@ -21,6 +22,7 @@ export function MenuRow({ href, icon, label, external = false }: { href: string;
       <Link href={href} className={cls}>
         <Icon name={icon} size={20} className="shrink-0 text-muted" />
         <span className="flex-1">{label}</span>
+        <LinkPending />
         <Icon name="chevron" size={18} className="shrink-0 text-muted" />
       </Link>
     </li>

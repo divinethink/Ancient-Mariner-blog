@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Icon, type IconName } from "@/components/icons";
+import { LinkPending } from "@/components/ui/LinkPending";
 import { bn } from "@/i18n/bn";
 import { useAdd } from "./AddSheet";
 
@@ -49,7 +50,10 @@ export function TopNav() {
         <span className="flex h-7 w-14 items-center justify-center">
           <Icon name={icon} strokeWidth={on ? 2.4 : 1.8} />
         </span>
-        <span className="max-w-full truncate px-1">{label}</span>
+        <span className="flex max-w-full items-center gap-1 px-1">
+          <span className="truncate">{label}</span>
+          <LinkPending />
+        </span>
       </Link>
     );
   };
