@@ -1,5 +1,6 @@
 import { bn } from "@/i18n/bn";
 import { LogoutButton } from "../LogoutButton";
+import { LockMenuRow } from "./LockMenuRow";
 import { MenuGroup, MenuRow } from "./MenuRow";
 import { ThemePicker } from "./ThemePicker";
 
@@ -29,6 +30,7 @@ export default function MenuPage() {
       <MenuGroup title={bn.dashboard.groupSystem}>
         <MenuRow href="/dashboard/backups" icon="backup" label={bn.backup.title} />
         <MenuRow href="/dashboard/settings" icon="settings" label={bn.dashboard.settings} />
+        <LockMenuRow />
       </MenuGroup>
       <LogoutButton />
     </>

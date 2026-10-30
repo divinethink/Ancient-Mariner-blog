@@ -1,0 +1,24 @@
+"use client";
+
+import { useEffect, useSyncExternalStore } from "react";
+import { hasPasscode, isLocked, lockNow, subscribeLock } from "@/data/appLock";
+
+export const useAppLocked = (): boolean => useSyncExternalStore(subscribeLock, isLocked, () => false);
+export const useHasPasscode = (): boolean => useSyncExternalStore(subscribeLock, hasPasscode, () => false);
+
+/** অ্যাপ ব্যাকগ্রাউন্ডে `graceMs` বা বেশি থাকলে ফিরে এসে লক (এর কম হলে — যেমন কল/নোটিফিকেশন দেখে ফেরা — লক নয়) */
+export function useAutoLock(graceMs = 30_000): void {
+  useEffect(() => {
+    let hiddenAt: number | null = null;
+    const onChange = () => {
+      if (document.visibilityState === "hidden") {
+        hiddenAt = Date.now();
+      } else {
+        if (hiddenAt !== null && Date.now() - hiddenAt >= graceMs) lockNow();
+        hiddenAt = null;
+      }
+    };
+    document.addEventListener("visibilitychange", onChange);
+    return () => document.removeEventListener("visibilitychange", onChange);
+  }, [graceMs]);
+}

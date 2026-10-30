@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { AuthGate } from "@/auth/AuthGate";
+import { AppLockGate } from "./AppLockGate";
 import { DashboardShell } from "./DashboardShell";
 import { SiteSettingsProvider } from "./SiteSettingsProvider";
 
@@ -9,7 +10,9 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   return (
     <AuthGate>
       <SiteSettingsProvider>
-        <DashboardShell>{children}</DashboardShell>
+        <AppLockGate>
+          <DashboardShell>{children}</DashboardShell>
+        </AppLockGate>
       </SiteSettingsProvider>
     </AuthGate>
   );

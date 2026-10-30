@@ -100,4 +100,11 @@ export const prefs = {
       // স্টোরেজ বন্ধ/পূর্ণ: পছন্দ এই সেশনেই প্রযোজ্য থাকে
     }
   },
+  remove(key: string): void {
+    try {
+      localStorage.removeItem(key);
+    } catch {
+      // উপেক্ষা
+    }
+  },
 };
