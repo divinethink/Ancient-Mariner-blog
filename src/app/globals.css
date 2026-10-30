@@ -593,15 +593,18 @@ main:has(.dash-shell) {
 .diary-print-root .dbook[data-dbook="navy"] { background: linear-gradient(90deg, #14264a 0 14mm, #1f3a68 14mm 100%); color: #f3dfa0; }
 .diary-print-root .dbook[data-dbook="red"] { background: linear-gradient(90deg, #4a1710 0 14mm, #7a2820 14mm 100%); color: #f6e3b4; }
 .diary-print-root .dbook-frame { width: 100%; border: 0; padding: 22mm 10mm; background-image: linear-gradient(currentColor, currentColor), linear-gradient(currentColor, currentColor), linear-gradient(currentColor, currentColor), linear-gradient(currentColor, currentColor); background-size: 100% 1.2mm, 100% 1.2mm, 1.2mm 100%, 1.2mm 100%; background-position: top, bottom, left, right; background-repeat: no-repeat; display: flex; flex-direction: column; align-items: center; gap: 12px; min-height: 200mm; justify-content: center; }
-.diary-print-root .dbook-year { margin: 0; font-size: 1.1em; letter-spacing: 0.2em; opacity: 0.9; }
+.diary-print-root .dbook-year { margin: 0; font-size: 1.2em; letter-spacing: 0; }
 .diary-print-root .dbook-title { margin: 12px 0; font-size: 3.4em; line-height: 1.25; font-weight: 700; }
 .diary-print-root .dbook-rule { width: 55%; height: 1.2mm; background: currentColor; opacity: 0.7; }
 .diary-print-root .dbook-author { margin: 6px 0 0; font-size: 1.4em; }
-.diary-print-root .dbook-stat { margin: 0; font-size: 1em; opacity: 0.9; }
+.diary-print-root .dbook-stat { margin: 0; font-size: 1.15em; opacity: 1; }
 .diary-print-root .dtoc { padding: 28mm 24mm; background: #fbf2dc; color: #5a2a1c; min-height: 296mm; }
 .diary-print-root .dtoc h2 { margin: 0 0 8mm; text-align: center; font-size: 2em; }
 .diary-print-root .dtoc-row { display: flex; align-items: baseline; gap: 6px; padding: 3mm 0; border-bottom: 1px dotted rgba(90, 42, 28, 0.45); font-size: 1.2em; }
 .diary-print-root .dtoc-row i { flex: 1; }
+.diary-print-root .dlat { font-size: 0.88em; font-style: italic; font-weight: 400; }
+.diary-print-root .dtoc-month { font-weight: 700; margin-top: 3mm; border-bottom-style: solid; }
+.diary-print-root .dtoc-day { font-size: 1em; padding: 1.6mm 0 1.6mm 5mm; }
 .diary-print-root .dtoc-note { margin: 8mm 0 0; text-align: center; font-size: 0.85em; opacity: 0.8; }
 
 /* দিনলিপি ডাউনলোড (PDF = প্রিন্ট): পাতাগুলো পর্দার বাইরে; প্রিন্টের সময় শুধু এগুলোই দেখা যায় */
@@ -639,6 +642,10 @@ main:has(.dash-shell) {
   .diary-print-root .dpage[data-dlayout="book"]::before { left: 17mm; }
   .diary-print-root .dpage[data-dlayout="book"] .dtext { margin: 20px calc(-1 * var(--dpr)) 0 calc(28px - var(--dpl)); background-position: 28px 0; background-size: calc(100% - 28px) var(--dlh); background-repeat: repeat-y; }
   .diary-print-root .dpage[data-dlayout] .dfoot { display: flex; justify-content: space-between; text-align: left; padding-bottom: 4mm; }
+  .diary-print-root .dbook, .diary-print-root .dcover { font-size: 14pt; }
+  .diary-print-root .dpage[data-dlayout="book"] .dtext { margin-left: calc(20mm - var(--dpl)); padding-left: calc(var(--dpl) - 20mm); background-position: 0 0; background-size: 100% var(--dlh); }
+  .diary-print-root .dpage[data-dlayout="book"] .dtext::before { left: calc(var(--dpl) - 20mm); }
+  .diary-print-root .dpage[data-dlayout] .dfoot { position: absolute; left: var(--dpl); right: var(--dpr); bottom: 2.5mm; padding: 0; font-size: 0.95em; opacity: 1; }
 }
 
 /* দিনলিপির ছবি = পোলারয়েড (পাবলিক + ড্যাশবোর্ড): ১টি = পুরো প্রস্থ; ২টি = পাশাপাশি; ৩টি = প্রথমটি পুরো, বাকি দুটি আধা */
