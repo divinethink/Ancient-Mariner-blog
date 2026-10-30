@@ -93,11 +93,7 @@ export function RestorePanel() {
   const retryable = phase === "done" && result !== null && result.failedDocs > 0;
 
   return (
-    <section
-      aria-label={t.title}
-      className="mt-8 space-y-4 rounded-2xl border border-line bg-surface p-4"
-    >
-      <h2 className="font-serif text-xl font-bold">{t.title}</h2>
+    <div className="space-y-4">
       <p className="text-sm text-muted">{t.intro}</p>
       <p className="text-sm text-muted">{t.takeExport}</p>
 
@@ -204,6 +200,6 @@ export function RestorePanel() {
           )}
         </div>
       )}
-    </section>
+    </div>
   );
 }

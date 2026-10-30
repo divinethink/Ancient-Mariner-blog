@@ -17,13 +17,15 @@ import {
 } from "@/lib/exportBundle";
 import { dayKey } from "@/lib/datetime";
 import { DOCX_MIME } from "@/lib/exportDocx"; // শুধু ধ্রুবক — `docx` প্যাকেজ বোতাম চাপলে lazy লোড হয়
+import { Toggle } from "@/components/ui/Toggle";
 import { useSiteTimezone } from "../SiteSettingsProvider";
 
 type Phase = "idle" | "running" | "done" | "empty" | "error";
 type DocxPhase = "idle" | "building" | "error";
 type Files = { md: { url: string; name: string }; html: { url: string; name: string }; count: number };
 
-const btn = "min-h-11 rounded-full bg-btn-bg px-5 text-btn-tx disabled:opacity-50";
+const btn = "min-h-12 w-full rounded-full bg-btn-bg px-5 font-semibold text-btn-tx disabled:opacity-50";
+const dl = "inline-flex min-h-12 items-center justify-center rounded-full bg-btn-bg px-4 font-semibold text-btn-tx";
 const T = bn.backup.textExport;
 
 export function TextExportPanel() {
@@ -114,32 +116,29 @@ export function TextExportPanel() {
   }
 
   return (
-    <section aria-label={T.title} className="mt-10 space-y-4">
-      <h2 className="font-serif text-2xl font-bold">{T.title}</h2>
-      <p className="text-muted">{T.intro}</p>
-      <label className="flex min-h-11 items-center gap-3">
-        <input
-          type="checkbox"
+    <div className="space-y-4">
+      <p className="text-sm text-muted">{T.intro}</p>
+      <fieldset disabled={phase === "running"}>
+        <legend className="sr-only">{T.all}</legend>
+        <Toggle
           checked={all}
-          disabled={phase === "running"}
-          onChange={(e) => setAll(e.target.checked)}
-          className="size-6 accent-[var(--accent)]"
+          onChange={setAll}
+          label={T.all}
+          hint={<span className={all ? "text-accent-text" : undefined}>{all ? T.allWarn : T.onlyPublished}</span>}
         />
-        {T.all}
-      </label>
-      <p className={all ? "text-accent-text" : "text-sm text-muted"}>{all ? T.allWarn : T.onlyPublished}</p>
+      </fieldset>
 
       <fieldset className="space-y-2" disabled={phase === "running"}>
         <legend className="font-semibold">{T.rangeTitle}</legend>
         <p className="text-sm text-muted">{T.rangeHint}</p>
-        <div className="flex flex-wrap gap-3">
-          <label className="text-sm">
+        <div className="grid grid-cols-2 gap-3">
+          <label className="min-w-0 text-sm">
             {T.rangeFrom}
-            <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="mt-1 block min-h-11 rounded-xl border border-line bg-surface px-3" />
+            <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="mt-1 block min-h-11 w-full rounded-xl border border-line bg-surface px-3" />
           </label>
-          <label className="text-sm">
+          <label className="min-w-0 text-sm">
             {T.rangeTo}
-            <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="mt-1 block min-h-11 rounded-xl border border-line bg-surface px-3" />
+            <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="mt-1 block min-h-11 w-full rounded-xl border border-line bg-surface px-3" />
           </label>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -183,7 +182,7 @@ export function TextExportPanel() {
           <p role="status" className="text-muted">
             {T.running(read)}
           </p>
-          <button type="button" onClick={() => abort.current?.abort()} className="min-h-11 rounded-full border border-line px-5">
+          <button type="button" onClick={() => abort.current?.abort()} className="min-h-11 w-full rounded-full border border-line px-5">
             {T.cancel}
           </button>
         </div>
@@ -195,15 +194,17 @@ export function TextExportPanel() {
       {phase === "done" && files && (
         <div className="space-y-2">
           <p role="status">{T.ready(files.count)}</p>
-          <a href={files.md.url} download={files.md.name} className={`${btn} inline-flex items-center`}>
-            ⬇ {T.mdLabel}
-          </a>{" "}
-          <a href={files.html.url} download={files.html.name} className={`${btn} inline-flex items-center`}>
-            ⬇ {T.htmlLabel}
-          </a>
+          <div className="grid grid-cols-2 gap-3">
+            <a href={files.md.url} download={files.md.name} className={dl}>
+              ⬇ {T.mdLabel}
+            </a>
+            <a href={files.html.url} download={files.html.name} className={dl}>
+              ⬇ {T.htmlLabel}
+            </a>
+          </div>
           {docxFile ? (
             <p>
-              <a href={docxFile.url} download={docxFile.name} className={`${btn} inline-flex items-center`}>
+              <a href={docxFile.url} download={docxFile.name} className={`${dl} w-full`}>
                 ⬇ {T.docxLabel}
               </a>
             </p>
@@ -213,7 +214,7 @@ export function TextExportPanel() {
                 type="button"
                 onClick={() => void makeDocx()}
                 disabled={docx === "building"}
-                className="min-h-11 rounded-full border border-line px-5 disabled:opacity-50"
+                className="min-h-12 w-full rounded-full border border-line px-5 disabled:opacity-50"
               >
                 {docx === "building" ? T.docxBuilding : T.docxBtn}
               </button>
@@ -228,6 +229,6 @@ export function TextExportPanel() {
           <p className="text-sm text-muted">{bn.backup.keepSafe}</p>
         </div>
       )}
-    </section>
+    </div>
   );
 }

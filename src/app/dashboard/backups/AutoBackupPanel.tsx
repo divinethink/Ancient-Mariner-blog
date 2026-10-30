@@ -56,7 +56,7 @@ export function AutoBackupPanel() {
           {t_.loadFailed}
         </p>
       )}
-      {s.kind === "ok" && <p>{s.at ? t_.last(formatDateTime(s.at)) : t_.none}</p>}
+      {s.kind === "ok" && <p className="rounded-xl bg-bg p-3 text-sm">{s.at ? t_.last(formatDateTime(s.at)) : t_.none}</p>}
       {stale && (
         <p
           role="alert"
@@ -69,7 +69,7 @@ export function AutoBackupPanel() {
         type="button"
         onClick={() => void start()}
         disabled={t === "starting"}
-        className="min-h-11 rounded-full bg-btn-bg px-5 text-btn-tx disabled:opacity-50"
+        className="min-h-12 w-full rounded-full bg-btn-bg px-5 font-semibold text-btn-tx disabled:opacity-50"
       >
         {t === "starting" ? t_.starting : t_.now}
       </button>

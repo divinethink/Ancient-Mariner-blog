@@ -25,7 +25,8 @@ import { useSiteSettings } from "../SiteSettingsProvider";
 type Load = { kind: "loading" } | { kind: "error" } | { kind: "ready"; saved: SiteSettings };
 type Errs = Partial<Record<keyof SiteSettings, string>>;
 
-const input = "mt-1 min-h-11 w-full rounded-lg border border-line bg-surface px-3";
+const input = "mt-1 min-h-11 w-full rounded-xl border border-line bg-surface px-3";
+const lbl = "text-sm text-muted";
 const THEME_LABEL = { auto: bn.settings.themeAuto, light: bn.settings.themeLight, dark: bn.settings.themeDark } as const;
 
 function validate(v: SiteSettings): Errs {
@@ -141,9 +142,15 @@ export function SettingsForm() {
   // নাম/স্লোগানের ফন্ট ও সাইজ: draft.design-এর উপ-ফিল্ড (বাকি design অক্ষত)
   const setDesign = (p: Partial<SiteSettings["design"]>) => set("design", { ...draft.design, ...p });
   const headControls = (fk: "titleFont" | "taglineFont", sk: "titleSize" | "taglineSize", fl: string, sl: string) => (
-    <div className="space-y-2">
-      <Segmented showLabel compact label={fl} value={draft.design[fk]} options={HEAD_FONTS.map((v) => ({ value: v, label: bn.settings.head.fonts[v] }))} onChange={(v) => setDesign({ [fk]: v })} />
-      <Segmented showLabel compact label={sl} value={draft.design[sk]} options={HEAD_SIZES.map((v) => ({ value: v, label: bn.settings.head.sizes[v] }))} onChange={(v) => setDesign({ [sk]: v })} />
+    <div className="space-y-3">
+      <div>
+        <p className={`mb-1 ${lbl}`}>{fl}</p>
+        <Segmented label={fl} value={draft.design[fk]} options={HEAD_FONTS.map((v) => ({ value: v, label: bn.settings.head.fonts[v] }))} onChange={(v) => setDesign({ [fk]: v })} />
+      </div>
+      <div>
+        <p className={`mb-1 ${lbl}`}>{sl}</p>
+        <Segmented label={sl} value={draft.design[sk]} options={HEAD_SIZES.map((v) => ({ value: v, label: bn.settings.head.sizes[v] }))} onChange={(v) => setDesign({ [sk]: v })} />
+      </div>
     </div>
   );
 
@@ -179,7 +186,6 @@ export function SettingsForm() {
           />
           {err("siteTitle")}
         </label>
-        {headControls("titleFont", "titleSize", bn.settings.head.titleFont, bn.settings.head.titleSize)}
         <label className="block">
           {bn.settings.tagline}
           <input
@@ -191,7 +197,6 @@ export function SettingsForm() {
           />
           {err("tagline")}
         </label>
-        {headControls("taglineFont", "taglineSize", bn.settings.head.taglineFont, bn.settings.head.taglineSize)}
         <label className="block">
           {bn.settings.authorBio}
           <textarea
@@ -202,28 +207,28 @@ export function SettingsForm() {
             onChange={(e) => set("authorBio", e.target.value)}
             {...aria("authorBio")}
           />
-          <span className="mt-1 block text-sm text-muted">{bn.settings.authorBioHint}</span>
+          <span className="mt-1 flex justify-between gap-3 text-sm text-muted">
+            <span>{bn.settings.authorBioHint}</span>
+            <span className="shrink-0" aria-hidden="true">
+              {draft.authorBio.length}/{AUTHOR_BIO_MAX}
+            </span>
+          </span>
           {err("authorBio")}
         </label>
-        <div role="radiogroup" aria-label={bn.settings.theme}>
+      </Section>
+
+      <Section title={bn.settings.look} summary={THEME_LABEL[draft.defaultTheme as keyof typeof THEME_LABEL]}>
+        {headControls("titleFont", "titleSize", bn.settings.head.titleFont, bn.settings.head.titleSize)}
+        {headControls("taglineFont", "taglineSize", bn.settings.head.taglineFont, bn.settings.head.taglineSize)}
+        <div>
           <p>{bn.settings.theme}</p>
-          <p className="text-sm text-muted">{bn.settings.themeHint}</p>
-          <div className="mt-1 flex flex-wrap gap-2">
-            {SELECTABLE_THEMES.map((t) => (
-              <label
-                key={t}
-                className="flex min-h-11 cursor-pointer items-center gap-2 rounded-full border border-line px-4 has-[:checked]:border-accent has-[:checked]:bg-surface"
-              >
-                <input
-                  type="radio"
-                  name="defaultTheme"
-                  checked={draft.defaultTheme === t}
-                  onChange={() => set("defaultTheme", t)}
-                />
-                {THEME_LABEL[t as keyof typeof THEME_LABEL]}
-              </label>
-            ))}
-          </div>
+          <p className={`mb-2 ${lbl}`}>{bn.settings.themeHint}</p>
+          <Segmented
+            label={bn.settings.theme}
+            value={draft.defaultTheme}
+            options={SELECTABLE_THEMES.map((t) => ({ value: t, label: THEME_LABEL[t as keyof typeof THEME_LABEL] }))}
+            onChange={(t) => set("defaultTheme", t)}
+          />
         </div>
       </Section>
 
@@ -323,19 +328,19 @@ export function SettingsForm() {
         />
       </Section>
 
-      <div className="pt-2">
-        <button
-          type="submit"
-          disabled={busy || !dirty || hasErr}
-          className="min-h-11 rounded-lg bg-btn-bg px-5 text-btn-tx disabled:opacity-50"
-        >
-          {busy ? bn.settings.saving : bn.settings.save}
-        </button>
+      <div className="sticky bottom-16 -mx-1 space-y-2 border-t border-line bg-bg px-1 py-3 min-[1024px]:bottom-0">
         {msg && (
-          <p role={msg.ok ? "status" : "alert"} className={`mt-3 text-sm ${msg.ok ? "text-muted" : "text-accent-text"}`}>
+          <p role={msg.ok ? "status" : "alert"} className={`text-sm ${msg.ok ? "text-muted" : "text-accent-text"}`}>
             {msg.text}
           </p>
         )}
+        <button
+          type="submit"
+          disabled={busy || !dirty || hasErr}
+          className="min-h-12 w-full rounded-full bg-btn-bg px-6 font-semibold text-btn-tx disabled:opacity-50"
+        >
+          {busy ? bn.settings.saving : dirty ? bn.settings.save : bn.settings.noChange}
+        </button>
       </div>
     </form>
   );

@@ -18,7 +18,7 @@ import { ConfirmButton } from "../ConfirmButton";
 type Counts = Record<BackupCollection, number>;
 type Phase = "idle" | "counting" | "ready" | "running" | "done" | "error";
 
-const btn = "min-h-11 rounded-full bg-btn-bg px-5 text-btn-tx disabled:opacity-50";
+const btn = "min-h-12 w-full rounded-full bg-btn-bg px-5 font-semibold text-btn-tx disabled:opacity-50";
 
 export function BackupPanel() {
   const [phase, setPhase] = useState<Phase>("idle");
@@ -77,6 +77,7 @@ export function BackupPanel() {
 
   return (
     <div className="space-y-4">
+      <p className="text-sm text-muted">{bn.backup.intro}</p>
       {(phase === "idle" || phase === "error") && (
         <>
           {phase === "error" && (
@@ -92,7 +93,7 @@ export function BackupPanel() {
       {phase === "counting" && <p className="text-muted">{bn.backup.counting}</p>}
 
       {counts && (phase === "ready" || phase === "running" || phase === "done") && (
-        <section aria-label={bn.backup.countsLabel} className="rounded-2xl border border-line bg-surface p-4">
+        <section aria-label={bn.backup.countsLabel} className="rounded-xl bg-bg p-3">
           <ul className="space-y-1">
             {BACKUP_COLLECTIONS.map((c) => (
               <li key={c} className="flex justify-between">
@@ -121,7 +122,7 @@ export function BackupPanel() {
           <p role="status" className="text-muted">
             {bn.backup.running(done, total)}
           </p>
-          <button type="button" onClick={() => abort.current?.abort()} className="min-h-11 rounded-full border border-line px-5">
+          <button type="button" onClick={() => abort.current?.abort()} className="min-h-11 w-full rounded-full border border-line px-5">
             {bn.backup.cancel}
           </button>
         </div>
@@ -129,7 +130,7 @@ export function BackupPanel() {
       {phase === "done" && file && (
         <div className="space-y-2">
           <p role="status">{bn.backup.ready(Math.max(1, Math.round(file.size / 1024)))}</p>
-          <a href={file.url} download={file.name} className={`${btn} inline-flex items-center`}>
+          <a href={file.url} download={file.name} className={`${btn} inline-flex items-center justify-center break-all`}>
             ⬇ {file.name}
           </a>
           <p className="text-sm text-muted">{bn.backup.keepSafe}</p>
