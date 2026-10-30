@@ -1583,6 +1583,7 @@ export const bn = {
     },
     tiles: { entries: "লেখা", photos: "ছবি", places: "স্থান", month: "এই মাসে লেখা", published: "প্রকাশিত" },
     editEntry: "সম্পাদনা (ছবিসহ)",
+    search: "দিনলিপিতে খুঁজুন",
     weekLbl: "সপ্তাহ",
     periods: { morning: "সকাল", noon: "দুপুর", afternoon: "বিকাল", evening: "সন্ধ্যা", night: "রাত" } as Record<string, string>,
     moon: { new: "অমাবস্যা", waxing: "শুক্লপক্ষের চাঁদ", full: "পূর্ণিমা", waning: "কৃষ্ণপক্ষের চাঁদ", light: "আলো" },
@@ -1766,6 +1767,7 @@ export const bn = {
     typeIdea: "আইডিয়া",
     typeNote: "নোট",
     typeChapter: "অধ্যায়",
+    clearType: "সব ধরনে খুঁজুন",
     hint: "শিরোনাম, সারাংশ ও লেখার ভেতরের বাক্য — সবই খোঁজা হয়। একাধিক শব্দ দিলে সবকটা থাকা লেখা আসে। নেট না থাকলেও চলে।",
     none: "কিছু মেলেনি।",
     count: (shown: number, total: number) =>

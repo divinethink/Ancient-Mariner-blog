@@ -50,7 +50,7 @@ function Marked({ segs }: { segs: Seg[] }) {
 type Sync = "idle" | "syncing" | "failed";
 
 /** পূর্ণ-লেখা খোঁজ (private, offline-সক্ষম; P8b)। index = ডিভাইসের IndexedDB; খুললেই পুরনো index দিয়ে চলে, পেছনে delta-sync। */
-export function SearchView({ initialQuery }: { initialQuery: string }) {
+export function SearchView({ initialQuery, initialType = "" }: { initialQuery: string; initialType?: string }) {
   const router = useRouter();
   const tz = useSiteTimezone();
   const [entries, setEntries] = useState<SearchEntry[] | null>(null);
@@ -60,6 +60,7 @@ export function SearchView({ initialQuery }: { initialQuery: string }) {
   const [dq, setDq] = useState(initialQuery);
   const [categoryId, setCategoryId] = useState("");
   const [status, setStatus] = useState("");
+  const [type, setType] = useState(initialType); // খালি = সব ধরন
   // "খুঁজুন" চাপলে যে ফিল্টার প্রযোজ্য হয়েছে; বাছাই বদলালে মুছে যায় (ভুল বাছাইয়ে অটো তালিকা আসে না)
   const [applied, setApplied] = useState<{ categoryId: string; status: string } | null>(null);
   const [open, setOpen] = useState<string | null>(null); // প্রসারিত আইডিয়া/নোটের key
@@ -117,8 +118,10 @@ export function SearchView({ initialQuery }: { initialQuery: string }) {
     const u = new URL(location.href);
     if (dq.trim()) u.searchParams.set("q", dq.trim());
     else u.searchParams.delete("q");
+    if (type) u.searchParams.set("type", type);
+    else u.searchParams.delete("type");
     history.replaceState(history.state, "", u);
-  }, [dq]);
+  }, [dq, type]);
 
   const prepared = useMemo(() => prepare(entries ?? []), [entries]);
   const fct = useMemo(() => facets(entries ?? [], CONTENT_TYPE), [entries]);
@@ -126,11 +129,11 @@ export function SearchView({ initialQuery }: { initialQuery: string }) {
   const result = useMemo(
     () =>
       hasQuery
-        ? search(prepared, dq, { categoryId, status }, SEARCH_LIMIT)
+        ? search(prepared, dq, { categoryId, status, type }, SEARCH_LIMIT)
         : applied
-          ? listByFilter(prepared, applied, SEARCH_LIMIT)
+          ? listByFilter(prepared, { ...applied, type }, SEARCH_LIMIT)
           : { hits: [], total: 0 },
-    [prepared, dq, hasQuery, categoryId, status, applied],
+    [prepared, dq, hasQuery, categoryId, status, type, applied],
   );
   const shownList = hasQuery || applied !== null;
   const lit = useMemo(
@@ -183,6 +186,14 @@ export function SearchView({ initialQuery }: { initialQuery: string }) {
         />
       </label>
 
+      {type && (
+        <p className="mt-3 flex items-center gap-2 text-sm">
+          <span className="rounded-full bg-line px-3 py-1">{bn.org.types[type as keyof typeof bn.org.types] ?? type}</span>
+          <button type="button" onClick={() => setType("")} className="min-h-11 text-accent-text underline">
+            {bn.search.clearType}
+          </button>
+        </p>
+      )}
       <div role="group" aria-label={bn.search.filters} className="mt-4 grid grid-cols-2 gap-3">
         <label className="rounded-2xl border border-line bg-surface p-3 text-xs font-semibold text-muted">
           {bn.search.filterCategory}
