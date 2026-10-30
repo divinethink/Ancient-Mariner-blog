@@ -1,0 +1,224 @@
+// রেফারেন্স-snapshot (রেন্ডার-করা rules, UID বাদ)। এটা deploy-যোগ্য ফাইল নয় — আসল উৎস firestore.rules.tpl।
+// Console-এ paste করতে হলে আগে __OWNER_UID__ নিজের UID দিয়ে বদলান; paste-এর পর UID কোথাও commit করবেন না।
+rules_version = '2';
+// P1b: posts / slugs / siteSettings · P2a: drafts · P3a: categories / tags / series · P3b: ideas / notes · P4b: pages · P5a: revisions · P5b: backups · P6: media · P7b: templates · P11b: comments · P11c: shareLinks · P12-৩: bookmarks / highlights · P14a-১: writingProjects / chapters · দিনলিপি-গ: letters · দিনলিপি-ঘ: books / quotes · দিনলিপি-চ: trips / specialDays (Arch §৯)। বাকি collection phase-অনুযায়ী যোগ হয়; বাকি সব deny-all।
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isOwner() {
+      return request.auth != null && request.auth.uid == '__OWNER_UID__';
+    }
+    function validPage() {
+      return request.resource.data.title is string
+          && request.resource.data.ownerUid == '__OWNER_UID__'
+          && request.resource.data.status in ['draft', 'published'];
+    }
+    function validPost() {
+      return request.resource.data.title is string
+          && request.resource.data.ownerUid == '__OWNER_UID__'
+          && request.resource.data.status in ['draft', 'published', 'trashed', 'archived', 'scheduled']
+          && request.resource.data.visibility in ['private', 'public', 'unlisted'];
+    }
+
+    function validMedia() {
+      return request.resource.data.ownerUid == request.auth.uid
+          && request.resource.data.type in ['image', 'file']
+          && request.resource.data.deliveryType in ['upload', 'authenticated']
+          && request.resource.data.visibility in ['public', 'private'];
+    }
+
+    function validProject() {
+      return request.resource.data.title is string
+          && request.resource.data.ownerUid == '__OWNER_UID__'
+          && request.resource.data.type is string
+          && request.resource.data.type.size() >= 1
+          && request.resource.data.type.size() <= 40
+          && request.resource.data.status in ['draft', 'published', 'archived']
+          && request.resource.data.visibility in ['private', 'public'];
+    }
+    function validChapter() {
+      return request.resource.data.title is string
+          && request.resource.data.ownerUid == '__OWNER_UID__'
+          && request.resource.data.projectId is string
+          && request.resource.data.order is int
+          && request.resource.data.status in ['draft', 'published', 'trashed']
+          && request.resource.data.visibility in ['private', 'public'];
+    }
+
+    function validBook() {
+      return request.resource.data.title is string
+          && request.resource.data.title.size() <= 150
+          && request.resource.data.ownerUid == '__OWNER_UID__'
+          && request.resource.data.status in ['wishlist', 'reading', 'finished']
+          && request.resource.data.visibility in ['private', 'public'];
+    }
+
+    function validTrip() {
+      return request.resource.data.place is string
+          && request.resource.data.place.size() >= 1
+          && request.resource.data.place.size() <= 100
+          && request.resource.data.ownerUid == '__OWNER_UID__'
+          && request.resource.data.status in ['wish', 'been']
+          && (!('costTaka' in request.resource.data)
+              || (request.resource.data.costTaka is int && request.resource.data.costTaka >= 0));
+    }
+
+    function validSpecialDay() {
+      return request.resource.data.name is string
+          && request.resource.data.name.size() >= 1
+          && request.resource.data.name.size() <= 80
+          && request.resource.data.ownerUid == '__OWNER_UID__'
+          && request.resource.data.kind in ['birthday', 'anniversary', 'other']
+          && request.resource.data.month is int && request.resource.data.month >= 1 && request.resource.data.month <= 12
+          && request.resource.data.day is int && request.resource.data.day >= 1 && request.resource.data.day <= 31;
+    }
+
+    match /posts/{postId} {
+      allow read: if resource.data.status == 'published'
+                  && resource.data.visibility in ['public', 'unlisted'];
+      allow read: if isOwner();
+      allow delete: if isOwner() && resource.data.status == 'trashed';
+      allow create: if isOwner() && validPost();
+      allow update: if isOwner() && validPost()
+                    && request.resource.data.ownerUid == resource.data.ownerUid;
+    }
+
+    match /slugs/{slug} {
+      allow read, create, delete: if isOwner();
+      allow update: if false;
+    }
+
+    match /drafts/{targetId} {
+      allow read, write: if isOwner();
+    }
+
+    match /categories/{id} {
+      allow read: if true;
+      allow write: if isOwner();
+    }
+    match /tags/{id} {
+      allow read: if true;
+      allow write: if isOwner();
+    }
+    match /series/{id} {
+      allow read: if true;
+      allow write: if isOwner();
+    }
+
+    match /ideas/{id} {
+      allow read, write: if isOwner();
+    }
+    match /notes/{id} {
+      allow read, write: if isOwner();
+    }
+
+    match /shareLinks/{hash} {
+      allow read, delete: if isOwner();
+      allow create, update: if isOwner()
+                            && request.resource.data.ownerUid == '__OWNER_UID__'
+                            && request.resource.data.postId is string
+                            && request.resource.data.expiresAt is timestamp;
+    }
+
+    match /bookmarks/{postId} {
+      allow read, delete: if isOwner();
+      allow create, update: if isOwner()
+                            && request.resource.data.ownerUid == '__OWNER_UID__'
+                            && request.resource.data.postId == postId;
+    }
+
+    match /highlights/{id} {
+      allow read, delete: if isOwner();
+      allow create, update: if isOwner()
+                            && request.resource.data.ownerUid == '__OWNER_UID__'
+                            && request.resource.data.postId is string
+                            && request.resource.data.quote is string
+                            && request.resource.data.quote.size() > 0
+                            && request.resource.data.quote.size() <= 2400;
+    }
+
+    match /writingProjects/{projectId} {
+      allow read: if resource.data.status == 'published' && resource.data.visibility == 'public';
+      allow read, delete: if isOwner();
+      allow create: if isOwner() && validProject();
+      allow update: if isOwner() && validProject()
+                    && request.resource.data.ownerUid == resource.data.ownerUid;
+    }
+
+    match /chapters/{chapterId} {
+      allow read: if resource.data.status == 'published' && resource.data.visibility == 'public'
+                  && get(/databases/$(database)/documents/writingProjects/$(resource.data.projectId)).data.status == 'published'
+                  && get(/databases/$(database)/documents/writingProjects/$(resource.data.projectId)).data.visibility == 'public';
+      allow read: if isOwner();
+      allow delete: if isOwner() && resource.data.status == 'trashed';
+      allow create: if isOwner() && validChapter();
+      allow update: if isOwner() && validChapter()
+                    && request.resource.data.ownerUid == resource.data.ownerUid
+                    && request.resource.data.projectId == resource.data.projectId;
+    }
+
+    match /comments/{commentId} {
+      allow read: if resource.data.status == 'approved';
+      allow read: if isOwner();
+      allow write: if false;
+    }
+
+    match /templates/{id} {
+      allow read, write: if isOwner();
+    }
+
+    match /letters/{id} {
+      allow read, write: if isOwner();
+    }
+
+    match /books/{id} {
+      allow read: if resource.data.visibility == 'public';
+      allow read, delete: if isOwner();
+      allow create, update: if isOwner() && validBook();
+    }
+    match /trips/{id} {
+      allow read, delete: if isOwner();
+      allow create, update: if isOwner() && validTrip();
+    }
+    match /specialDays/{id} {
+      allow read, delete: if isOwner();
+      allow create, update: if isOwner() && validSpecialDay();
+    }
+    match /quotes/{id} {
+      allow read, write: if isOwner();
+    }
+
+    match /pages/{slug} {
+      allow read: if resource.data.status == 'published';
+      allow read: if isOwner();
+      allow create, update: if isOwner() && validPage();
+      allow delete: if isOwner() && resource.data.get('system', false) != true;
+    }
+
+    match /revisions/{revisionId} {
+      allow read, create: if isOwner();
+      allow update, delete: if false;
+    }
+
+    match /backups/{backupId} {
+      allow read: if isOwner();
+      allow write: if false;
+    }
+
+    match /media/{mediaId} {
+      allow read: if resource.data.visibility == 'public';
+      allow read, delete: if isOwner();
+      allow create: if isOwner() && validMedia();
+      allow update: if isOwner() && validMedia()
+                    && request.resource.data.ownerUid == resource.data.ownerUid;
+    }
+
+    match /siteSettings/{docId} {
+      allow read: if true;
+      allow write: if isOwner();
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
