@@ -1072,6 +1072,8 @@ export const bn = {
     linkPrompt: "লিংকের ঠিকানা (https://…)",
     linkInvalid: "শুধু http, https বা mailto লিংক চলবে।",
     publish: "প্রকাশ ▸",
+    diarySave: "সেভ",
+    diarySaved: "সেভ হয়েছে ✓",
     syncing: "সিঙ্ক হচ্ছে…",
     synced: "সংরক্ষিত ✓",
     syncFailed: "সিঙ্ক হয়নি — লেখা এই ডিভাইসে নিরাপদ",

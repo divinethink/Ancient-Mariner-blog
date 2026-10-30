@@ -15,7 +15,7 @@ import { EditorSurface, type Loaded } from "./EditorSurface";
 
 export type State = { kind: "loading" } | { kind: "error" } | { kind: "ready"; data: Loaded };
 
-const fromLocal = async (postId: string, l: LocalDraft, pub?: Loaded["pub"]): Promise<State> => {
+const fromLocal = async (postId: string, l: LocalDraft, pub?: Loaded["pub"], diary = false): Promise<State> => {
   const doc = parseBody(l.body);
   return {
     kind: "ready",
@@ -27,6 +27,7 @@ const fromLocal = async (postId: string, l: LocalDraft, pub?: Loaded["pub"]): Pr
       excerpt: l.excerpt,
       excerptManual: l.excerptManual ?? l.excerpt !== makeExcerpt(docToText(doc)),
       pub: pub ?? { status: "draft", hasUnpublished: false },
+      diary,
     },
   };
 };
@@ -58,11 +59,9 @@ export async function load(postId: string, isNew: boolean, tpl: string | null = 
   void repoP.catch(() => undefined);
   const local = await draftStore.loadDraft(postId).catch(() => undefined);
   if (local?.dirty) {
-    const pub = await repoP
-      .then((r) => loadRemote(r, postId))
-      .then((rv) => (rv ? { status: rv.post.status === "published" ? ("published" as const) : ("draft" as const), hasUnpublished: true } : undefined))
-      .catch(() => undefined);
-    return fromLocal(postId, local, pub);
+    const rv = await repoP.then((r) => loadRemote(r, postId)).catch(() => null);
+    const pub = rv ? { status: rv.post.status === "published" ? ("published" as const) : ("draft" as const), hasUnpublished: true } : undefined;
+    return fromLocal(postId, local, pub, rv?.post.contentType === "diary");
   }
   try {
     const repo = await repoP;
@@ -87,6 +86,7 @@ export async function load(postId: string, isNew: boolean, tpl: string | null = 
           excerpt: rv.excerpt,
           excerptManual: rv.excerpt !== makeExcerpt(docToText(doc)),
           pub,
+          diary: rv.post.contentType === "diary",
         },
       };
     }

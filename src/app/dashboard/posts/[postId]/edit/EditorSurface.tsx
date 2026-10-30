@@ -9,6 +9,7 @@ import { applyComfort, applyEditorAids, readComfort, readFocus, saveFocus } from
 import { draftStore, type EditorPos } from "@/data/draftStore";
 import { goalStore } from "@/data/goalStore";
 import { triggerSiteRebuild } from "@/data/rebuildClient";
+import { snapshotOnPublish } from "@/data/revisionHooks";
 import { getTemplateRepo } from "@/data/templateRepo.wire";
 import { bn } from "@/i18n/bn";
 import { dayKey } from "@/lib/datetime";
@@ -40,6 +41,8 @@ export type Loaded = {
   /** প্যানেলে হাতে লেখা (autosave বদলাবে না) */
   excerptManual: boolean;
   pub: PubInfo;
+  /** দিনলিপির এন্ট্রি: "প্রকাশ" প্যানেলের বদলে শুধু "সেভ"; public/private দিনলিপি-পাতার টগলে */
+  diary?: boolean;
 };
 type SaveState = "idle" | "saving" | "saved" | "failed";
 
@@ -82,6 +85,33 @@ export function EditorSurface({ postId, data, backToSite = null }: { postId: str
     const id = setTimeout(() => setNote(""), 2500);
     return () => clearTimeout(id);
   }, [note]);
+  /** দিনলিপির "সেভ": লোকাল সেভ → সিঙ্ক; আগে থেকে প্রকাশিত (public) এন্ট্রির অপ্রকাশিত পরিবর্তন সরাসরি লাইভ (changeStatus-এর একই ক্রম); double-tap-এ দ্বিতীয়টা বাদ */
+  const diaryBusy = useRef(false);
+  async function saveDiary() {
+    if (diaryBusy.current) return;
+    diaryBusy.current = true;
+    try {
+      const goLive = pub.status === "published" && pub.hasUnpublished;
+      await flushAsync();
+      await engine.syncNow();
+      if (engine.status === "conflict" || engine.status === "trashed") return setNote(bn.publishPanel.conflictFirst);
+      if (goLive) {
+        await engine.exclusive(async (repo) => {
+          await repo.applyDraft(postId, (await draftStore.loadDraft(postId))?.wordCount ?? words);
+          const post = await repo.get(postId);
+          if (post) await engine.adoptBase(post.updatedAt.getTime());
+        });
+        await snapshotOnPublish(postId).catch(() => undefined); // ইতিহাস best-effort
+        setPub({ status: "published", hasUnpublished: false });
+        await triggerSiteRebuild(); // ব্যর্থ হলেও সেভ সফল; সাইট পরের build-এ ঠিক হবে
+      }
+      setNote(bn.editor.diarySaved);
+    } catch {
+      setNote(bn.editor.status.failed);
+    } finally {
+      diaryBusy.current = false;
+    }
+  }
   async function saveAsTemplate() {
     setMoreOpen(false);
     const ed = editorRef.current;
@@ -417,10 +447,10 @@ export function EditorSurface({ postId, data, backToSite = null }: { postId: str
         </button>
         <button
           type="button"
-          onClick={() => setPanelOpen(true)}
+          onClick={() => (data.diary ? void saveDiary() : setPanelOpen(true))}
           className="min-h-11 rounded-full bg-btn-bg px-4 text-sm font-semibold text-btn-tx"
         >
-          {bn.editor.publish}
+          {data.diary ? bn.editor.diarySave : bn.editor.publish}
         </button>
         <div className="relative">
           <button
@@ -459,15 +489,19 @@ export function EditorSurface({ postId, data, backToSite = null }: { postId: str
               >
                 {bn.editor.history}
               </Link>
-              <button type="button" onClick={() => void saveAsTemplate()} className="min-h-11 whitespace-nowrap px-4 text-left">
-                {bn.editor.tpl.save}
-              </button>
-              <button type="button" onClick={() => void copyAs("plain")} className="min-h-11 whitespace-nowrap px-4 text-left">
-                {bn.editor.tpl.copyPlain}
-              </button>
-              <button type="button" onClick={() => void copyAs("md")} className="min-h-11 whitespace-nowrap px-4 text-left">
-                {bn.editor.tpl.copyMd}
-              </button>
+              {!data.diary && (
+                <>
+                  <button type="button" onClick={() => void saveAsTemplate()} className="min-h-11 whitespace-nowrap px-4 text-left">
+                    {bn.editor.tpl.save}
+                  </button>
+                  <button type="button" onClick={() => void copyAs("plain")} className="min-h-11 whitespace-nowrap px-4 text-left">
+                    {bn.editor.tpl.copyPlain}
+                  </button>
+                  <button type="button" onClick={() => void copyAs("md")} className="min-h-11 whitespace-nowrap px-4 text-left">
+                    {bn.editor.tpl.copyMd}
+                  </button>
+                </>
+              )}
               <div role="separator" className="my-1 border-t border-line" />
               <button type="button" onClick={() => void changeStatus("draft")} className="min-h-11 whitespace-nowrap px-4 text-left">
                 {bn.editor.status.draft}
@@ -545,7 +579,7 @@ export function EditorSurface({ postId, data, backToSite = null }: { postId: str
       </div>
       <div className="h-24" aria-hidden />
       {comfortOpen && <ComfortPanel onClose={() => setComfortOpen(false)} />}
-      {panelOpen && (
+      {panelOpen && !data.diary && (
       <PublishPanel
         docked={docked}
         onClose={() => setPanelOpen(false)}
